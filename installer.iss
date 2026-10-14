@@ -34,6 +34,8 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Type: files; Name: "{autodesktop}\BROWSER MTS.lnk"
 Type: files; Name: "{autodesktop}\Extensão Chrome BROWSER MTS.lnk"
 Type: files; Name: "{autodesktop}\Extensao Chrome BROWSER MTS.lnk"
+Type: files; Name: "{userprograms}\BROWSER MTS\*.lnk"
+Type: filesandordirs; Name: "{userprograms}\BROWSER MTS"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -42,6 +44,7 @@ Name: "exticon"; Description: "Criar atalho na Area de Trabalho para a Extensao 
 [Files]
 Source: "dist\NAVEGADOR_MTS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "src\extension\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "dist\NAVEGADOR_MTS\NAVEGADOR_MTS.exe"; DestDir: "{localappdata}\Programs\BROWSER MTS"; DestName: "BROWSER_MTS.exe"; Flags: ignoreversion restartreplace
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app_icon.ico"
@@ -59,7 +62,7 @@ var
   ResultCode: Integer;
 begin
   Exec('taskkill.exe', '/F /IM NAVEGADOR_MTS.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('taskkill.exe', '/F /IM BROWSER_MTS.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill.exe', '/F /IM "BROWSER MTS.exe" /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Result := True;
 end;
-

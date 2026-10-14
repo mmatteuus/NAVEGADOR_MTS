@@ -7,6 +7,7 @@ o acúmulo de processos órfãos através de encerramento em cascata.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from typing import Any, Dict, List, Optional
@@ -36,12 +37,23 @@ class ProcessSupervisor:
     def start(self) -> bool:
         """Inicia o processo filho e vincula o monitoramento do psutil."""
         try:
+            creationflags = 0
+            startupinfo = None
+            if os.name == "nt":
+                creationflags = subprocess.CREATE_NO_WINDOW
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = 0
+
             self._popen = subprocess.Popen(
                 self.command,
                 cwd=self.cwd,
                 env=self.env,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,
+                creationflags=creationflags,
+                startupinfo=startupinfo,
             )
             self._psutil_proc = psutil.Process(self._popen.pid)
             return True
@@ -73,30 +85,24 @@ class ProcessSupervisor:
 
             # 1. Envia sinal de término gracioso para todos os processos
             for proc in all_procs:
-                try:
-                    proc.terminate()
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
+                try: proc.terminate()
+                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
 
             # 2. Aguarda a liberação dos processos pelo kernel do Windows
             _, alive = psutil.wait_procs(all_procs, timeout=timeout)
 
             # 3. Se algum processo filho resistir, força a finalização imediata
             for proc in alive:
-                try:
-                    proc.kill()
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
+                try: proc.kill()
+                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         finally:
             if self._popen is not None:
                 for stream in (self._popen.stdin, self._popen.stdout, self._popen.stderr):
                     if stream is not None and not stream.closed:
-                        try:
-                            stream.close()
-                        except Exception:
-                            pass
+                        try: stream.close()
+                        except Exception: pass
                 if self._popen.poll() is None:
                     self._popen.kill()
             self._popen = None
@@ -105,21 +111,15 @@ class ProcessSupervisor:
     def restart(self, reason: str = "") -> bool:
         """Mata a árvore anterior, aguarda o intervalo de liberação e reinicia."""
         self.terminate_tree(timeout=1.5)
-        # Aguarda <= 500ms para liberação de portas e handles no Windows
         if self.restart_delay > 0:
             time.sleep(self.restart_delay)
         return self.start()
 
     def get_metrics(self) -> Dict[str, Any]:
         """Coleta métricas de consumo de memória, uso de CPU e integridade."""
+        empty_res = {"name": self.name, "alive": False, "pid": None, "cpu_percent": 0.0, "memory_mb": 0.0}
         if not self.is_alive() or self._psutil_proc is None:
-            return {
-                "name": self.name,
-                "alive": False,
-                "pid": None,
-                "cpu_percent": 0.0,
-                "memory_mb": 0.0,
-            }
+            return empty_res
 
         try:
             mem_info = self._psutil_proc.memory_info()
@@ -131,10 +131,4 @@ class ProcessSupervisor:
                 "memory_mb": round(mem_info.rss / (1024 * 1024), 2),
             }
         except (psutil.NoSuchProcess, psutil.AccessDenied):
-            return {
-                "name": self.name,
-                "alive": False,
-                "pid": None,
-                "cpu_percent": 0.0,
-                "memory_mb": 0.0,
-            }
+            return empty_res
