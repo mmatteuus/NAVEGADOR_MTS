@@ -46,3 +46,4 @@ if exist "%APP_EXE%" (
 
 echo.
 pause
+
