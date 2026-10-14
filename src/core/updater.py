@@ -4,7 +4,7 @@ Responsabilidades:
 - Consulta resiliente à API de releases e fallback automático para instalador local.
 - Comparação semântica de versões (ex: 2.0.1 > 2.0.0).
 - Download ou cópia com barra de progresso em tempo real.
-- Execução do instalador in-place sem desinstalação prévia.
+- Execução do instalador in-place com fechamento forçado de instâncias antigas.
 """
 
 from dataclasses import dataclass
@@ -27,7 +27,6 @@ DEFAULT_RELEASE_URL: str = "https://api.github.com/repos/mmatteuus/browser-mcp-m
 @dataclass(frozen=True)
 class UpdateInfo:
     """Metadados de uma versão disponível para atualização."""
-
     version: str
     release_notes: str
     download_url: str
@@ -67,39 +66,28 @@ def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: 
         headers={"User-Agent": f"BROWSER-MTS-Updater/{APP_VERSION}", "Accept": "application/vnd.github.v3+json"}
     )
     try:
-        with urllib.request.urlopen(req, timeout=5) as response:
-            if response.status == 200:
-                data = json.loads(response.read().decode("utf-8"))
-                tag_name = data.get("tag_name", "")
-                release_notes = data.get("body", "Melhorias de desempenho e correções gerais.")
-                assets = data.get("assets", [])
-                is_newer = parse_version_tuple(tag_name) > parse_version_tuple(APP_VERSION)
-                download_url = ""
-                asset_name = ""
-                for asset in assets:
-                    name = asset.get("name", "")
-                    if name.endswith(".exe"):
-                        download_url = asset.get("browser_download_url", "")
-                        asset_name = name
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                tag = data.get("tag_name", "")
+                notes = data.get("body", "Melhorias de desempenho e correções gerais.")
+                is_newer = parse_version_tuple(tag) > parse_version_tuple(APP_VERSION)
+                d_url, a_name = "", ""
+                for a in data.get("assets", []):
+                    if a.get("name", "").endswith(".exe"):
+                        d_url, a_name = a.get("browser_download_url", ""), a.get("name", "")
                         break
-                return UpdateInfo(
-                    version=tag_name, release_notes=release_notes,
-                    download_url=download_url,
-                    asset_name=asset_name, is_newer=is_newer
-                )
+                return UpdateInfo(version=tag, release_notes=notes, download_url=d_url, asset_name=a_name, is_newer=is_newer)
     except Exception:
         pass
 
-    # Fallback apenas na URL oficial padrão se permitido
     if api_url == DEFAULT_RELEASE_URL and allow_local_fallback:
-        local_installer = find_local_installer_path()
-        if local_installer and parse_version_tuple(TARGET_UPDATE_VERSION) > parse_version_tuple(APP_VERSION):
+        loc = find_local_installer_path()
+        if loc and parse_version_tuple(TARGET_UPDATE_VERSION) > parse_version_tuple(APP_VERSION):
             return UpdateInfo(
                 version=TARGET_UPDATE_VERSION,
                 release_notes="✨ Transporte Stdio MCP integrado\n✨ Conexão nativa com ChatGPT Tunnel\n✨ Execução de aplicativos locais (Excel, etc.)",
-                download_url=str(local_installer),
-                asset_name=local_installer.name,
-                is_newer=True,
+                download_url=str(loc), asset_name=loc.name, is_newer=True
             )
     return None
 
@@ -109,7 +97,7 @@ def download_and_launch_update(
     progress_callback: Optional[Callable[[float], None]] = None,
     on_ready_to_install: Optional[Callable[[], None]] = None,
 ) -> bool:
-    """Prepara o executável da nova versão e inicia a instalação in-place."""
+    """Prepara o executável da nova versão e inicia a instalação in-place com substituição forçada."""
     if not update_info.download_url:
         return False
 
@@ -133,8 +121,7 @@ def download_and_launch_update(
             req = urllib.request.Request(update_info.download_url, headers={"User-Agent": f"BROWSER-MTS-Updater/{APP_VERSION}"})
             with urllib.request.urlopen(req, timeout=30) as resp, open(target_path, "wb") as out_file:
                 total_size = int(resp.headers.get("Content-Length", 0))
-                downloaded = 0
-                chunk_size = 65536
+                downloaded, chunk_size = 0, 65536
                 while chunk := resp.read(chunk_size):
                     out_file.write(chunk)
                     downloaded += len(chunk)
@@ -144,7 +131,9 @@ def download_and_launch_update(
         if on_ready_to_install:
             on_ready_to_install()
 
-        subprocess.Popen([target_path])
+        # Flags Inno Setup para fechar instâncias anteriores e substituir in-place sem travar
+        cmd = [target_path, "/SILENT", "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS"]
+        subprocess.Popen(cmd)
         return True
     except Exception:
         return False
