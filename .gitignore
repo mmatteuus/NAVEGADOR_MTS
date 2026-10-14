@@ -72,6 +72,7 @@ htmlcov/
 # 6. Artefatos de Compilação e Distribuição
 # ------------------------------------------------------------------------------
 dist/
+dist_installer/
 build/
 bin/
 obj/

@@ -93,7 +93,29 @@ O BROWSER MTS foi reestruturado para eliminar totalmente as desconexões intermi
 
 ---
 
-### Opção 1: Instalação 1-Clique Super Simplificada (Para Qualquer Usuário)
+### 🌟 Opção 1: Instalador Oficial (.exe) em 1 Clique (Recomendado para Distribuição e Usuários)
+
+> **Não requer Python, Git nem comandos de terminal!** É um executável único de instalação tradicional do Windows (Inno Setup), empacotado para você enviar e distribuir diretamente para qualquer pessoa.
+
+1. Execute o arquivo **`dist_installer\BROWSER_MTS_Instalador_v2.0.exe`** (apenas ~15 MB).
+2. Siga o assistente visual em Português do Brasil e clique em **Instalar**.
+3. O instalador faz tudo automaticamente:
+   - Extrai o executável standalone compilado para `%LOCALAPPDATA%\Programs\BROWSER_MTS` (sem exigir permissões de administrador).
+   - Cria o atalho principal **`BROWSER MTS`** na Área de Trabalho e no Menu Iniciar.
+   - Cria o atalho direto **`Extensão Chrome BROWSER MTS`** na Área de Trabalho.
+   - Abre o Google Chrome e a pasta da extensão para carregamento imediato.
+   - Registra o desinstalador oficial no Windows (Configurações > Aplicativos Instalados).
+
+#### Como recompilar o instalador distribuível:
+Se você alterou o código e deseja gerar um novo instalador para enviar a outras pessoas, basta dar dois cliques em:
+```cmd
+COMPILAR_INSTALADOR.bat
+```
+Ele executa o PyInstaller e o Inno Setup 6 automaticamente, gerando um novo executável único em `dist_installer\`.
+
+---
+
+### Opção 2: Instalação Rápida via Script Batch (Para Desenvolvedores com Python)
 
 1. Dê dois cliques no arquivo **`INSTALAR_BROWSER_MTS.bat`**:
    - Cria o ambiente virtual e instala tudo automaticamente.
@@ -106,7 +128,7 @@ O BROWSER MTS foi reestruturado para eliminar totalmente as desconexões intermi
 
 ---
 
-### Opção 2: Instalação via PowerShell (`install.ps1`)
+### Opção 3: Instalação via PowerShell (`install.ps1`)
 
 Para desenvolvedores e administradores que preferem automação via PowerShell:
 
@@ -122,7 +144,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ---
 
-### Opção 3: Instalação Manual via Terminal
+### Opção 4: Instalação Manual via Terminal
 
 Caso prefira configurar manualmente:
 

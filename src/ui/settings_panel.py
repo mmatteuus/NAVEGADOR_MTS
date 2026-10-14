@@ -39,7 +39,10 @@ def set_autostart_enabled(enabled: bool) -> bool:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _REG_SUBKEY, 0, winreg.KEY_SET_VALUE) as key:
             if enabled:
-                cmd = f'"{sys.executable}" -m src.app --minimized'
+                if getattr(sys, "frozen", False):
+                    cmd = f'"{sys.executable}" --minimized'
+                else:
+                    cmd = f'"{sys.executable}" -m src.app --minimized'
                 winreg.SetValueEx(key, _REG_APP_NAME, 0, winreg.REG_SZ, cmd)
             else:
                 try:

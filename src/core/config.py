@@ -9,12 +9,20 @@ Responsabilidades:
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
+import sys
 
 # Definições padronizadas de rede
 DEFAULT_HOST: str = "127.0.0.1"
 DEFAULT_DEV_PORT: int = 3456
 DEFAULT_MCP_PORT: int = 3457
 DEFAULT_TUNNEL_ID: str = "tunnel_6a7aea545c408191889cd114d4a99d9b"
+
+
+def _get_project_root() -> Path:
+    """Retorna o diretório raiz seja executando em código fonte ou .exe congelado."""
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", os.path.dirname(sys.executable)))
+    return Path(__file__).resolve().parent.parent.parent
 
 
 @dataclass(frozen=True)
@@ -28,7 +36,7 @@ class AppConfig:
     dev_mode: bool = False
 
     # Diretórios e caminhos absolutos
-    project_root: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent.parent)
+    project_root: Path = field(default_factory=_get_project_root)
     app_data_dir: Path = field(default_factory=lambda: Path(
         os.environ.get("APPDATA", str(Path.home()))
     ) / "browser-mcp-mts")
