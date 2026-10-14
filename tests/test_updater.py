@@ -119,3 +119,19 @@ def test_download_and_launch_update_flow(tmp_path):
     assert len(ready_called) == 1
     mock_popen.assert_called_once()
 
+
+def test_download_and_launch_update_local_file(tmp_path):
+    """Valida cópia e lançamento do instalador quando download_url é local."""
+    installer = tmp_path / "Instalador_Local.exe"
+    installer.write_bytes(b"MZ" + b"\x00" * 50)
+    info = UpdateInfo("2.0.1", "Notas", str(installer), "Instalador_Local.exe", True)
+
+    reports = []
+    with patch("subprocess.Popen") as mock_popen, \
+         patch("tempfile.gettempdir", return_value=str(tmp_path)):
+        ok = download_and_launch_update(info, progress_callback=lambda p: reports.append(p))
+
+    assert ok is True
+    assert reports[-1] == 1.0
+    mock_popen.assert_called_once()
+

@@ -12,6 +12,7 @@ import sys
 import threading
 from typing import Optional
 from .core.config import current_config
+from .core.tunnel_service import tunnel_service
 from .computer.kill_switch import kill_switch
 from .computer.safety_gate import safety_gate
 from .mcp.ws_bridge import WebSocketBridge
@@ -42,8 +43,9 @@ class DesktopApplication:
         self.ws_thread = threading.Thread(target=_run_ws, daemon=True, name="WSBridgeThread")
         self.ws_thread.start()
 
-        # Inicia a escuta global do Kill-Switch (3x ESC)
+        # Inicia a escuta global do Kill-Switch e o Túnel persistente OpenAI
         kill_switch.start()
+        tunnel_service.start()
 
     def _poll_status_cycle(self) -> None:
         """Ciclo periódico (1s) para sincronização de métricas e status com a UI."""
@@ -55,6 +57,8 @@ class DesktopApplication:
         active_tab = self.ws_bridge.client_info.get("activeTabUrl", "")
         self.window.panel_dashboard.update_mcp_status("Ativo", latency_ms=lat, port=self.ws_bridge.port)
         self.window.panel_dashboard.update_extension_status(is_ext, active_tab=active_tab)
+        tun_status = "🟢 Ativo" if tunnel_service.is_active else "🟡 Conectando"
+        self.window.panel_dashboard.lbl_mcp_tunnel.configure(text=f"Túnel ChatGPT: {tun_status}")
 
         # Atualiza a cor e o tooltip no System Tray
         if is_ext:
@@ -68,6 +72,7 @@ class DesktopApplication:
         """Encerra graciosamente todos os serviços, threads e janelas."""
         self._running = False
         kill_switch.stop()
+        tunnel_service.stop()
         if self.tray:
             self.tray.stop()
         if self.ws_loop and self.ws_loop.is_running():
