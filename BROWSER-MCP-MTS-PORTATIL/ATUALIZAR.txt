@@ -1,0 +1,11 @@
+BROWSER MTS - correcao para pasta com espacos
+
+1. Feche qualquer BROWSER MTS/tunnel-client que esteja rodando.
+2. Extraia estes dois EXEs dentro de:
+   C:\Users\MATEUS\browser mcp mts\BROWSER-MCP-MTS-PORTATIL
+3. Confirme a substituicao de BROWSER MTS.exe.
+4. Mantenha config, node e browsermcp como estao.
+5. Abra BROWSER MTS.exe novamente.
+
+O novo launcher usa browsermcp-runner.exe como comando MCP sem caminhos com espacos.
+O runner encontra node\node.exe e browsermcp\...\dist\index.js relativamente a propria pasta.

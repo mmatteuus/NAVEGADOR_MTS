@@ -1,0 +1,77 @@
+# BROWSER MTS - pacote portatil
+
+Launcher Windows x64 para ligar/desligar o Browser MCP conectado ao OpenAI Secure MCP Tunnel.
+
+## Pasta alvo
+
+Extraia todos os arquivos diretamente em:
+
+```text
+C:\Users\MATEUS\browser mcp mts
+```
+
+O launcher usa a propria pasta como raiz. Nao depende mais de `D:\MATEUS\Dowloads` nem do Node.js instalado no Windows.
+
+## Estrutura inicial
+
+```text
+C:\Users\MATEUS\browser mcp mts\
+  BROWSER MTS.exe
+  tunnel-client.exe
+  cloudflared.exe
+  cloudflared-manifest.json
+  CONFIGURAR CHAVE.cmd
+  LEIA-ME.txt
+```
+
+No primeiro clique em `BROWSER MTS.exe`, o launcher cria dentro dessa mesma pasta:
+
+```text
+node\          Node.js portatil 24.19.0 LTS
+browsermcp\    @browsermcp/mcp 0.1.3 e dependencias
+npm-cache\     cache npm local
+config\        chave e perfis do tunnel-client
+downloads\     arquivos temporarios de bootstrap
+```
+
+O ZIP oficial do Node.js e baixado de `nodejs.org` e validado pelo SHA-256 oficial antes da extracao.
+
+## Configuracao unica da Runtime API Key
+
+A Runtime API Key nao fica embutida no executavel.
+
+1. Rotacione a chave que foi exposta durante os testes anteriores.
+2. Crie uma Runtime API Key restrita com `Tunnels: Read` e `Tunnels: Use`.
+3. Copie a nova chave para a area de transferencia.
+4. Execute `CONFIGURAR CHAVE.cmd`.
+
+O script grava a chave em:
+
+```text
+config\runtime-api-key.txt
+```
+
+O tunnel-client recebe apenas uma referencia `file:<caminho>` para esse arquivo.
+
+## Uso
+
+1. Certifique-se de que a extensao Browser MCP esta instalada no Chrome.
+2. Dê dois cliques em `BROWSER MTS.exe`.
+3. No primeiro uso, aguarde o download do Node.js portatil e a instalacao local do Browser MCP.
+4. Aguarde a mensagem `BROWSER MTS ligado`.
+5. Na extensao Browser MCP do Chrome, clique `Connect` na aba que deseja controlar.
+6. Use o app `BROWSER MTS` no ChatGPT.
+7. Para desligar, execute `BROWSER MTS.exe` novamente.
+
+## Tunnel
+
+- Tunnel ID: `tunnel_6a7aea545c408191889cd114d4a99d9b`
+- Alias local: `browser-mts`
+- Perfil gerado: `config\profiles`
+- Runtime key: `file:config\runtime-api-key.txt` (caminho absoluto gerado em runtime)
+
+## Versoes fixadas
+
+- OpenAI tunnel-client: 0.0.11 (binario fornecido pelo usuario)
+- Node.js portable: 24.19.0 LTS
+- @browsermcp/mcp: 0.1.3

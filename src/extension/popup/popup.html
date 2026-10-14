@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser MTS</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="fluent-container">
+    <!-- Cabeçalho Windows 11 -->
+    <header class="fluent-header">
+      <div class="logo-area">
+        <img src="../icons/icon-32.png" alt="Browser MTS" class="app-icon">
+        <div class="title-group">
+          <h1 class="fluent-title">BROWSER MTS</h1>
+          <span class="fluent-subtitle">Automação Web Segura &bull; v2.0.0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Interruptor Principal de Automação -->
+    <section class="card toggle-card">
+      <div class="toggle-info">
+        <span class="card-label">Automação do Navegador</span>
+        <span class="card-desc" id="toggle-desc">Permitir comandos do agente</span>
+      </div>
+      <label class="fluent-switch">
+        <input type="checkbox" id="automation-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </section>
+
+    <!-- Cartão de Status e Conexão Local -->
+    <section class="card status-card">
+      <div class="status-header">
+        <span class="status-title">Conexão Desktop App</span>
+        <div class="led-wrapper">
+          <span class="led" id="status-led"></span>
+          <span class="status-text" id="status-text">Conectando...</span>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <span class="metric-label">Porta Local</span>
+          <span class="metric-value">ws://127.0.0.1:3456</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Latência</span>
+          <span class="metric-value" id="latency-text">-- ms</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Comandos</span>
+          <span class="metric-value" id="commands-text">0 executados</span>
+        </div>
+      </div>
+
+      <button id="btn-reconnect" class="fluent-btn-secondary" style="display: none;">
+        Tentar Reconectar Agora
+      </button>
+    </section>
+
+    <!-- Cartão de Controle do Computador (Computer Use) -->
+    <section class="card safety-card">
+      <div class="safety-header">
+        <span class="safety-icon" id="safety-icon">🛡️</span>
+        <div class="safety-text-group">
+          <span class="safety-title">Controle do Windows</span>
+          <span class="safety-state" id="safety-state">Verificando autorização...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="fluent-footer">
+      <span>BROWSER MTS &bull; Resiliência & Estabilidade Windows 11</span>
+    </footer>
+  </div>
+
+  <script src="popup_ui.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+/**
+ * @file popup.css
+ * @description Estilização moderna Windows 11 Fluent Design para o Popup da extensão.
+ */
+
+:root {
+  --bg-primary: #f3f3f3;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --text-primary: #1c1c1c;
+  --text-secondary: #5c5c5c;
+  --accent-color: #0078d4;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --led-green: #107c10;
+  --led-yellow: #fce100;
+  --led-red: #d13438;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #202020;
+    --card-bg: rgba(38, 38, 38, 0.85);
+    --text-primary: #f5f5f5;
+    --text-secondary: #a0a0a0;
+    --accent-color: #60cdff;
+    --border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 340px;
+  font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.fluent-container { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.fluent-header { display: flex; align-items: center; justify-content: space-between; }
+.logo-area { display: flex; align-items: center; gap: 10px; }
+.app-icon { width: 28px; height: 28px; border-radius: 6px; }
+.fluent-title { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+.fluent-subtitle { font-size: 11px; color: var(--text-secondary); display: block; }
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.toggle-card { display: flex; align-items: center; justify-content: space-between; }
+.toggle-info { display: flex; flex-direction: column; gap: 2px; }
+.card-label { font-size: 13px; font-weight: 600; }
+.card-desc { font-size: 11px; color: var(--text-secondary); }
+
+.fluent-switch { position: relative; width: 40px; height: 20px; }
+.fluent-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background-color: #8a8a8a; transition: 0.2s; border-radius: 20px;
+}
+.slider:before {
+  position: absolute; content: ""; height: 14px; width: 14px;
+  left: 3px; bottom: 3px; background-color: white;
+  transition: 0.2s; border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--accent-color); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+.status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.status-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.led-wrapper { display: flex; align-items: center; gap: 6px; }
+.led {
+  width: 10px; height: 10px; border-radius: 50%;
+  background-color: var(--led-red); box-shadow: 0 0 6px var(--led-red);
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+.led.connected { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green); }
+.led.reconnecting { background-color: var(--led-yellow); box-shadow: 0 0 8px var(--led-yellow); }
+.status-text { font-size: 12px; font-weight: 600; }
+
+.metrics-grid {
+  display: grid; grid-template-columns: 1fr; gap: 6px;
+  background: rgba(128, 128, 128, 0.06); padding: 8px; border-radius: 6px;
+}
+.metric-item { display: flex; justify-content: space-between; font-size: 11px; }
+.metric-label { color: var(--text-secondary); }
+.metric-value { font-weight: 600; }
+
+.fluent-btn-secondary {
+  margin-top: 8px; width: 100%; padding: 6px; font-size: 12px;
+  border-radius: 6px; border: 1px solid var(--border-color);
+  background: var(--accent-color); color: white; cursor: pointer;
+}
+
+.safety-header { display: flex; align-items: center; gap: 10px; }
+.safety-icon { font-size: 18px; }
+.safety-text-group { display: flex; flex-direction: column; }
+.safety-title { font-size: 12px; font-weight: 600; }
+.safety-state { font-size: 11px; color: var(--text-secondary); }
+
+.fluent-footer {
+  text-align: center; font-size: 10px; color: var(--text-secondary); margin-top: 4px;
+}

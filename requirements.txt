@@ -1,0 +1,10 @@
+# Dependências do BROWSER MTS para Windows 11
+customtkinter>=5.2.0
+pywinstyles>=1.8.0
+pystray>=0.19.5
+winotify>=1.1.0
+pillow>=10.0.0
+psutil>=5.9.0
+websockets>=13.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

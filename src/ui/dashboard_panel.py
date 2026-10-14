@@ -1,0 +1,142 @@
+"""Módulo do Painel Principal (Dashboard em Tempo Real).
+
+Responsabilidades:
+- Visualização de status dos serviços (Servidor MCP, Extensão, Computer Use).
+- Controle interativo da Trava de Segurança (Safety Gate) via toggle.
+- Console de logs de diagnóstico em tempo real com sanitização e botões de ação.
+"""
+
+import time
+from typing import Optional
+import customtkinter as ctk
+from .theme import PALETTE, get_status_color
+from ..computer.safety_gate import safety_gate
+
+
+class DashboardPanel(ctk.CTkFrame):
+    """Painel de controle visual com métricas e status em tempo real."""
+
+    def __init__(self, master, **kwargs) -> None:
+        super().__init__(master, corner_radius=PALETTE.corner_radius, **kwargs)
+        self._setup_ui()
+        safety_gate.add_listener(self._on_safety_gate_change)
+
+    def _setup_ui(self) -> None:
+        """Monta a estrutura visual do dashboard com cartões Fluent."""
+        self.grid_columnconfigure((0, 1), weight=1)
+
+        # Cabeçalho de Status Geral
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=16, pady=(12, 8))
+        self.lbl_system_status = ctk.CTkLabel(
+            self.header_frame, text="🟢 SISTEMA OPERACIONAL & ONLINE",
+            font=(PALETTE.font_family, 16, "bold"), text_color=PALETTE.success
+        )
+        self.lbl_system_status.pack(side="left")
+        self.lbl_version = ctk.CTkLabel(self.header_frame, text="Versão: 2.0.0", text_color=PALETTE.subtext_dark)
+        self.lbl_version.pack(side="right")
+
+        # Cartão 1: Servidor MCP
+        self.card_mcp = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
+        self.card_mcp.grid(row=1, column=0, sticky="nsew", padx=(16, 8), pady=8)
+        ctk.CTkLabel(self.card_mcp, text="🔌 Servidor MCP", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
+        self.lbl_mcp_status = ctk.CTkLabel(self.card_mcp, text="Status: Ativo (Porta 3456)", anchor="w")
+        self.lbl_mcp_status.pack(anchor="w", padx=12, pady=2)
+        self.lbl_mcp_tunnel = ctk.CTkLabel(self.card_mcp, text="Túnel: OpenAI Secure", anchor="w", text_color=PALETTE.subtext_dark)
+        self.lbl_mcp_tunnel.pack(anchor="w", padx=12, pady=2)
+        self.lbl_mcp_latency = ctk.CTkLabel(self.card_mcp, text="Latência: -- ms", anchor="w")
+        self.lbl_mcp_latency.pack(anchor="w", padx=12, pady=(2, 10))
+
+        # Cartão 2: Extensão do Navegador
+        self.card_ext = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
+        self.card_ext.grid(row=1, column=1, sticky="nsew", padx=(8, 16), pady=8)
+        ctk.CTkLabel(self.card_ext, text="🌐 Extensão Chrome / Edge", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
+        self.lbl_ext_status = ctk.CTkLabel(self.card_ext, text="Status: Aguardando...", anchor="w")
+        self.lbl_ext_status.pack(anchor="w", padx=12, pady=2)
+        self.lbl_ext_tab = ctk.CTkLabel(self.card_ext, text="Aba Ativa: Nenhuma", anchor="w", text_color=PALETTE.subtext_dark)
+        self.lbl_ext_tab.pack(anchor="w", padx=12, pady=2)
+        self.lbl_ext_port = ctk.CTkLabel(self.card_ext, text="Ponte: ws://127.0.0.1:3456", anchor="w")
+        self.lbl_ext_port.pack(anchor="w", padx=12, pady=(2, 10))
+
+        # Cartão 3: Trava de Controle do Computador (Computer Use)
+        self.card_safety = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
+        self.card_safety.grid(row=2, column=0, columnspan=2, sticky="ew", padx=16, pady=8)
+        ctk.CTkLabel(self.card_safety, text="🛡️ CONTROLE DO COMPUTADOR (COMPUTER USE)", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
+        self.switch_safety = ctk.CTkSwitch(
+            self.card_safety, text="Permitir controle de mouse, teclado e tela",
+            command=self._on_switch_toggled, font=(PALETTE.font_family_body, 12)
+        )
+        self.switch_safety.pack(anchor="w", padx=12, pady=4)
+        self.lbl_safety_desc = ctk.CTkLabel(self.card_safety, text="Status: 🔴 Desautorizado pelo usuário", anchor="w")
+        self.lbl_safety_desc.pack(anchor="w", padx=12, pady=2)
+        ctk.CTkLabel(self.card_safety, text="🚨 Kill-Switch de Emergência: Pressione ESC 3x para interromper", text_color=PALETTE.warning).pack(anchor="w", padx=12, pady=(2, 10))
+
+        # Cartão 4: Console de Registro de Atividades em Tempo Real
+        self.card_logs = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
+        self.card_logs.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=16, pady=(8, 14))
+        self.rowconfigure(3, weight=1)
+        ctk.CTkLabel(self.card_logs, text="📋 Registro de Atividades em Tempo Real", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(8, 4))
+        self.txt_logs = ctk.CTkTextbox(self.card_logs, height=120, font=("Consolas", 11), wrap="char")
+        self.txt_logs.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        self.txt_logs.configure(state="disabled")
+
+        # Botões de ação dos logs
+        btn_box = ctk.CTkFrame(self.card_logs, fg_color="transparent")
+        btn_box.pack(anchor="e", padx=12, pady=(0, 8))
+        ctk.CTkButton(btn_box, text="Limpar", width=70, height=24, command=self.clear_logs).pack(side="right", padx=4)
+        ctk.CTkButton(btn_box, text="Copiar", width=70, height=24, command=self.copy_logs).pack(side="right")
+
+    def _on_switch_toggled(self) -> None:
+        """Manipula o clique do usuário no toggle de autorização."""
+        if self.switch_safety.get() == 1:
+            safety_gate.authorize()
+        else:
+            safety_gate.revoke("Desativado pelo usuário no painel")
+
+    def _on_safety_gate_change(self, authorized: bool, reason: str) -> None:
+        """Callback thread-safe invocado quando o estado do Safety Gate muda."""
+        def _update():
+            if authorized:
+                self.switch_safety.select()
+                self.lbl_safety_desc.configure(text="Status: 🟢 O Agente PODE interagir com o computador", text_color=PALETTE.success)
+            else:
+                self.switch_safety.deselect()
+                self.lbl_safety_desc.configure(text=f"Status: 🔴 Desautorizado ({reason})", text_color=PALETTE.error)
+            self.append_log(f"Trava de segurança alterada: {'Autorizado' if authorized else 'Revogado'} ({reason})")
+        self.after(0, _update)
+
+    def update_mcp_status(self, status: str, latency_ms: Optional[float] = None) -> None:
+        """Atualiza visualmente os indicadores do Servidor MCP."""
+        color = get_status_color(status)
+        self.lbl_mcp_status.configure(text=f"Status: {status}", text_color=color)
+        if latency_ms is not None:
+            self.lbl_mcp_latency.configure(text=f"Latência: {latency_ms:.1f} ms")
+
+    def update_extension_status(self, connected: bool, active_tab: str = "") -> None:
+        """Atualiza os indicadores visuais da Extensão do Chrome/Edge."""
+        if connected:
+            self.lbl_ext_status.configure(text="Status: 🟢 Conectada", text_color=PALETTE.success)
+            self.lbl_ext_tab.configure(text=f"Aba: {active_tab or 'Detectada'}")
+        else:
+            self.lbl_ext_status.configure(text="Status: 🔴 Desconectada", text_color=PALETTE.error)
+            self.lbl_ext_tab.configure(text="Aba: Nenhuma")
+
+    def append_log(self, text: str) -> None:
+        """Insere uma linha sanitizada no console de atividades."""
+        stamp = time.strftime("[%H:%M:%S] ")
+        self.txt_logs.configure(state="normal")
+        self.txt_logs.insert("end", f"{stamp}{text}\n")
+        self.txt_logs.see("end")
+        self.txt_logs.configure(state="disabled")
+
+    def clear_logs(self) -> None:
+        """Limpa o conteúdo do console de logs."""
+        self.txt_logs.configure(state="normal")
+        self.txt_logs.delete("1.0", "end")
+        self.txt_logs.configure(state="disabled")
+
+    def copy_logs(self) -> None:
+        """Copia todo o texto dos logs para a área de transferência do Windows."""
+        content = self.txt_logs.get("1.0", "end-1c")
+        self.clipboard_clear()
+        self.clipboard_append(content)

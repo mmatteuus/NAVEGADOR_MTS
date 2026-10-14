@@ -1,0 +1,98 @@
+# ==============================================================================
+# .gitignore — BROWSER MTS
+# Proteção de credenciais, segredos, binários portáteis, dependências e caches.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Segredos, Credenciais e Chaves de API (Segurança Crítica)
+# ------------------------------------------------------------------------------
+*runtime-api-key*
+**/*runtime-api-key*
+*browser-mts-runtime.yaml*
+**/*browser-mts-runtime.yaml*
+config/profiles/*
+**/config/profiles/*
+BROWSER-MCP-MTS-PORTATIL/config/profiles/*
+*.key
+*.pem
+*.pfx
+*.p12
+*.enc
+secrets/
+**/secrets/
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------------------------
+# 2. Binários Grandes e Pacotes Portáteis Legados
+# ------------------------------------------------------------------------------
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+BROWSER-MCP-MTS-PORTATIL.zip
+BROWSER-MCP-MTS-PORTATIL/node/
+BROWSER-MCP-MTS-PORTATIL/npm-cache/
+BROWSER-MCP-MTS-PORTATIL/downloads/
+
+# ------------------------------------------------------------------------------
+# 3. Metadados dos Agentes e Orquestração Interna
+# ------------------------------------------------------------------------------
+.agents/
+
+# ------------------------------------------------------------------------------
+# 4. Dependências e Caches do Node.js
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------------------------------------------------------
+# 5. Caches e Ambientes Virtuais Python
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# ------------------------------------------------------------------------------
+# 6. Artefatos de Compilação e Distribuição
+# ------------------------------------------------------------------------------
+dist/
+build/
+bin/
+obj/
+*.egg-info/
+*.spec
+
+# ------------------------------------------------------------------------------
+# 7. Arquivos de Log e Diretórios Temporários
+# ------------------------------------------------------------------------------
+*.log
+logs/
+temp/
+tmp/
+
+# ------------------------------------------------------------------------------
+# 8. Ambientes de Desenvolvimento e Sistema Operacional
+# ------------------------------------------------------------------------------
+.vscode/
+.idea/
+*.suo
+*.user
+Thumbs.db
+Desktop.ini
+.DS_Store
