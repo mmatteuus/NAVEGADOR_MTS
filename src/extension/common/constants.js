@@ -12,20 +12,23 @@ export const PORT_CANDIDATES = [3456, 3457, 3458, 3459, 3460, 3461, 3462, 3463, 
 export const WS_BASE_URL = 'ws://127.0.0.1';
 export const WS_URL = `${WS_BASE_URL}:${DEFAULT_PORT}`;
 
-/** Intervalo do Heartbeat de transporte em milissegundos (3 segundos) */
-export const HEARTBEAT_INTERVAL_MS = 3000;
+/** Intervalo do Heartbeat de transporte em milissegundos (4 segundos) */
+export const HEARTBEAT_INTERVAL_MS = 4000;
 
-/** Limite de tolerância para pings sem resposta antes de declarar queda (6 segundos) */
-export const HEARTBEAT_TIMEOUT_MS = 6000;
+/** Limite de tolerância para declarar queda da conexão (20 segundos = 5 pings perdidos) */
+export const HEARTBEAT_TIMEOUT_MS = 20000;
+
+/** Tentativas na mesma porta antes de buscar porta alternativa */
+export const MAX_RETRIES_BEFORE_PORT_HOP = 3;
 
 /** Nome do alarme nativo para evitar suspensão de 30s do Service Worker MV3 */
 export const KEEP_ALIVE_ALARM_NAME = 'browser_mts_keep_alive';
 
-/** Período do alarme em minutos (0.33 minutos = aproximadamente 20 segundos) */
-export const KEEP_ALIVE_PERIOD_MINUTES = 0.33;
+/** Período do alarme em minutos (mínimo de 1 minuto exigido pelo Chromium) */
+export const KEEP_ALIVE_PERIOD_MINUTES = 1.0;
 
 /** Etapas do Backoff Exponencial para reconexão ao Desktop App (em milissegundos) */
-export const RECONNECT_BACKOFF_STEPS_MS = [500, 1000, 2000, 5000];
+export const RECONNECT_BACKOFF_STEPS_MS = [500, 1000, 2000, 4000];
 
 /** Chave de armazenamento das preferências do usuário no chrome.storage.local */
 export const STORAGE_KEYS = {
