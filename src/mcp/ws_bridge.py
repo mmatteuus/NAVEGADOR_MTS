@@ -1,15 +1,5 @@
-"""
-Módulo de Ponte WebSocket Local (WebSocket Bridge).
-
-Implementa o servidor WebSocket local (porta 3456) para comunicação
-bidirecional entre o Servidor MCP Desktop e a Extensão do Navegador.
-Suporta handshake de apresentação, ping-pong de 3s e despacho assíncrono.
-"""
-import asyncio
-import json
-import logging
-import time
-import uuid
+"""Ponte WebSocket Local (porta 3456) para comunicação com a Extensão do Navegador."""
+import asyncio, json, logging, time, uuid
 from typing import Any, Dict, Optional
 from websockets.asyncio.server import Server, serve
 
@@ -20,8 +10,7 @@ class WebSocketBridge:
     """Gerencia a ponte WebSocket local com a extensão do navegador."""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 3456) -> None:
-        self.host = host
-        self.port = port
+        self.host, self.port = host, port
         self.server: Optional[Server] = None
         self._active_socket: Any = None
         self._pending_requests: Dict[str, asyncio.Future] = {}
@@ -32,6 +21,16 @@ class WebSocketBridge:
     def is_connected(self) -> bool:
         """Verifica se há uma extensão de navegador conectada e ativa."""
         return self._active_socket is not None
+
+    async def reload_extension(self) -> bool:
+        """Envia ordem de recarga automática para a extensão atualizar em tempo real."""
+        if self._active_socket:
+            try:
+                await self._active_socket.send(json.dumps({"type": "reload_extension"}))
+                return True
+            except Exception:
+                pass
+        return False
 
     async def start(self, max_ports: int = 10) -> int:
         """Inicia o servidor WebSocket local na porta configurada ou pula para uma livre se ocupada."""
@@ -51,9 +50,8 @@ class WebSocketBridge:
 
     async def stop(self) -> None:
         """Encerra o servidor e cancela requisições pendentes com segurança."""
-        for req_id, fut in list(self._pending_requests.items()):
-            if not fut.done():
-                fut.cancel()
+        for fut in self._pending_requests.values():
+            if not fut.done(): fut.cancel()
         self._pending_requests.clear()
         if self._active_socket:
             await self._active_socket.close()
@@ -87,9 +85,15 @@ class WebSocketBridge:
         if msg_type == "client_hello":
             self._active_socket = websocket
             self.client_info = data.get("payload", {})
+            ext_ver = self.client_info.get("version", "1.0.0")
             reply = {
                 "type": "server_hello",
-                "payload": {"status": "connected", "desktopVersion": "2.0.0", "heartbeatIntervalMs": 3000}
+                "payload": {
+                    "status": "connected",
+                    "desktopVersion": "2.0.0",
+                    "heartbeatIntervalMs": 3000,
+                    "reloadRequired": bool(ext_ver and ext_ver != "2.0.0")
+                }
             }
             await websocket.send(json.dumps(reply))
         elif msg_type == "ping":
@@ -122,15 +126,13 @@ class WebSocketBridge:
 
     def _resolve_pending_request(self, data: Dict[str, Any]) -> None:
         """Resolve a Future associada à resposta de uma ação enviada à extensão."""
-        payload = data.get("payload", {}) if "payload" in data else data
-        req_id = payload.get("requestId") or data.get("id")
+        p = data.get("payload", {}) if "payload" in data else data
+        req_id = p.get("requestId") or data.get("id")
         if req_id and req_id in self._pending_requests:
             fut = self._pending_requests.pop(req_id)
             if not fut.done():
-                if payload.get("error"):
-                    fut.set_exception(RuntimeError(str(payload["error"])))
-                else:
-                    fut.set_result(payload.get("result", payload.get("data", {})))
+                (fut.set_exception(RuntimeError(str(p["error"]))) if p.get("error")
+                 else fut.set_result(p.get("result", p.get("data", {}))))
 
     async def send_action(self, action: str, params: Dict[str, Any], timeout: float = 30.0) -> Any:
         """Envia um comando para execução na extensão e aguarda a resposta."""

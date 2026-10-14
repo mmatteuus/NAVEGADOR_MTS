@@ -76,7 +76,7 @@ class TunnelService:
                 self._on_status_change(False, "Binário ou perfil de túnel não encontrado")
             return False
 
-        cmd = [str(bin_path), "run", "--config", str(cfg_path)]
+        cmd = [str(bin_path), "run", "--profile-file", str(cfg_path)]
         self._supervisor = ProcessSupervisor(command=cmd, name="openai_tunnel_supervisor", restart_delay=1.0)
         started = self._supervisor.start()
         self._running = started

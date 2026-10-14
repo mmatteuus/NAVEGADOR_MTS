@@ -94,6 +94,15 @@ function handleIncomingMessage(rawData) {
       if (typeof msg.payload?.computerUseAuthorized === 'boolean') {
         setComputerUseAllowed(msg.payload.computerUseAuthorized);
       }
+      if (msg.payload?.reloadRequired) {
+        chrome.runtime.reload();
+      }
+      return;
+    }
+
+    if (msg.type === 'reload_extension' || msg.action === 'reload_extension') {
+      logger.info('Auto-atualização da extensão solicitada pelo Desktop App.');
+      chrome.runtime.reload();
       return;
     }
 
@@ -115,29 +124,20 @@ export function sendMessage(payload) {
 
 function scheduleReconnect() {
   clearTimeout(reconnectTimer);
-  const delayIndex = Math.min(reconnectAttempt, RECONNECT_BACKOFF_STEPS_MS.length - 1);
-  const delayMs = RECONNECT_BACKOFF_STEPS_MS[delayIndex];
-  reconnectAttempt++;
-
+  const delayMs = RECONNECT_BACKOFF_STEPS_MS[Math.min(reconnectAttempt++, RECONNECT_BACKOFF_STEPS_MS.length - 1)];
   updateConnectionStatus(CONNECTION_STATE.RECONNECTING, 0);
-  logger.info(`Reconexão agendada em ${delayMs}ms (Tentativa ${reconnectAttempt}).`);
   reconnectTimer = setTimeout(() => connectWebSocket(), delayMs);
 }
 
 function cleanupSocket() {
   heartbeat.stop();
   if (socket) {
-    socket.onopen = null;
-    socket.onmessage = null;
-    socket.onclose = null;
-    socket.onerror = null;
+    socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null;
     try { socket.close(); } catch (_) {}
     socket = null;
   }
 }
 
 export function ensureConnected() {
-  if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) {
-    connectWebSocket();
-  }
+  if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
