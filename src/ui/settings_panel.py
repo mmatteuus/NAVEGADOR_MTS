@@ -17,7 +17,6 @@ from ..core.security import encrypt_dpapi, decrypt_dpapi, mask_credential
 _REG_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 _REG_APP_NAME = "BrowserMTS"
 
-
 def is_autostart_enabled() -> bool:
     """Verifica se o aplicativo está configurado para iniciar com o Windows."""
     if sys.platform != "win32":
@@ -29,7 +28,6 @@ def is_autostart_enabled() -> bool:
             return True
     except Exception:
         return False
-
 
 def set_autostart_enabled(enabled: bool) -> bool:
     """Habilita ou desabilita a inicialização automática no Registro do Windows."""
@@ -53,13 +51,13 @@ def set_autostart_enabled(enabled: bool) -> bool:
     except Exception:
         return False
 
-
 class SettingsPanel(ctk.CTkFrame):
     """Painel gráfico de configurações do BROWSER MTS."""
 
-    def __init__(self, master, on_status_message: Optional[any] = None, **kwargs) -> None:
+    def __init__(self, master, on_status_message: Optional[any] = None, on_shutdown_app: Optional[any] = None, **kwargs) -> None:
         super().__init__(master, corner_radius=PALETTE.corner_radius, **kwargs)
         self.on_status_message = on_status_message
+        self.on_shutdown_app = on_shutdown_app
         self._raw_api_key: Optional[str] = None
         self._load_saved_credentials()
         self._setup_ui()
@@ -118,11 +116,18 @@ class SettingsPanel(ctk.CTkFrame):
             self.switch_autostart.select()
         self.switch_autostart.pack(anchor="w", padx=12, pady=(4, 10))
 
-        # Botão Salvar
+        # Botões de Ação
         self.lbl_feedback = ctk.CTkLabel(self, text="", text_color=PALETTE.success)
-        self.lbl_feedback.grid(row=3, column=0, pady=(4, 2))
-        btn_save = ctk.CTkButton(self, text="💾 Salvar Configurações", width=180, height=32, command=self.save_settings)
-        btn_save.grid(row=4, column=0, pady=(2, 14))
+        self.lbl_feedback.grid(row=3, column=0, pady=(2, 2))
+        btn_box = ctk.CTkFrame(self, fg_color="transparent")
+        btn_box.grid(row=4, column=0, pady=(2, 10))
+        ctk.CTkButton(btn_box, text="💾 Salvar Configurações", width=170, height=32, command=self.save_settings).pack(side="left", padx=6)
+        ctk.CTkButton(btn_box, text="🗑️ Desinstalar da Máquina", fg_color=PALETTE.error, hover_color="#A80000", width=190, height=32, command=self._on_click_uninstall).pack(side="left", padx=6)
+
+    def _on_click_uninstall(self) -> None:
+        """Abre diálogo para desinstalar o BROWSER MTS desta máquina."""
+        from .uninstaller_dialog import show_uninstall_dialog
+        show_uninstall_dialog(self, on_shutdown=self.on_shutdown_app)
 
     def save_settings(self) -> None:
         """Salva as configurações alteradas pelo usuário com proteção criptográfica."""
@@ -139,6 +144,5 @@ class SettingsPanel(ctk.CTkFrame):
                 self.lbl_feedback.configure(text=f"Erro ao proteger credencial: {exc}", text_color=PALETTE.error)
                 return
 
-        # Atualiza autostart
         set_autostart_enabled(self.switch_autostart.get() == 1)
         self.lbl_feedback.configure(text="✅ Configurações salvas com sucesso!", text_color=PALETTE.success)

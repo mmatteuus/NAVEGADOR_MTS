@@ -68,6 +68,11 @@ class SystemTrayManager:
             if self.on_toggle_mcp:
                 self.on_toggle_mcp()
 
+        def _action_uninstall(icon, item):
+            from ..core.uninstaller import trigger_application_uninstall
+            self.stop()
+            trigger_application_uninstall(self.on_quit_app)
+
         def _action_exit(icon, item):
             self.stop()
             if self.on_quit_app:
@@ -78,6 +83,7 @@ class SystemTrayManager:
             pystray.MenuItem(auth_label, _action_toggle_safety),
             pystray.MenuItem("🔌 Alternar Servidor MCP", _action_toggle_mcp),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("🗑️ Desinstalar Aplicativo", _action_uninstall),
             pystray.MenuItem("❌ Sair do Aplicativo", _action_exit),
         ]
         return pystray.Menu(*items)

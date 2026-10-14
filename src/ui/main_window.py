@@ -64,7 +64,7 @@ class MainWindow(ctk.CTk):
         self.btn_update.pack(side="right", padx=(0, 6))
 
         self.panel_dashboard = DashboardPanel(self)
-        self.panel_settings = SettingsPanel(self)
+        self.panel_settings = SettingsPanel(self, on_shutdown_app=self.on_quit_app)
         self.panel_dashboard.grid(row=1, column=0, sticky="nsew", padx=16, pady=(4, 16))
 
     def show_dashboard(self) -> None:
