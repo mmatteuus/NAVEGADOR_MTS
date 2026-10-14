@@ -82,10 +82,13 @@ class DesktopApplication:
         configure_app_theme("dark")
         self._start_background_services()
 
-        self.window = MainWindow(on_close_to_tray=lambda: notifier.notify(
-            "BROWSER MTS em Segundo Plano",
-            "O processamento continua ativo! O 'X' apenas fecha a janela. Para encerrar de verdade, use a bandeja."
-        ))
+        self.window = MainWindow(
+            on_close_to_tray=lambda: notifier.notify(
+                "BROWSER MTS em Segundo Plano",
+                "O processamento continua ativo! O 'X' apenas fecha a janela. Para encerrar de verdade, use a bandeja."
+            ),
+            on_quit_app=self.shutdown,
+        )
 
         self.tray = SystemTrayManager(
             on_show_window=self.window.show_from_tray,
@@ -98,6 +101,8 @@ class DesktopApplication:
             self.window.withdraw()
 
         self.window.after(500, self._poll_status_cycle)
+        # Verificação automática em segundo plano de novas versões 5s após startup
+        self.window.after(5000, lambda: self.window.check_for_updates_ui(auto_open=True))
         self.window.mainloop()
 
 

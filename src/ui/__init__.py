@@ -15,6 +15,7 @@ from .notifications import ToastNotifier, notifier
 from .settings_panel import SettingsPanel
 from .theme import PALETTE, apply_mica_theme, configure_app_theme, get_status_color
 from .tray import SystemTrayManager, create_tray_icon_image
+from .update_dialog import UpdateDialog
 
 __all__ = [
     "MainWindow",
@@ -28,4 +29,5 @@ __all__ = [
     "configure_app_theme",
     "get_status_color",
     "create_tray_icon_image",
+    "UpdateDialog",
 ]

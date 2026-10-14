@@ -17,6 +17,12 @@ from src.core.security import (
     mask_credential,
     sanitize_log,
 )
+from src.core.updater import (
+    APP_VERSION,
+    UpdateInfo,
+    check_for_updates,
+    download_and_launch_update,
+)
 
 __all__ = [
     "AppConfig",
@@ -27,4 +33,8 @@ __all__ = [
     "mask_credential",
     "sanitize_log",
     "SecurityError",
+    "APP_VERSION",
+    "UpdateInfo",
+    "check_for_updates",
+    "download_and_launch_update",
 ]
