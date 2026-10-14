@@ -113,3 +113,4 @@ class TunnelService:
 
 # Instância global singleton do serviço de túnel
 tunnel_service: TunnelService = TunnelService()
+
