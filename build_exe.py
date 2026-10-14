@@ -14,12 +14,10 @@ def build_standalone_executable() -> bool:
     """Executa o PyInstaller com todas as dependências e assets embutidos."""
     print("Iniciando compilação do BROWSER MTS...")
 
-    pyinstaller_bin = os.path.join(os.path.dirname(sys.executable), "pyinstaller.exe")
-    if not os.path.exists(pyinstaller_bin):
-        pyinstaller_bin = "pyinstaller"
-
     cmd = [
-        pyinstaller_bin,
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--noconfirm",
         "--onedir",
         "--windowed",

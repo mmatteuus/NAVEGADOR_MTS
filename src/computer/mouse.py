@@ -59,13 +59,10 @@ kill_switch.register_cleanup_callback(release_mouse_buttons)
 def move_mouse(x: int, y: int, smooth: bool = True, duration_ms: int = 200) -> Dict[str, Any]:
     """Move o ponteiro do mouse até (x, y) de forma suave ou instantânea."""
     safety_gate.check_authorization("move_mouse")
-    vx, vy, vw, vh = _get_virtual_screen_bounds()
     cur_x, cur_y = get_cursor_position()
 
     if not smooth:
-        nx = int((x - vx) * 65535 / vw)
-        ny = int((y - vy) * 65535 / vh)
-        _send_mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK, nx, ny)
+        user32.SetCursorPos(int(x), int(y))
         return {"currentX": x, "currentY": y}
 
     steps = max(int(duration_ms / 10), 10)
@@ -75,14 +72,13 @@ def move_mouse(x: int, y: int, smooth: bool = True, duration_ms: int = 200) -> D
     last_emitted = (cur_x, cur_y)
     for px, py in caminho:
         real_x, real_y = get_cursor_position()
-        if abs(real_x - last_emitted[0]) > 40 or abs(real_y - last_emitted[1]) > 40:
+        if abs(real_x - last_emitted[0]) > 60 or abs(real_y - last_emitted[1]) > 60:
             return {"currentX": real_x, "currentY": real_y, "interrupted": True}
-        nx = int((px - vx) * 65535 / vw)
-        ny = int((py - vy) * 65535 / vh)
-        _send_mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK, nx, ny)
-        last_emitted = (px, py)
+        user32.SetCursorPos(int(px), int(py))
+        last_emitted = (int(px), int(py))
         time.sleep(step_delay)
 
+    user32.SetCursorPos(int(x), int(y))
     return {"currentX": x, "currentY": y}
 
 def click_mouse(button: str = "left", double: bool = False, hold_ms: int = 50) -> Dict[str, Any]:

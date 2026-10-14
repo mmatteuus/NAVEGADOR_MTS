@@ -16,6 +16,7 @@ from .settings_panel import SettingsPanel
 from .theme import PALETTE, apply_mica_theme, configure_app_theme, get_status_color
 from .tray import SystemTrayManager, create_tray_icon_image
 from .update_dialog import UpdateDialog
+from .mcp_copy_dialog import MCPConnectDialog, show_mcp_dialog
 
 __all__ = [
     "MainWindow",
@@ -30,4 +31,6 @@ __all__ = [
     "get_status_color",
     "create_tray_icon_image",
     "UpdateDialog",
+    "MCPConnectDialog",
+    "show_mcp_dialog",
 ]

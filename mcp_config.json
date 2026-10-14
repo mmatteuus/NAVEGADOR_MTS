@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "browser-mts": {
+      "command": "C:\\Users\\MATEUS\\AppData\\Local\\Programs\\BROWSER MTS\\BROWSER_MTS.exe",
+      "args": [
+        "--stdio"
+      ]
+    }
+  }
+}
+

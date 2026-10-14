@@ -64,21 +64,20 @@ class WebSocketBridge:
             self.server = None
 
     async def _handle_client(self, websocket: Any) -> None:
-        """Processa o ciclo de vida e mensagens da extensão conectada."""
-        self._active_socket = websocket
-        logger.info("Extensão do navegador conectada à ponte WebSocket.")
+        """Processa o ciclo de vida e mensagens dos clientes conectados."""
+        logger.info("Novo cliente conectado à ponte WebSocket.")
         try:
             async for raw_msg in websocket:
                 await self._process_incoming_message(raw_msg, websocket)
         except Exception as exc:
-            logger.warning(f"Conexão com extensão encerrada: {exc}")
+            logger.warning(f"Conexão de cliente encerrada: {exc}")
         finally:
             if self._active_socket == websocket:
                 self._active_socket = None
-            logger.info("Extensão desconectada da ponte WebSocket.")
+                logger.info("Extensão do navegador desconectada da ponte WebSocket.")
 
     async def _process_incoming_message(self, raw_msg: str, websocket: Any) -> None:
-        """Interpreta envelopes JSON recebidos da extensão."""
+        """Interpreta envelopes JSON recebidos da extensão ou de agentes."""
         try:
             data = json.loads(raw_msg)
         except json.JSONDecodeError:
@@ -86,6 +85,7 @@ class WebSocketBridge:
 
         msg_type = data.get("type")
         if msg_type == "client_hello":
+            self._active_socket = websocket
             self.client_info = data.get("payload", {})
             reply = {
                 "type": "server_hello",
@@ -101,6 +101,24 @@ class WebSocketBridge:
                 self.last_latency_ms = max(0.0, (time.time() * 1000) - client_ts)
         elif msg_type in ("messageResponse", "browser_response"):
             self._resolve_pending_request(data)
+        elif msg_type == "agent_action":
+            await self._handle_agent_action(data, websocket)
+
+    async def _handle_agent_action(self, data: Dict[str, Any], websocket: Any) -> None:
+        """Despacha uma ação enviada por um agente externo de IA."""
+        act, params, call_id = data.get("action", ""), data.get("params", {}), data.get("id", "agent_cmd")
+        try:
+            if act.startswith("browser_"):
+                res = await self.send_action(act, params)
+                await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": True, "result": res}))
+            elif act.startswith("computer_"):
+                from ..computer import execute_computer_action
+                res = execute_computer_action(act, params)
+                await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": res.get("success", False), "result": res}))
+            else:
+                await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": f"Ação desconhecida: '{act}'"}))
+        except Exception as exc:
+            await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": str(exc)}))
 
     def _resolve_pending_request(self, data: Dict[str, Any]) -> None:
         """Resolve a Future associada à resposta de uma ação enviada à extensão."""
@@ -118,19 +136,10 @@ class WebSocketBridge:
         """Envia um comando para execução na extensão e aguarda a resposta."""
         if not self.is_connected:
             raise ConnectionError(f"Extensão do navegador não conectada na porta {self.port}.")
-
         req_id = f"cmd_{uuid.uuid4().hex[:12]}"
-        loop = asyncio.get_running_loop()
-        fut: asyncio.Future = loop.create_future()
+        fut = asyncio.get_running_loop().create_future()
         self._pending_requests[req_id] = fut
-
-        msg = {
-            "id": req_id,
-            "type": "execute_action",
-            "action": action,
-            "payload": params,
-            "timestamp": int(time.time() * 1000)
-        }
+        msg = {"id": req_id, "type": "execute_action", "action": action, "payload": params, "timestamp": int(time.time() * 1000)}
         await self._active_socket.send(json.dumps(msg))
         try:
             return await asyncio.wait_for(fut, timeout=timeout)

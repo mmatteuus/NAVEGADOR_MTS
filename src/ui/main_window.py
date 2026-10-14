@@ -57,6 +57,9 @@ class MainWindow(ctk.CTk):
         self.btn_nav_settings = ctk.CTkButton(self.nav_bar, text="⚙️ Configurações", width=120, height=30, command=self.show_settings, fg_color="transparent", text_color=PALETTE.text_dark)
         self.btn_nav_settings.pack(side="left", padx=4)
 
+        self.btn_mcp_connect = ctk.CTkButton(self.nav_bar, text="🤖 Conectar com IA", width=135, height=30, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover)
+        self.btn_mcp_connect.pack(side="left", padx=4)
+
         self.btn_theme_toggle = ctk.CTkButton(self.nav_bar, text="🌙 Modo Escuro", width=110, height=30, command=self.toggle_theme, fg_color="transparent", border_width=1)
         self.btn_theme_toggle.pack(side="right")
 
@@ -66,6 +69,11 @@ class MainWindow(ctk.CTk):
         self.panel_dashboard = DashboardPanel(self)
         self.panel_settings = SettingsPanel(self, on_shutdown_app=self.on_quit_app)
         self.panel_dashboard.grid(row=1, column=0, sticky="nsew", padx=16, pady=(4, 16))
+
+    def open_mcp_connect_dialog(self) -> None:
+        """Abre janela para copiar a configuração MCP e testar visualmente o mouse."""
+        from .mcp_copy_dialog import show_mcp_dialog
+        show_mcp_dialog(self)
 
     def show_dashboard(self) -> None:
         """Exibe o painel de Dashboard e atualiza o destaque do botão."""
