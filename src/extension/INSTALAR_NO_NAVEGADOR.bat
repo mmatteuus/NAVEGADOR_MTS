@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================================
-echo    INSTALADOR RAPIDO DA EXTENSAO BROWSER MTS
+echo    INSTALADOR RAPIDO DA EXTENSAO NAVEGADOR MTS
 echo ========================================================
 echo.
 echo 1. O Google Chrome abrira na pagina de extensoes.

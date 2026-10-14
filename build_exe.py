@@ -1,8 +1,8 @@
-"""Script de Compilação do Executável Standalone BROWSER MTS.
+"""Script de Compilação do Executável Standalone Navegador MTS.
 
 Utiliza o PyInstaller para empacotar todo o código Python, bibliotecas
 de interface gráfica (CustomTkinter, Pywinstyles), pystray e winotify
-em uma pasta distribuível 'dist/BROWSER_MTS'.
+em uma pasta distribuível 'dist/NAVEGADOR_MTS'.
 """
 
 import os
@@ -12,7 +12,7 @@ import sys
 
 def build_standalone_executable() -> bool:
     """Executa o PyInstaller com todas as dependências e assets embutidos."""
-    print("Iniciando compilação do BROWSER MTS...")
+    print("Iniciando compilação do Navegador MTS...")
 
     cmd = [
         sys.executable,
@@ -21,7 +21,7 @@ def build_standalone_executable() -> bool:
         "--noconfirm",
         "--onedir",
         "--windowed",
-        "--name=BROWSER_MTS",
+        "--name=NAVEGADOR_MTS",
         "--icon=app_icon.ico",
         "--collect-all=customtkinter",
         "--collect-all=pystray",
@@ -38,10 +38,10 @@ def build_standalone_executable() -> bool:
 
     if result.returncode == 0:
         import shutil
-        dist_ext = os.path.join("dist", "BROWSER_MTS", "extension")
+        dist_ext = os.path.join("dist", "NAVEGADOR_MTS", "extension")
         shutil.copytree(os.path.join("src", "extension"), dist_ext, dirs_exist_ok=True)
-        shutil.copy2("app_icon.ico", os.path.join("dist", "BROWSER_MTS", "app_icon.ico"))
-        print("Compilação concluída com sucesso! Diretório: dist/BROWSER_MTS")
+        shutil.copy2("app_icon.ico", os.path.join("dist", "NAVEGADOR_MTS", "app_icon.ico"))
+        print("Compilação concluída com sucesso! Diretório: dist/NAVEGADOR_MTS")
         return True
     else:
         print(f"Erro na compilação. Código de retorno: {result.returncode}")
@@ -51,4 +51,3 @@ def build_standalone_executable() -> bool:
 if __name__ == "__main__":
     success = build_standalone_executable()
     sys.exit(0 if success else 1)
-

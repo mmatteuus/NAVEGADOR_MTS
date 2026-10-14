@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================================
-echo     COMPILADOR DO INSTALADOR UNICO - BROWSER MTS
+echo     COMPILADOR DO INSTALADOR UNICO - NAVEGADOR MTS
 echo ========================================================
 echo.
 echo [1/3] Gerando icones e assets visuais...
@@ -33,9 +33,8 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo ========================================================
 echo     INSTALADOR GERADO COM SUCESSO!
-echo     Local: dist_installer\BROWSER_MTS_Instalador_v2.0.exe
+echo     Local: dist_installer\NAVEGADOR_MTS_Instalador_v2.0.exe
 echo ========================================================
 echo.
-explorer.exe /select,"dist_installer\BROWSER_MTS_Instalador_v2.0.exe"
+explorer.exe /select,"dist_installer\NAVEGADOR_MTS_Instalador_v2.0.exe"
 pause
-

@@ -27,7 +27,7 @@ class UninstallDialog(ctk.CTkToplevel):
 
     def _setup_window(self) -> None:
         """Define dimensões e centralização do diálogo de desinstalação."""
-        self.title("Desinstalar Aplicativo — BROWSER MTS")
+        self.title("Desinstalar Aplicativo — Navegador MTS")
         self.geometry("480x280")
         self.resizable(False, False)
         self.transient(self.master)
@@ -43,11 +43,11 @@ class UninstallDialog(ctk.CTkToplevel):
         """Monta os componentes visuais do diálogo de confirmação."""
         hdr = ctk.CTkFrame(self, fg_color="transparent")
         hdr.pack(fill="x", padx=24, pady=(20, 10))
-        ctk.CTkLabel(hdr, text="⚠️ Desinstalar BROWSER MTS?", font=(PALETTE.font_family, 16, "bold"), text_color=PALETTE.error).pack(anchor="w")
+        ctk.CTkLabel(hdr, text="⚠️ Desinstalar Navegador MTS?", font=(PALETTE.font_family, 16, "bold"), text_color=PALETTE.error).pack(anchor="w")
 
         body = ctk.CTkLabel(
             self,
-            text="Tem certeza que deseja remover o BROWSER MTS desta máquina?\n\n"
+            text="Tem certeza que deseja remover o Navegador MTS desta máquina?\n\n"
                  "• O aplicativo será encerrado.\n"
                  "• Os atalhos da Área de Trabalho e do Menu Iniciar serão removidos.\n"
                  "• O assistente de desinstalação do Windows será iniciado.",

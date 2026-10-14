@@ -22,7 +22,7 @@ def test_manifest_v3_structure():
         manifest = json.load(f)
 
     assert manifest.get("manifest_version") == 3
-    assert manifest.get("version") == "2.0.0"
+    assert manifest.get("version") == "2.1.0"
     assert "tabs" in manifest.get("permissions", [])
     assert "activeTab" in manifest.get("permissions", [])
     assert "alarms" in manifest.get("permissions", [])

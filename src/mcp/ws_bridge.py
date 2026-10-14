@@ -87,7 +87,7 @@ class WebSocketBridge:
             self.client_info = data.get("payload", {})
             reply = {
                 "type": "server_hello",
-                "payload": {"status": "connected", "desktopVersion": "2.0.0", "heartbeatIntervalMs": 4000, "reloadRequired": False}
+                "payload": {"status": "connected", "desktopVersion": "2.1.0", "heartbeatIntervalMs": 4000, "reloadRequired": False}
             }
             await websocket.send(json.dumps(reply))
         elif msg_type == "ping":

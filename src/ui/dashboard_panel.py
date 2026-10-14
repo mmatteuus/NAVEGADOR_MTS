@@ -11,6 +11,7 @@ from typing import Optional
 import customtkinter as ctk
 from .theme import PALETTE, get_status_color
 from ..computer.safety_gate import safety_gate
+from ..core.updater import APP_VERSION
 
 
 class DashboardPanel(ctk.CTkFrame):
@@ -33,7 +34,7 @@ class DashboardPanel(ctk.CTkFrame):
             font=(PALETTE.font_family, 16, "bold"), text_color=PALETTE.success
         )
         self.lbl_system_status.pack(side="left")
-        self.lbl_version = ctk.CTkLabel(self.header_frame, text="Versão: 2.0.0", text_color=PALETTE.subtext_dark)
+        self.lbl_version = ctk.CTkLabel(self.header_frame, text=f"Versão: {APP_VERSION}", text_color=PALETTE.subtext_dark)
         self.lbl_version.pack(side="right")
 
         # Cartão 1: Servidor MCP

@@ -16,7 +16,7 @@ from ..computer.mouse import get_cursor_position
 from ..core.tunnel_service import tunnel_service, TUNNEL_ID
 
 MCP_PROMPT_TEMPLATE = (
-    "Você é meu assistente de IA com acesso ao BROWSER MTS. "
+    "Você é meu assistente de IA com acesso ao Navegador MTS. "
     "O servidor MCP está ativo localmente em ws://127.0.0.1:3456. "
     "Você pode navegar na web, inspecionar elementos e interagir com o computador."
 )
@@ -28,7 +28,7 @@ class MCPConnectDialog(ctk.CTkToplevel):
     def __init__(self, master, port: int = 3456, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.port = port
-        self.title("🤖 Conectar com Agente de IA - BROWSER MTS")
+        self.title("🤖 Conectar com Agente de IA - Navegador MTS")
         self.geometry("560x540")
         self.resizable(False, False)
         self.attributes("-topmost", True)
@@ -36,13 +36,13 @@ class MCPConnectDialog(ctk.CTkToplevel):
 
     def _get_mcp_config_json(self) -> str:
         """Gera a configuração formatada compatível com Claude Desktop e Cursor."""
-        exe = sys.executable if getattr(sys, "frozen", False) else "C:\\Users\\MATEUS\\AppData\\Local\\Programs\\BROWSER MTS\\BROWSER_MTS.exe"
-        cfg = {"mcpServers": {"browser-mts": {"command": exe, "args": ["--stdio"]}}}
+        exe = sys.executable if getattr(sys, "frozen", False) else "C:\\Users\\MATEUS\\AppData\\Local\\Programs\\Navegador MTS\\NAVEGADOR_MTS.exe"
+        cfg = {"mcpServers": {"navegador-mts": {"command": exe, "args": ["--stdio"]}}}
         return json.dumps(cfg, indent=2, ensure_ascii=False)
 
     def _setup_ui(self) -> None:
         """Constrói a interface com opções universais para todos os tipos de agentes."""
-        ctk.CTkLabel(self, text="🤖 Conectar Agentes de IA ao BROWSER MTS", font=(PALETTE.font_family, 15, "bold")).pack(anchor="w", padx=20, pady=(12, 2))
+        ctk.CTkLabel(self, text="🤖 Conectar Agentes de IA ao Navegador MTS", font=(PALETTE.font_family, 15, "bold")).pack(anchor="w", padx=20, pady=(12, 2))
         ctk.CTkLabel(self, text="Escolha a forma mais conveniente para o seu agente ou ChatGPT:", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark).pack(anchor="w", padx=20, pady=(0, 6))
 
         # 1. ChatGPT (Aba Túnel)

@@ -19,8 +19,8 @@ from typing import Callable, Optional
 import urllib.request
 from .config import current_config
 
-APP_VERSION: str = "2.0.0"
-TARGET_UPDATE_VERSION: str = "2.0.1"
+APP_VERSION: str = "2.1.0"
+TARGET_UPDATE_VERSION: str = "2.1.1"
 DEFAULT_RELEASE_URL: str = "https://api.github.com/repos/mmatteuus/browser-mcp-mts/releases/latest"
 
 
@@ -49,9 +49,11 @@ def parse_version_tuple(v_str: str) -> tuple[int, ...]:
 def find_local_installer_path() -> Optional[Path]:
     """Localiza instalador executável recente gerado localmente na máquina."""
     candidates = [
-        current_config.project_root / "dist_installer" / "BROWSER_MTS_Instalador_v2.0.exe",
-        Path(r"D:\MATEUS\Documentos\GitHub\browser mcp mts\dist_installer\BROWSER_MTS_Instalador_v2.0.exe"),
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "BROWSER MTS" / "BROWSER_MTS_Instalador_v2.0.exe",
+        current_config.project_root / "dist_installer" / "NAVEGADOR_MTS_Instalador_v2.1.0.exe",
+        current_config.project_root / "dist_installer" / "NAVEGADOR_MTS_Instalador_v2.1.exe",
+        Path(r"D:\MATEUS\Documentos\GitHub\browser mcp mts\dist_installer\NAVEGADOR_MTS_Instalador_v2.1.0.exe"),
+        current_config.project_root / "dist_installer" / "NAVEGADOR_MTS_Instalador_v2.0.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Navegador MTS" / "NAVEGADOR_MTS_Instalador_v2.1.0.exe",
     ]
     for p in candidates:
         if p.exists() and p.stat().st_size > 1_000_000:

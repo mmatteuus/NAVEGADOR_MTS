@@ -23,7 +23,7 @@ except ImportError:
 class ToastNotifier:
     """Gerenciador central de notificações nativas do sistema operacional."""
 
-    def __init__(self, app_id: str = "BROWSER MTS - Windows 11") -> None:
+    def __init__(self, app_id: str = "Navegador MTS - Windows 11") -> None:
         self.app_id = app_id
         self._last_sent: Dict[str, float] = {}
         self._cooldown_seconds: float = 4.0

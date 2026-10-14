@@ -79,7 +79,7 @@ class SystemTrayManager:
                 self.on_quit_app()
 
         items = [
-            pystray.MenuItem("🌐 Abrir BROWSER MTS", _action_show, default=True),
+            pystray.MenuItem("🌐 Abrir Navegador MTS", _action_show, default=True),
             pystray.MenuItem(auth_label, _action_toggle_safety),
             pystray.MenuItem("🔌 Alternar Servidor MCP", _action_toggle_mcp),
             pystray.Menu.SEPARATOR,
@@ -93,7 +93,7 @@ class SystemTrayManager:
         if self._icon:
             self._icon.menu = self._build_menu()
 
-    def update_status(self, color: str = "#107C41", tooltip: str = "BROWSER MTS Online") -> None:
+    def update_status(self, color: str = "#107C41", tooltip: str = "Navegador MTS Online") -> None:
         """Atualiza a cor do ícone no tray e a dica flutuante de status."""
         self._status_color = color
         if self._icon:
@@ -109,9 +109,9 @@ class SystemTrayManager:
 
         def _run_icon():
             self._icon = pystray.Icon(
-                name="BrowserMTS",
+                name="NavegadorMTS",
                 icon=create_tray_icon_image(self._status_color),
-                title="BROWSER MTS - Windows 11",
+                title="Navegador MTS - Windows 11",
                 menu=self._build_menu(),
             )
             self._icon.run()

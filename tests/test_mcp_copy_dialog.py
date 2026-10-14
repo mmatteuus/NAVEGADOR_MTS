@@ -19,8 +19,8 @@ def test_mcp_dialog_json_generation() -> None:
     data = json.loads(raw_json)
 
     assert "mcpServers" in data
-    assert "browser-mts" in data["mcpServers"]
-    server_cfg = data["mcpServers"]["browser-mts"]
+    assert "navegador-mts" in data["mcpServers"]
+    server_cfg = data["mcpServers"]["navegador-mts"]
     assert "command" in server_cfg
     assert server_cfg["args"] == ["--stdio"]
 
@@ -28,7 +28,7 @@ def test_mcp_dialog_json_generation() -> None:
 def test_mcp_dialog_prompt_template() -> None:
     """Valida o conteúdo do template de prompt para agentes de IA."""
     assert "ws://127.0.0.1:3456" in MCP_PROMPT_TEMPLATE
-    assert "BROWSER MTS" in MCP_PROMPT_TEMPLATE
+    assert "Navegador MTS" in MCP_PROMPT_TEMPLATE
 
 
 def test_mcp_dialog_safety_gate_integration() -> None:

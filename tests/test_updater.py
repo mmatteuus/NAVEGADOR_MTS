@@ -32,11 +32,11 @@ def test_parse_version_tuple_variants():
 def test_check_for_updates_newer_version_detected():
     """Valida a identificação correta de uma versão mais nova disponível."""
     mock_payload = {
-        "tag_name": "v2.1.0",
+        "tag_name": "v2.2.0",
         "body": "Nova versão com auto-update in-place e melhorias.",
         "assets": [
             {
-                "name": "BROWSER_MTS_Instalador_v2.1.0.exe",
+                "name": "NAVEGADOR_MTS_Instalador_v2.2.0.exe",
                 "browser_download_url": "https://github.com/mock/installer.exe",
             }
         ],
@@ -51,7 +51,7 @@ def test_check_for_updates_newer_version_detected():
         info = check_for_updates("https://mock.api/latest")
 
     assert info is not None
-    assert info.version == "v2.1.0"
+    assert info.version == "v2.2.0"
     assert info.is_newer is True
     assert info.download_url == "https://github.com/mock/installer.exe"
     assert "auto-update" in info.release_notes

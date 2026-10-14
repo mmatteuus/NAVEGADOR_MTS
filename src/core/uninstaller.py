@@ -18,9 +18,9 @@ def find_uninstaller_binary() -> Optional[str]:
     exe_dir = os.path.dirname(sys.executable)
     candidates = [
         os.path.join(exe_dir, "unins000.exe"),
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\Navegador MTS\unins000.exe"),
         os.path.expandvars(r"%LOCALAPPDATA%\Programs\BROWSER MTS\unins000.exe"),
-        os.path.expandvars(r"%APPDATA%\Programs\BROWSER MTS\unins000.exe"),
-        os.path.expandvars(r"%LOCALAPPDATA%\Programs\BROWSER_MTS\unins000.exe"),
+        os.path.expandvars(r"%APPDATA%\Programs\Navegador MTS\unins000.exe"),
     ]
     for path in candidates:
         if os.path.isfile(path):
@@ -37,13 +37,14 @@ def clean_shortcuts_and_registry() -> None:
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE) as key:
+            winreg.DeleteValue(key, "NavegadorMTS")
             winreg.DeleteValue(key, "BrowserMTS")
     except Exception:
         pass
 
     # Atalhos na Área de Trabalho do usuário
     user_desktop = os.path.expandvars(r"%USERPROFILE%\Desktop")
-    for name in ["BROWSER MTS.lnk", "Extensão Chrome BROWSER MTS.lnk"]:
+    for name in ["Navegador MTS.lnk", "Extensão Chrome Navegador MTS.lnk", "BROWSER MTS.lnk", "Extensão Chrome BROWSER MTS.lnk"]:
         sc_path = os.path.join(user_desktop, name)
         if os.path.isfile(sc_path):
             try:

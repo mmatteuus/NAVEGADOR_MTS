@@ -27,7 +27,7 @@ class MainWindow(ctk.CTk):
 
     def _setup_window(self) -> None:
         """Define propriedades da janela, dimensões, título e efeito Mica."""
-        self.title("BROWSER MTS & COMPUTER USE — Windows 11")
+        self.title("Navegador MTS & Computer Use — Windows 11")
         self.geometry("820x660")
         self.minsize(760, 580)
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
@@ -46,7 +46,7 @@ class MainWindow(ctk.CTk):
         self.nav_bar.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 4))
         
         lbl_brand = ctk.CTkLabel(
-            self.nav_bar, text="🌐 BROWSER MTS",
+            self.nav_bar, text="🌐 Navegador MTS",
             font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_dark
         )
         lbl_brand.pack(side="left", padx=(0, 20))
