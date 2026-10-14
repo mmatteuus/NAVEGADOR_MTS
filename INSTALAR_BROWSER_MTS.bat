@@ -33,3 +33,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObj
 echo.
 echo [SUCESSO] Atalhos criados no Menu Iniciar e na sua Area de Trabalho!
 echo.
+

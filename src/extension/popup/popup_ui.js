@@ -15,6 +15,7 @@ window.popupUI = (function () {
     latencyText: document.getElementById('latency-text'),
     commandsText: document.getElementById('commands-text'),
     btnReconnect: document.getElementById('btn-reconnect'),
+    portText: document.getElementById('port-text'),
     safetyIcon: document.getElementById('safety-icon'),
     safetyState: document.getElementById('safety-state')
   };
@@ -96,11 +97,22 @@ window.popupUI = (function () {
     }
   }
 
+  /**
+   * Atualiza o endereço da porta local ativa.
+   * @param {number} port - Número da porta.
+   */
+  function updatePortDisplay(port) {
+    if (elements.portText && port) {
+      elements.portText.textContent = `ws://127.0.0.1:${port}`;
+    }
+  }
+
   return {
     elements,
     updateConnectionDisplay,
     updateToggleDisplay,
     updateSafetyDisplay,
-    updateCommandsCount
+    updateCommandsCount,
+    updatePortDisplay
   };
 })();

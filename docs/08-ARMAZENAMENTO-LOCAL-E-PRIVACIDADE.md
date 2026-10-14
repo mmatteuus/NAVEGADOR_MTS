@@ -54,3 +54,4 @@ A ponte de comunicação entre a **Extensão do Chrome** e o **Aplicativo Deskto
 1. **Transparência Total**: O usuário pode inspecionar todos os arquivos gerados em sua própria máquina.
 2. **Controle de Desinstalação**: Se o usuário desejar remover o aplicativo, basta apagar a pasta e nenhum rastro ou cadastro permanece em servidores remotos.
 3. **Conformidade com a LGPD**: Como não há coleta ou tratamento centralizado de dados pessoais, o sistema atende aos mais rígidos critérios de conformidade e privacidade.
+

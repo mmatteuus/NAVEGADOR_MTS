@@ -45,3 +45,4 @@ echo [PRONTO!] A pasta e o navegador foram abertos.
 echo Basta clicar em "Carregar sem compactacao" e escolher a pasta aberta.
 echo.
 pause
+

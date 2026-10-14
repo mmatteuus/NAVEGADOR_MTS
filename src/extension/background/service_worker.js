@@ -52,7 +52,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           connectionStatus: data[STORAGE_KEYS.CONNECTION_STATUS] || CONNECTION_STATE.DISCONNECTED,
           latencyMs: data[STORAGE_KEYS.LAST_LATENCY_MS] || 0,
           computerUseAllowed: !!data[STORAGE_KEYS.COMPUTER_USE_ALLOWED],
-          totalCommands: data[STORAGE_KEYS.TOTAL_COMMANDS] || 0
+          totalCommands: data[STORAGE_KEYS.TOTAL_COMMANDS] || 0,
+          activePort: data[STORAGE_KEYS.ACTIVE_PORT] || 3456
         }
       });
     });

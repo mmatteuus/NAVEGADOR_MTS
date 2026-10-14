@@ -98,3 +98,26 @@ def test_websocket_bridge_timeout_and_error(dynamic_port: int) -> None:
         await bridge.stop()
 
     asyncio.run(_run())
+
+
+def test_websocket_bridge_port_hopping(dynamic_port: int) -> None:
+    """Valida que o WebSocketBridge pula automaticamente para a próxima porta se a inicial estiver ocupada."""
+    import socket
+
+    # Ocupa propositalmente a porta dynamic_port
+    blocker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    blocker.bind(("127.0.0.1", dynamic_port))
+    blocker.listen(1)
+
+    try:
+        bridge = WebSocketBridge(host="127.0.0.1", port=dynamic_port)
+
+        async def _run():
+            bound_port = await bridge.start(max_ports=5)
+            assert bound_port > dynamic_port
+            assert bridge.port == bound_port
+            await bridge.stop()
+
+        asyncio.run(_run())
+    finally:
+        blocker.close()

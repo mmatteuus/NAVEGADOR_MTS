@@ -16,11 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const { automationEnabled, connectionStatus, latencyMs, computerUseAllowed, totalCommands } = response.data;
+    const { automationEnabled, connectionStatus, latencyMs, computerUseAllowed, totalCommands, activePort } = response.data;
     ui.updateToggleDisplay(automationEnabled);
     ui.updateConnectionDisplay(connectionStatus, latencyMs);
     ui.updateSafetyDisplay(computerUseAllowed);
     ui.updateCommandsCount(totalCommands);
+    if (activePort) ui.updatePortDisplay(activePort);
   });
 
   // 2. Manipula o clique no interruptor de automação
@@ -65,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (changes.browser_mts_total_commands) {
       ui.updateCommandsCount(changes.browser_mts_total_commands.newValue);
+    }
+
+    if (changes.browser_mts_active_port) {
+      ui.updatePortDisplay(changes.browser_mts_active_port.newValue);
     }
   });
 });

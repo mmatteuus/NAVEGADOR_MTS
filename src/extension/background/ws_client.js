@@ -6,7 +6,7 @@
  * e orquestração de comandos recebidos pelo servidor local.
  */
 
-import { WS_URL, RECONNECT_BACKOFF_STEPS_MS, CONNECTION_STATE } from '../common/constants.js';
+import { PORT_CANDIDATES, WS_BASE_URL, RECONNECT_BACKOFF_STEPS_MS, CONNECTION_STATE, STORAGE_KEYS } from '../common/constants.js';
 import { logger } from '../common/logger.js';
 import { buildClientHello } from '../common/protocol.js';
 import { updateConnectionStatus, setComputerUseAllowed, isAutomationEnabled } from './state_storage.js';
@@ -17,6 +17,7 @@ let socket = null;
 let reconnectAttempt = 0;
 let reconnectTimer = null;
 let messageDispatcherFn = null;
+let currentPortIndex = 0;
 
 const heartbeat = createHeartbeatManager(() => {
   cleanupSocket();
@@ -39,16 +40,21 @@ export async function connectWebSocket() {
     return;
   }
 
+  const activePort = PORT_CANDIDATES[currentPortIndex];
+  const targetUrl = `${WS_BASE_URL}:${activePort}`;
   await updateConnectionStatus(CONNECTION_STATE.CONNECTING, 0);
-  logger.info(`Conectando ao Desktop App em ${WS_URL}...`);
+  logger.info(`Conectando ao Desktop App em ${targetUrl} (porta ${activePort})...`);
 
   try {
-    socket = new WebSocket(WS_URL);
+    socket = new WebSocket(targetUrl);
 
     socket.onopen = async () => {
-      logger.info('Conexão WebSocket estabelecida com sucesso.');
+      logger.info(`Conexão WebSocket estabelecida com sucesso na porta ${activePort}.`);
       reconnectAttempt = 0;
       await updateConnectionStatus(CONNECTION_STATE.CONNECTED, 0);
+      try {
+        await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_PORT]: activePort });
+      } catch (_) {}
 
       const active = await getActiveTab();
       sendMessage(buildClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
@@ -58,7 +64,8 @@ export async function connectWebSocket() {
     socket.onmessage = (event) => handleIncomingMessage(event.data);
 
     socket.onclose = () => {
-      logger.warn('Conexão WebSocket encerrada. Agendando reconexão resiliente...');
+      logger.warn(`Conexão na porta ${activePort} fechada/recusada. Agendando próxima porta...`);
+      currentPortIndex = (currentPortIndex + 1) % PORT_CANDIDATES.length;
       cleanupSocket();
       scheduleReconnect();
     };
@@ -66,6 +73,7 @@ export async function connectWebSocket() {
     socket.onerror = (err) => logger.debug('Falha de transporte no WebSocket:', err);
   } catch (err) {
     logger.error('Erro na instanciação do WebSocket:', err);
+    currentPortIndex = (currentPortIndex + 1) % PORT_CANDIDATES.length;
     scheduleReconnect();
   }
 }

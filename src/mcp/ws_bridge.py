@@ -33,12 +33,21 @@ class WebSocketBridge:
         """Verifica se há uma extensão de navegador conectada e ativa."""
         return self._active_socket is not None
 
-    async def start(self) -> None:
-        """Inicia o servidor WebSocket local na porta configurada."""
+    async def start(self, max_ports: int = 10) -> int:
+        """Inicia o servidor WebSocket local na porta configurada ou pula para uma livre se ocupada."""
         if self.server is not None:
-            return
-        self.server = await serve(self._handle_client, self.host, self.port, reuse_address=True)
-        logger.info(f"WebSocket Bridge escutando em ws://{self.host}:{self.port}")
+            return self.port
+        initial_port = self.port
+        for offset in range(max_ports):
+            candidate_port = initial_port + offset
+            try:
+                self.server = await serve(self._handle_client, self.host, candidate_port, reuse_address=True)
+                self.port = candidate_port
+                logger.info(f"WebSocket Bridge escutando em ws://{self.host}:{self.port}")
+                return self.port
+            except OSError as err:
+                logger.warning(f"Porta {candidate_port} ocupada ({err}). Pulando para próxima porta...")
+        raise RuntimeError(f"Nenhuma porta livre no intervalo {initial_port} a {initial_port + max_ports - 1}.")
 
     async def stop(self) -> None:
         """Encerra o servidor e cancela requisições pendentes com segurança."""
@@ -108,7 +117,7 @@ class WebSocketBridge:
     async def send_action(self, action: str, params: Dict[str, Any], timeout: float = 30.0) -> Any:
         """Envia um comando para execução na extensão e aguarda a resposta."""
         if not self.is_connected:
-            raise ConnectionError("Extensão do navegador não conectada na porta 3456.")
+            raise ConnectionError(f"Extensão do navegador não conectada na porta {self.port}.")
 
         req_id = f"cmd_{uuid.uuid4().hex[:12]}"
         loop = asyncio.get_running_loop()

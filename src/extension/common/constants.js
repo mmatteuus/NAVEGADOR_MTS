@@ -6,8 +6,11 @@
  * de backoff exponencial e identificadores dos comandos suportados.
  */
 
-/** Endereço do WebSocket Bridge hospedado pelo Desktop App Windows */
-export const WS_URL = 'ws://127.0.0.1:3456';
+/** Endereço base e candidatos de portas para detecção e pulo automático */
+export const DEFAULT_PORT = 3456;
+export const PORT_CANDIDATES = [3456, 3457, 3458, 3459, 3460, 3461, 3462, 3463, 3464, 3465];
+export const WS_BASE_URL = 'ws://127.0.0.1';
+export const WS_URL = `${WS_BASE_URL}:${DEFAULT_PORT}`;
 
 /** Intervalo do Heartbeat de transporte em milissegundos (3 segundos) */
 export const HEARTBEAT_INTERVAL_MS = 3000;
@@ -30,7 +33,8 @@ export const STORAGE_KEYS = {
   LAST_LATENCY_MS: 'browser_mts_last_latency_ms',
   CONNECTION_STATUS: 'browser_mts_connection_status',
   COMPUTER_USE_ALLOWED: 'browser_mts_computer_use_allowed',
-  TOTAL_COMMANDS: 'browser_mts_total_commands'
+  TOTAL_COMMANDS: 'browser_mts_total_commands',
+  ACTIVE_PORT: 'browser_mts_active_port'
 };
 
 /** Estados possíveis de conectividade da extensão */

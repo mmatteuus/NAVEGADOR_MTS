@@ -105,10 +105,13 @@ class DashboardPanel(ctk.CTkFrame):
             self.append_log(f"Trava de segurança alterada: {'Autorizado' if authorized else 'Revogado'} ({reason})")
         self.after(0, _update)
 
-    def update_mcp_status(self, status: str, latency_ms: Optional[float] = None) -> None:
-        """Atualiza visualmente os indicadores do Servidor MCP."""
+    def update_mcp_status(self, status: str, latency_ms: Optional[float] = None, port: Optional[int] = None) -> None:
+        """Atualiza visualmente os indicadores do Servidor MCP e porta ativa."""
         color = get_status_color(status)
-        self.lbl_mcp_status.configure(text=f"Status: {status}", text_color=color)
+        port_txt = f" (Porta {port})" if port else ""
+        self.lbl_mcp_status.configure(text=f"Status: {status}{port_txt}", text_color=color)
+        if port:
+            self.lbl_ext_port.configure(text=f"Ponte: ws://127.0.0.1:{port}")
         if latency_ms is not None:
             self.lbl_mcp_latency.configure(text=f"Latência: {latency_ms:.1f} ms")
 

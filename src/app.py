@@ -53,14 +53,14 @@ class DesktopApplication:
         is_ext = self.ws_bridge.is_connected
         lat = self.ws_bridge.last_latency_ms
         active_tab = self.ws_bridge.client_info.get("activeTabUrl", "")
-        self.window.panel_dashboard.update_mcp_status("Ativo", latency_ms=lat)
+        self.window.panel_dashboard.update_mcp_status("Ativo", latency_ms=lat, port=self.ws_bridge.port)
         self.window.panel_dashboard.update_extension_status(is_ext, active_tab=active_tab)
 
         # Atualiza a cor e o tooltip no System Tray
         if is_ext:
-            self.tray.update_status("#107C41", "BROWSER MTS: Conectado e Operacional")
+            self.tray.update_status("#107C41", f"BROWSER MTS (Porta {self.ws_bridge.port}): Conectado e Operacional")
         else:
-            self.tray.update_status("#D83B01", "BROWSER MTS: Aguardando Extensão")
+            self.tray.update_status("#D83B01", f"BROWSER MTS (Porta {self.ws_bridge.port}): Aguardando Extensão")
 
         self.window.after(1000, self._poll_status_cycle)
 
