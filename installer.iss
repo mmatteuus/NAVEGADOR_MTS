@@ -31,9 +31,11 @@ RestartApplications=no
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [InstallDelete]
+Type: filesandordirs; Name: "{localappdata}\Programs\BROWSER MTS"
 Type: files; Name: "{autodesktop}\BROWSER MTS.lnk"
 Type: files; Name: "{autodesktop}\Extensão Chrome BROWSER MTS.lnk"
 Type: files; Name: "{autodesktop}\Extensao Chrome BROWSER MTS.lnk"
+Type: files; Name: "D:\BROWSER MTS*.lnk"
 Type: files; Name: "{userprograms}\BROWSER MTS\*.lnk"
 Type: filesandordirs; Name: "{userprograms}\BROWSER MTS"
 
@@ -44,7 +46,6 @@ Name: "exticon"; Description: "Criar atalho na Area de Trabalho para a Extensao 
 [Files]
 Source: "dist\NAVEGADOR_MTS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "src\extension\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
-Source: "dist\NAVEGADOR_MTS\NAVEGADOR_MTS.exe"; DestDir: "{localappdata}\Programs\BROWSER MTS"; DestName: "BROWSER_MTS.exe"; Flags: ignoreversion restartreplace
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app_icon.ico"
@@ -52,9 +53,11 @@ Name: "{group}\Pasta da Extensao Chrome"; Filename: "{app}\extension"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\app_icon.ico"
 Name: "{autodesktop}\Extensao Chrome Navegador MTS"; Filename: "{app}\extension"; Tasks: exticon; IconFilename: "{app}\app_icon.ico"
+Name: "D:\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\app_icon.ico"
+Name: "D:\Extensao Chrome Navegador MTS"; Filename: "{app}\extension"; Tasks: exticon; IconFilename: "{app}\app_icon.ico"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait
 
 [Code]
 function InitializeSetup(): Boolean;

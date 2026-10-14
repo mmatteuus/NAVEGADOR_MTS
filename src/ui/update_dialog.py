@@ -6,6 +6,7 @@ Responsabilidades:
 - Acionamento seguro do instalador in-place e encerramento limpo da sessão atual.
 """
 
+import os
 import threading
 from typing import Callable, Optional
 import customtkinter as ctk
@@ -112,7 +113,8 @@ class UpdateDialog(ctk.CTkToplevel):
         """Chamado quando o download termina e o instalador está pronto."""
         self.lbl_status.configure(text="Download concluído! Iniciando instalador...", text_color=PALETTE.success)
         if self.on_shutdown_for_update:
-            self.after(1000, self.on_shutdown_for_update)
+            self.after(400, self.on_shutdown_for_update)
+        self.after(900, lambda: os._exit(0))
 
     def _on_download_failed(self) -> None:
         """Exibe mensagem de erro caso o download falhe."""

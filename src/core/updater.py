@@ -130,12 +130,11 @@ def download_and_launch_update(
                     if progress_callback and total_size > 0:
                         progress_callback(min(1.0, downloaded / total_size))
 
+        # Flags Inno Setup para fechar instâncias anteriores e substituir in-place sem travar
+        cmd = [target_path, "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS"]
+        subprocess.Popen(cmd)
         if on_ready_to_install:
             on_ready_to_install()
-
-        # Flags Inno Setup para fechar instâncias anteriores e substituir in-place sem travar
-        cmd = [target_path, "/SILENT", "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS"]
-        subprocess.Popen(cmd)
         return True
     except Exception:
         return False
