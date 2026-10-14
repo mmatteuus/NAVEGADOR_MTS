@@ -11,7 +11,7 @@ AppId={{C6B5E8A1-94F2-4D6F-B9D1-7A3982F10E23}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={userappdata}\Programs\{#MyAppName}
+DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=dist_installer
 OutputBaseFilename=BROWSER_MTS_Instalador_v2.0
@@ -33,6 +33,7 @@ Name: "exticon"; Description: "Criar atalho na Area de Trabalho para a Extensao 
 
 [Files]
 Source: "dist\BROWSER_MTS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "src\extension\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app_icon.ico"
@@ -43,5 +44,4 @@ Name: "{autodesktop}\Extensao Chrome BROWSER MTS"; Filename: "{app}\extension"; 
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\extension\INSTALAR_NO_NAVEGADOR.bat"; Description: "Abrir navegador e pasta da extensao para ativacao rapida"; Flags: nowait postinstall skipifsilent shellexec
-
+Filename: "explorer.exe"; Parameters: """{app}\extension"""; Description: "Abrir pasta da Extensao Chrome para carregar no navegador"; Flags: nowait postinstall skipifsilent

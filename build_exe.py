@@ -39,6 +39,10 @@ def build_standalone_executable() -> bool:
     result = subprocess.run(cmd)
 
     if result.returncode == 0:
+        import shutil
+        dist_ext = os.path.join("dist", "BROWSER_MTS", "extension")
+        shutil.copytree(os.path.join("src", "extension"), dist_ext, dirs_exist_ok=True)
+        shutil.copy2("app_icon.ico", os.path.join("dist", "BROWSER_MTS", "app_icon.ico"))
         print("Compilação concluída com sucesso! Diretório: dist/BROWSER_MTS")
         return True
     else:
