@@ -93,33 +93,26 @@ O BROWSER MTS foi reestruturado para eliminar totalmente as desconexões intermi
 
 ---
 
-### Opção A: Instalação Automática via `setup.bat` (Recomendado para Usuários)
+### Opção 1: Instalação 1-Clique Super Simplificada (Para Qualquer Usuário)
 
-1. Baixe ou clone este repositório para o seu computador:
-   ```cmd
-   git clone https://github.com/mmatteuus/browser-mcp-mts.git
-   cd "browser mcp mts"
-   ```
-2. Dê um duplo-clique no arquivo **`setup.bat`** (ou execute via Prompt de Comando):
-   ```cmd
-   setup.bat
-   ```
-3. O script irá automaticamente:
-   - Verificar a instalação do Python no seu Windows.
-   - Criar e configurar o ambiente virtual `.venv` isolado.
-   - Instalar todas as dependências do `requirements.txt`.
-   - Criar o atalho oficial **BROWSER MTS** no Menu Iniciar do Windows (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\BROWSER MTS.lnk`).
-   - Disponibilizar inicialização imediata do app.
+1. Dê dois cliques no arquivo **`INSTALAR_BROWSER_MTS.bat`**:
+   - Cria o ambiente virtual e instala tudo automaticamente.
+   - Cria atalhos no Menu Iniciar e na Área de Trabalho.
+   - Abre o aplicativo imediatamente.
+2. Dê dois cliques no arquivo **`INSTALAR_EXTENSAO_CHROME.bat`**:
+   - Abre o Chrome diretamente na tela de extensões (`chrome://extensions/`).
+   - Abre a pasta da extensão no Windows Explorer na sua tela.
+   - Basta arrastar a pasta para dentro do Chrome ou clicar em "Carregar sem compactação". Pronto!
 
 ---
 
-### Opção B: Instalação via PowerShell (`install.ps1`)
+### Opção 2: Instalação via PowerShell (`install.ps1`)
 
 Para desenvolvedores e administradores que preferem automação via PowerShell:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\install.ps1
+.\install.ps1 -StartNow
 ```
 
 **Parâmetros suportados no `install.ps1`:**
@@ -129,7 +122,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ---
 
-### Opção C: Instalação Manual via Terminal
+### Opção 3: Instalação Manual via Terminal
 
 Caso prefira configurar manualmente:
 
@@ -140,13 +133,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 python src/app.py
 ```
-
-### Carregando a Extensão no Chrome / Edge:
-1. Abra seu navegador Chrome ou Edge e acesse: `chrome://extensions/` (ou `edge://extensions/`).
-2. Ative a chave **"Modo do desenvolvedor"** no canto superior direito.
-3. Clique em **"Carregar sem compactação"** (Load unpacked).
-4. Selecione a pasta: `d:\MATEUS\Documentos\GitHub\browser mcp mts\src\extension` (ou o caminho onde clonou o projeto).
-5. O ícone do **BROWSER MTS** aparecerá na barra de ferramentas do seu navegador!
 
 ---
 

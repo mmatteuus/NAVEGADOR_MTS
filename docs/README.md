@@ -17,6 +17,7 @@ Para facilitar a leitura, navegação e manutenção por qualquer desenvolvedor 
 | **[05. Servidor MCP e Protocolo](05-SERVIDOR-MCP-E-TRANSPORTE.md)** | Protocolo MCP e Túneis | Catálogo unificado de ferramentas MCP, compatibilidade com OpenAI Tunnel, Claude e stdio. |
 | **[06. Interface Windows 11 e UX](06-INTERFACE-WINDOWS-11-UX.md)** | Experiência e UI Nativa | Design Fluent Win11, bandeja do sistema (System Tray), notificações nativas e temas claro/escuro. |
 | **[07. Guia de Código e Boas Práticas](07-GUIA-DE-MODULARIDADE-E-BOAS-PRATICAS.md)** | Padrões de Desenvolvimento | Regra de arquivos pequenos (< 150 linhas), modularidade cirúrgica e comentários didáticos. |
+| **[08. Armazenamento Local e Privacidade](08-ARMAZENAMENTO-LOCAL-E-PRIVACIDADE.md)** | Privacidade e Segurança | Política 100% Local-First, DPAPI e zero-telemetria para máxima adesão e confiança. |
 
 ---
 
