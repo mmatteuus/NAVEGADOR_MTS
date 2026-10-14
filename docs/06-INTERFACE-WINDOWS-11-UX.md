@@ -55,16 +55,17 @@ A tela principal do aplicativo é limpa, intuitiva e focada na observabilidade e
 
 Para garantir uso prático no dia a dia ("zero cliques"), o aplicativo roda em segundo plano sem poluir a barra de tarefas:
 
-1. **Fechar Minimiza para a Bandeja**: Ao clicar no `X` da janela, o app continua ativo na bandeja, garantindo que o agente de IA nunca perca o acesso.
-2. **Ícone Dinâmico de Status**:
-   - 🟢 **Verde**: Todos os serviços ativos e saudáveis.
-   - 🟡 **Amarelo**: Tentando reconectar extensão ou túnel.
+1. **O botão 'X' apenas oculta a janela (Segundo Plano Permanente)**: Ao clicar no botão 'X' superior, a janela é ocultada imediatamente, mas todo o processamento de segundo plano (servidor MCP, ponte WebSocket com a extensão e listeners de segurança) continua 100% ativo e operacional.
+2. **Encerramento Exclusivo pela Bandeja**: Para fechar e desativar o aplicativo por completo, o usuário deve obrigatoriamente clicar com o botão direito no ícone da bandeja do sistema (junto ao relógio do Windows) e escolher a opção **'❌ Sair do Aplicativo'**.
+3. **Ícone Dinâmico de Status**:
+   - 🟢 **Verde**: Todos os serviços ativos, extensão conectada e operacional.
+   - 🟡 **Amarelo**: Tentando reconectar extensão ou aguardando conexão.
    - 🔴 **Vermelho**: Serviços pausados ou erro de rede.
-3. **Menu de Contexto com Botão Direito**:
-   - Abrir Painel Principal
-   - Alternar Autorização do Computador (Ativado / Desativado)
-   - Reiniciar Conexões
-   - Sair do Aplicativo
+4. **Menu de Contexto com Botão Direito**:
+   - 🌐 Abrir BROWSER MTS (ou duplo-clique no ícone para restaurar a janela)
+   - 🛡️ Alternar Trava Computer Use (Ativado / Desativado)
+   - 🔌 Alternar Servidor MCP
+   - ❌ Sair do Aplicativo (Encerramento real)
 
 ---
 

@@ -150,7 +150,7 @@ O BROWSER MTS foi concebido com a filosofia de **"Zero Cliques"**: ele roda em s
 
 ### **Passo 1: Iniciar o BROWSER MTS**
 - Abra o Menu Iniciar do Windows e clique no atalho **BROWSER MTS** (ou execute `python src/app.py`).
-- O aplicativo iniciará exibindo o Dashboard moderno. Você pode clicar no botão de fechar para minimizá-lo silenciosamente para a **Bandeja do Sistema (junto ao relógio)**.
+- O aplicativo iniciará exibindo o Dashboard moderno. Clicar no botão **'X' apenas fecha a janela e mantém o BROWSER MTS rodando continuamente em segundo plano na Bandeja do Sistema (junto ao relógio)**, garantindo que o agente de IA nunca perca a conexão. Para encerrar o aplicativo por completo, clique com o botão direito no ícone da bandeja e selecione **"Sair do Aplicativo"**.
 - Certifique-se de que a extensão esteja ativada no Chrome (ícone verde no popup).
 
 ### **Passo 2: Conectar seu Cliente de IA Preferido**

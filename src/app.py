@@ -83,7 +83,8 @@ class DesktopApplication:
         self._start_background_services()
 
         self.window = MainWindow(on_close_to_tray=lambda: notifier.notify(
-            "BROWSER MTS em Segundo Plano", "O aplicativo continua ativo na bandeja do sistema."
+            "BROWSER MTS em Segundo Plano",
+            "O processamento continua ativo! O 'X' apenas fecha a janela. Para encerrar de verdade, use a bandeja."
         ))
 
         self.tray = SystemTrayManager(

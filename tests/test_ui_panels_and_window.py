@@ -83,6 +83,16 @@ class TestUIPanelsAndWindow(unittest.TestCase):
         resultado = is_autostart_enabled()
         self.assertIsInstance(resultado, bool)
 
+    def test_window_close_minimizes_to_tray_without_destroying(self):
+        """Valida que o protocolo de fechamento ('X') esconde a janela para a bandeja sem encerrar o app."""
+        notified = []
+        self.win.on_close_to_tray = lambda: notified.append(True)
+        self.win.hide_to_tray()
+        self.assertEqual(self.win.state(), "withdrawn")
+        self.assertTrue(len(notified) > 0)
+        self.win.show_from_tray()
+        self.assertNotEqual(self.win.state(), "withdrawn")
+
 
 if __name__ == "__main__":
     unittest.main()
