@@ -97,3 +97,9 @@ tmp/
 Thumbs.db
 Desktop.ini
 .DS_Store
+*.tmp
+*.xlsx
+*.csv
+tests/*.vbs
+tests/generate_xlsx.py
+tests/planilha_teste.csv

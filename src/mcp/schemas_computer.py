@@ -80,6 +80,17 @@ COMPUTER_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {}
         }
+    },
+    {
+        "name": "computer_launch_app",
+        "description": "Inicia um aplicativo local no Windows (ex: excel, notepad, calc) via Shell nativo do sistema operacional.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "app": {"type": "string", "description": "Nome ou caminho do aplicativo a ser iniciado (ex: excel, notepad)"}
+            },
+            "required": ["app"]
+        }
     }
 ]
 

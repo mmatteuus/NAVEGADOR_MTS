@@ -29,18 +29,25 @@ class MCPServer:
         self.ws_bridge = WebSocketBridge(host=self.host, port=self.ws_port)
         self.router = MCPToolRouter(ws_bridge=self.ws_bridge)
         self._running = False
+        self._use_active_hub = False
 
     async def start(self, start_ws: bool = True) -> None:
-        """Inicia os subsistemas do servidor MCP."""
+        """Inicia os subsistemas do servidor MCP conectando ao hub central ou subindo ponte."""
         self._running = True
         if start_ws:
-            await self.ws_bridge.start()
+            from .hub_client import is_hub_running
+            if await is_hub_running(self.host, self.ws_port):
+                self._use_active_hub = True
+                logger.info(f"Hub BROWSER MTS ativo detectado em {self.host}:{self.ws_port}. Encaminhando chamadas.")
+            else:
+                await self.ws_bridge.start()
         logger.info(f"Servidor MCP '{self.name}' v{self.version} inicializado.")
 
     async def stop(self) -> None:
         """Encerra graciosamente todos os componentes do servidor."""
         self._running = False
-        await self.ws_bridge.stop()
+        if not self._use_active_hub:
+            await self.ws_bridge.stop()
         logger.info("Servidor MCP finalizado.")
 
     async def handle_jsonrpc(self, req: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -66,7 +73,11 @@ class MCPServer:
         elif method == "tools/call":
             name = params.get("name", "")
             args = params.get("arguments", {})
-            call_res = await self.router.dispatch(name, args)
+            if self._use_active_hub:
+                from .hub_client import forward_tool_to_hub
+                call_res = await forward_tool_to_hub(name, args, host=self.host, port=self.ws_port)
+            else:
+                call_res = await self.router.dispatch(name, args)
             return {"jsonrpc": "2.0", "id": req_id, "result": call_res}
         else:
             err = {"code": -32601, "message": f"Método não encontrado: '{method}'"}

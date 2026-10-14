@@ -24,7 +24,25 @@ Se você utiliza **Claude Desktop**, **Cursor** ou outro cliente MCP compatível
 
 ---
 
-## 2. Prompt Pronto para Copiar e Colar no Chat da IA
+## 2. Conectar com o ChatGPT (Túnel OpenAI)
+
+Para conectar o **ChatGPT** ao seu BROWSER MTS:
+
+1. **Abra o Túnel**: Clique no botão **`🚀 Ligar Túnel ChatGPT`** no aplicativo BROWSER MTS (ou execute o arquivo `LIGAR_TUNEL_CHATGPT.bat`).
+2. **No ChatGPT**: Vá em **Configurações** > **Conectar aplicativos / Servidores MCP** > **Adicionar servidor MCP personalizado**.
+3. Preencha os campos exatamente assim:
+   - **Nome**: `BROWSER MCP MTS`
+   - **Conexão**: Clique na aba **`Túnel`** (ao lado de URL do Servidor)
+   - **Campo de Conexão**: Cole o ID:
+     `tunnel_6a7aea545c408191889cd114d4a99d9b`
+   - **Autenticação**: Selecione **`Sem autenticação`**
+   - Marque a caixa: ☑️ **Entendo e quero continuar**
+   - Clique em: **Criar como plugin**
+4. Pronto! O ChatGPT terá acesso completo às ferramentas para navegar no Chrome, inspecionar elementos e interagir com o computador.
+
+---
+
+## 3. Prompt Pronto para Copiar e Colar no Chat da IA
 
 Copie e cole este texto no início de qualquer conversa com sua IA:
 
@@ -39,7 +57,7 @@ Por favor, liste as ferramentas disponíveis e pergunte qual tarefa deseja reali
 
 ---
 
-## 3. Segurança e Controle Físico na sua Mão
+## 4. Segurança e Controle Físico na sua Mão
 
 - **Trava de Segurança (Fail-Closed):** O agente só consegue mover o mouse ou digitar se o botão *"Permitir controle do computador"* estiver verde no aplicativo desktop.
 - **Kill-Switch Físico de Emergência:** Se o agente fizer qualquer movimento indesejado, **aperte a tecla `ESC` 3 vezes seguidas**. Todas as ações são canceladas na hora e o controle é revogado.

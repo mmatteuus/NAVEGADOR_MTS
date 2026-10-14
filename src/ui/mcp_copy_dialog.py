@@ -41,52 +41,58 @@ class MCPConnectDialog(ctk.CTkToplevel):
     def _setup_ui(self) -> None:
         """Constrói a interface visual com seções de cópia e botão de teste do mouse."""
         self.lbl_title = ctk.CTkLabel(self, text="🤖 Conectar com Agente de IA", font=(PALETTE.font_family, 16, "bold"))
-        self.lbl_title.pack(anchor="w", padx=20, pady=(16, 4))
-        desc = "Copie a configuração para o Claude Desktop/Cursor ou copie a instrução para o chat da IA."
-        ctk.CTkLabel(self, text=desc, font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark, wraplength=500).pack(anchor="w", padx=20, pady=(0, 10))
+        self.lbl_title.pack(anchor="w", padx=20, pady=(14, 2))
+        desc = "Copie o ID do Túnel para o ChatGPT ou a configuração JSON para o Claude Desktop/Cursor."
+        ctk.CTkLabel(self, text=desc, font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark, wraplength=500).pack(anchor="w", padx=20, pady=(0, 8))
 
-        # 1. Configuração MCP JSON
+        # 1. Configuração ChatGPT (Aba Túnel)
+        card_chatgpt = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
+        card_chatgpt.pack(fill="x", padx=20, pady=4)
+        ctk.CTkLabel(card_chatgpt, text="🟢 Para ChatGPT (Modal 'Adicionar servidor MCP'):", font=(PALETTE.font_family, 12, "bold"), text_color=PALETTE.success).pack(anchor="w", padx=12, pady=(6, 2))
+        f_cg = ctk.CTkFrame(card_chatgpt, fg_color="transparent")
+        f_cg.pack(fill="x", padx=12, pady=(2, 6))
+        self.entry_tunnel = ctk.CTkEntry(f_cg, width=280)
+        self.entry_tunnel.insert(0, "tunnel_6a7aea545c408191889cd114d4a99d9b")
+        self.entry_tunnel.configure(state="readonly")
+        self.entry_tunnel.pack(side="left", padx=(0, 6))
+        ctk.CTkButton(f_cg, text="📋 Copiar ID", width=95, height=28, command=self._copy_tunnel_id).pack(side="left", padx=2)
+        ctk.CTkButton(f_cg, text="🚀 Ligar Túnel", width=95, height=28, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, command=self._start_tunnel_bg).pack(side="left", padx=2)
+
+        # 2. Configuração MCP JSON (Claude Desktop / Cursor)
         card_mcp = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
-        card_mcp.pack(fill="x", padx=20, pady=6)
-        ctk.CTkLabel(card_mcp, text="📋 Configuração JSON (Claude Desktop / Cursor):", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(8, 4))
-        self.txt_mcp = ctk.CTkTextbox(card_mcp, height=90, font=("Consolas", 10))
-        self.txt_mcp.insert("1.0", self._get_mcp_config_json())
-        self.txt_mcp.configure(state="disabled")
-        self.txt_mcp.pack(fill="x", padx=12, pady=4)
-        ctk.CTkButton(card_mcp, text="📋 Copiar JSON do MCP", height=28, command=self._copy_mcp_json).pack(anchor="e", padx=12, pady=(4, 8))
-
-        # 2. Prompt Pronto para Agentes
-        card_prompt = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
-        card_prompt.pack(fill="x", padx=20, pady=6)
-        ctk.CTkLabel(card_prompt, text="💬 Instrução Pronta para o Chat da IA:", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(8, 4))
-        self.txt_prompt = ctk.CTkTextbox(card_prompt, height=55, font=("Segoe UI", 10))
-        self.txt_prompt.insert("1.0", MCP_PROMPT_TEMPLATE)
-        self.txt_prompt.configure(state="disabled")
-        self.txt_prompt.pack(fill="x", padx=12, pady=4)
-        ctk.CTkButton(card_prompt, text="💬 Copiar Prompt para Agente", height=28, command=self._copy_prompt).pack(anchor="e", padx=12, pady=(4, 8))
+        card_mcp.pack(fill="x", padx=20, pady=4)
+        ctk.CTkLabel(card_mcp, text="📋 Para Claude Desktop / Cursor (JSON):", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(6, 2))
+        f_cl = ctk.CTkFrame(card_mcp, fg_color="transparent")
+        f_cl.pack(fill="x", padx=12, pady=(2, 6))
+        ctk.CTkButton(f_cl, text="📋 Copiar Bloco JSON", height=28, command=self._copy_mcp_json).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(f_cl, text="💬 Copiar Prompt IA", height=28, command=self._copy_prompt).pack(side="left")
 
         # 3. Teste Visual do Mouse
         card_test = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
-        card_test.pack(fill="x", padx=20, pady=6)
-        ctk.CTkLabel(card_test, text="🐭 Teste Visual do Mouse (Ver a IA mexendo na tela):", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(8, 4))
+        card_test.pack(fill="x", padx=20, pady=4)
+        ctk.CTkLabel(card_test, text="🐭 Teste Visual do Mouse:", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(6, 2))
         f_btn = ctk.CTkFrame(card_test, fg_color="transparent")
-        f_btn.pack(fill="x", padx=12, pady=(4, 8))
-        self.btn_test_mouse = ctk.CTkButton(f_btn, text="✨ Mover Mouse em Círculo Agora", fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, command=self._start_mouse_demo)
+        f_btn.pack(fill="x", padx=12, pady=(2, 6))
+        self.btn_test_mouse = ctk.CTkButton(f_btn, text="✨ Mover Mouse em Círculo", fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, command=self._start_mouse_demo)
         self.btn_test_mouse.pack(side="left", padx=(0, 8))
         self.lbl_feedback = ctk.CTkLabel(f_btn, text="", font=(PALETTE.font_family_body, 11), text_color=PALETTE.success)
         self.lbl_feedback.pack(side="left")
 
-    def _copy_mcp_json(self) -> None:
-        """Copia o bloco de configuração MCP para a área de transferência."""
+    def _copy_tunnel_id(self) -> None:
+        """Copia o ID do Túnel para o ChatGPT."""
         self.clipboard_clear()
-        self.clipboard_append(self._get_mcp_config_json())
-        self.lbl_feedback.configure(text="✅ JSON copiado!", text_color=PALETTE.success)
+        self.clipboard_append("tunnel_6a7aea545c408191889cd114d4a99d9b")
+        self.lbl_feedback.configure(text="✅ ID do Túnel copiado! Cole no ChatGPT.", text_color=PALETTE.success)
 
-    def _copy_prompt(self) -> None:
-        """Copia o prompt instrutivo para a área de transferência."""
-        self.clipboard_clear()
-        self.clipboard_append(MCP_PROMPT_TEMPLATE)
-        self.lbl_feedback.configure(text="✅ Prompt copiado!", text_color=PALETTE.success)
+    def _start_tunnel_bg(self) -> None:
+        """Inicia o processo do túnel da OpenAI em segundo plano."""
+        import subprocess, os
+        bat = os.path.abspath("LIGAR_TUNEL_CHATGPT.bat")
+        if os.path.exists(bat):
+            subprocess.Popen([bat], shell=True)
+            self.lbl_feedback.configure(text="🚀 Túnel iniciado em segundo plano!", text_color=PALETTE.success)
+        else:
+            self.lbl_feedback.configure(text="Arquivo LIGAR_TUNEL_CHATGPT.bat não encontrado.", text_color=PALETTE.error)
 
     def _start_mouse_demo(self) -> None:
         """Inicia uma thread para movimentar visivelmente o cursor na tela."""

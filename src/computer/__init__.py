@@ -103,6 +103,12 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
             )
             return {"success": True, "data": result}
 
+        if act in ("launch_app", "open_app", "launch"):
+            target = str(params.get("app", params.get("path", "excel")))
+            import os
+            os.startfile(target)
+            return {"success": True, "data": {"launched": target}}
+
         return {
             "success": False,
             "error": f"Ação de computador desconhecida: '{action}'"
