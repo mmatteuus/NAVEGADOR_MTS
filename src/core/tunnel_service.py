@@ -11,6 +11,7 @@ from urllib.request import urlopen
 
 from .config import current_config, get_tunnel_id
 from .security import decrypt_dpapi
+from .credential_validation import is_runtime_credential
 from .tunnel_health import probe_tunnel_ready
 from .supervisor import ProcessSupervisor
 
@@ -37,11 +38,12 @@ def get_tunnel_config_path() -> Optional[Path]:
 def get_runtime_api_key() -> Optional[str]:
     """Obtém credencial somente do ambiente ou do cofre DPAPI do Windows."""
     key = os.environ.get("CONTROL_PLANE_API_KEY", "").strip()
-    if key:
+    if is_runtime_credential(key):
         return key
     try:
         file = current_config.credentials_file
-        return decrypt_dpapi(file.read_text(encoding="utf-8").strip()) if file.is_file() else None
+        stored = decrypt_dpapi(file.read_text(encoding="utf-8").strip()) if file.is_file() else None
+        return stored if is_runtime_credential(stored) else None
     except Exception:
         return None
 
@@ -144,5 +146,4 @@ class TunnelService:
         if supervisor:
             supervisor.terminate_tree(timeout=1.5)
         self._status(False, "Túnel desligado pelo aplicativo.")
-
 tunnel_service = TunnelService()

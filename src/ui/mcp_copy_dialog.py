@@ -17,10 +17,19 @@ from ..core.tunnel_service import tunnel_service
 from ..core.config import current_config, get_tunnel_id
 
 MCP_PROMPT_TEMPLATE = (
-    "Você é meu assistente de IA com acesso ao Navegador MTS. "
+    "Você é meu assistente de IA com acesso ao NAVEGADOR MTS. "
     "O servidor MCP está ativo localmente em ws://127.0.0.1:3456. "
     "Você pode navegar na web, inspecionar elementos e interagir com o computador."
 )
+
+
+def tunnel_status_display(active: bool, ready: bool) -> tuple[str, str]:
+    """Retorna texto/cor sem confundir processo vivo com túnel pronto."""
+    if ready:
+        return "🟢 Túnel pronto", PALETTE.success
+    if active:
+        return "🟡 Conectando ao ChatGPT...", PALETTE.warning
+    return "⚪ Túnel desligado", PALETTE.subtext_dark
 
 
 class MCPConnectDialog(ctk.CTkToplevel):
@@ -29,7 +38,7 @@ class MCPConnectDialog(ctk.CTkToplevel):
     def __init__(self, master, port: int = 3456, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.port = port
-        self.title("🤖 Conectar com Agente de IA - Navegador MTS")
+        self.title("🤖 Conectar com Agente de IA - NAVEGADOR MTS")
         self.geometry("560x540")
         self.resizable(False, False)
         self.attributes("-topmost", True)
@@ -49,14 +58,14 @@ class MCPConnectDialog(ctk.CTkToplevel):
 
     def _setup_ui(self) -> None:
         """Constrói a interface com opções universais para todos os tipos de agentes."""
-        ctk.CTkLabel(self, text="🤖 Conectar Agentes de IA ao Navegador MTS", font=(PALETTE.font_family, 15, "bold")).pack(anchor="w", padx=20, pady=(12, 2))
+        ctk.CTkLabel(self, text="🤖 Conectar Agentes de IA ao NAVEGADOR MTS", font=(PALETTE.font_family, 15, "bold")).pack(anchor="w", padx=20, pady=(12, 2))
         ctk.CTkLabel(self, text="Escolha a forma mais conveniente para o seu agente ou ChatGPT:", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark).pack(anchor="w", padx=20, pady=(0, 6))
 
         # 1. ChatGPT (Aba Túnel)
         card_t = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         card_t.pack(fill="x", padx=20, pady=4)
-        status_txt = "🟢 Túnel Ativo no App" if tunnel_service.is_active else "🟡 Túnel em Segundo Plano"
-        ctk.CTkLabel(card_t, text=f"1. ChatGPT (Aba 'Túnel') — {status_txt}", font=(PALETTE.font_family, 12, "bold"), text_color=PALETTE.success).pack(anchor="w", padx=12, pady=(6, 2))
+        status_txt, status_color = tunnel_status_display(tunnel_service.is_active, tunnel_service.is_ready)
+        ctk.CTkLabel(card_t, text=f"1. ChatGPT (Aba 'Túnel') — {status_txt}", font=(PALETTE.font_family, 12, "bold"), text_color=status_color).pack(anchor="w", padx=12, pady=(6, 2))
         f_t = ctk.CTkFrame(card_t, fg_color="transparent")
         f_t.pack(fill="x", padx=12, pady=(2, 6))
         self.ent_tunnel = ctk.CTkEntry(f_t, width=300)
@@ -69,7 +78,7 @@ class MCPConnectDialog(ctk.CTkToplevel):
         # 2. Universal (Aba 'URL do Servidor' no ChatGPT e Outros Agentes)
         card_u = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         card_u.pack(fill="x", padx=20, pady=4)
-        ctk.CTkLabel(card_u, text="2. URL MCP local (não pública; use túnel no ChatGPT):", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(6, 2))
+        ctk.CTkLabel(card_u, text="2. URL local; para ChatGPT use a aba Túnel.", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(6, 2))
         f_u = ctk.CTkFrame(card_u, fg_color="transparent")
         f_u.pack(fill="x", padx=12, pady=(2, 6))
         self.ent_url = ctk.CTkEntry(f_u, width=300)

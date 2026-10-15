@@ -1,4 +1,4 @@
-## Testar a versão 2.1.1 (Windows)
+## Testar a versão 2.1.2 (Windows)
 
 Este projeto é o **NAVEGADOR MTS** do repositório `mmatteuus/browser-mcp-mts`.
 Não utilize outro conector instalado no ChatGPT como evidência de funcionamento.
@@ -9,7 +9,7 @@ Após instalar com backup, execute `TESTAR_INTEGRACAO.ps1 -StartApp`.
 A validação remota do túnel exige verificar `/readyz` e a conexão criada no ChatGPT.
 Veja [guia de testes](docs/09-TESTES-INTEGRACAO-WINDOWS.md).
 
-# 🌐 BROWSER MTS — Modernização & Plataforma Unificada para Windows 11
+# 🌐 NAVEGADOR MTS — Modernização & Plataforma Unificada para Windows 11
 
 [![Windows 11 Fluent](https://img.shields.io/badge/Windows%2011-Fluent%20%2F%20Mica-blue.svg)](https://microsoft.com/windows)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
@@ -17,7 +17,7 @@ Veja [guia de testes](docs/09-TESTES-INTEGRACAO-WINDOWS.md).
 [![Model Context Protocol](https://img.shields.io/badge/Protocol-MCP%20Unified-purple.svg)](https://modelcontextprotocol.io)
 [![Test Suite](https://img.shields.io/badge/Tests-74%2F74%20Passing%20(100%25)-success.svg)](tests/)
 
-> **BROWSER MTS** é uma solução unificada e resiliente para automação de navegadores (Chrome/Edge) e controle seguro de computador (Computer Use) voltada a agentes de inteligência artificial (Claude Desktop, Cursor, OpenAI Agents e integrações MCP). Desenvolvido nativamente para **Windows 11**, ele une uma interface moderna com efeito Mica/Fluent, uma extensão de navegador Manifest V3 ultraconfiável, servidor MCP unificado e um motor de auto-cura capaz de se recuperar de falhas em menos de 5 segundos.
+> **NAVEGADOR MTS** é uma solução unificada e resiliente para automação de navegadores (Chrome/Edge) e controle seguro de computador (Computer Use) voltada a agentes de inteligência artificial (Claude Desktop, Cursor, OpenAI Agents e integrações MCP). Desenvolvido nativamente para **Windows 11**, ele une uma interface moderna com efeito Mica/Fluent, uma extensão de navegador Manifest V3 ultraconfiável, servidor MCP unificado e um motor de recuperação de falhas.
 
 ---
 
@@ -31,7 +31,7 @@ Veja [guia de testes](docs/09-TESTES-INTEGRACAO-WINDOWS.md).
 
 ## 🏛️ 1. Apresentação Completa e Arquitetura do Sistema
 
-O BROWSER MTS foi reestruturado para eliminar totalmente as desconexões intermitentes da versão legada, proporcionando uma experiência contínua e sem necessidade de intervenção do usuário.
+O NAVEGADOR MTS foi reestruturado para reduzir desconexões intermitentes da versão legada, mantendo o usuário no controle da conexão e das autorizações.
 
 ```text
                         ┌────────────────────────────────────────┐
@@ -40,7 +40,7 @@ O BROWSER MTS foi reestruturado para eliminar totalmente as desconexões intermi
                                             │ MCP (Stdio ou WS)
                                             ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    BROWSER MTS CORE (Desktop App Win11)                         │
+│                    NAVEGADOR MTS CORE (Desktop App Win11)                       │
 │                                                                                 │
 │  ┌────────────────────────┐  ┌────────────────────────┐  ┌───────────────────┐  │
 │  │   UI Fluent / Mica     │  │  Servidor MCP Unificado│  │ Motor Resiliência │  │
@@ -108,12 +108,12 @@ O BROWSER MTS foi reestruturado para eliminar totalmente as desconexões intermi
 
 > **Não requer Python, Git nem comandos de terminal!** É um executável único de instalação tradicional do Windows (Inno Setup), empacotado para você enviar e distribuir diretamente para qualquer pessoa.
 
-1. Execute o arquivo **`dist_installer\BROWSER_MTS_Instalador_v2.0.exe`** (apenas ~15 MB).
+1. Execute o arquivo **`dist_installer\NAVEGADOR_MTS_Instalador_v2.1.2.exe`**.
 2. Siga o assistente visual em Português do Brasil e clique em **Instalar**.
 3. O instalador faz tudo automaticamente:
    - Extrai o executável standalone compilado para `%LOCALAPPDATA%\Programs\BROWSER_MTS` (sem exigir permissões de administrador).
-   - Cria o atalho principal **`BROWSER MTS`** na Área de Trabalho e no Menu Iniciar.
-   - Cria o atalho direto **`Extensão Chrome BROWSER MTS`** na Área de Trabalho.
+   - Cria o atalho principal **`NAVEGADOR MTS`** na Área de Trabalho e no Menu Iniciar.
+   - Cria o atalho direto **`Extensão Chrome NAVEGADOR MTS`** na Área de Trabalho.
    - Abre o Google Chrome e a pasta da extensão para carregamento imediato.
    - Registra o desinstalador oficial no Windows (Configurações > Aplicativos Instalados).
 
@@ -171,19 +171,19 @@ python entrypoint.py
 
 ## 💡 3. Modo de Uso Diário em 3 Passos Simples
 
-O BROWSER MTS foi concebido com a filosofia de **"Zero Cliques"**: ele roda em segundo plano e você não precisa reconfigurar nada no dia a dia.
+O NAVEGADOR MTS mantém o Desktop em segundo plano depois da configuração inicial; a extensão, o cliente MCP e o Tunnel ID precisam ser configurados pelo usuário conforme o fluxo escolhido.
 
 ```text
  ┌──────────────────────┐      ┌──────────────────────┐      ┌──────────────────────┐
  │       PASSO 1        │      │       PASSO 2        │      │       PASSO 3        │
- │ Iniciar o BROWSER MTS│ ───► │  Conectar o Cliente  │ ───► │  Ativar a Trava se   │
+ │ Iniciar o NAVEGADOR MTS│ ───► │  Conectar o Cliente  │ ───► │  Ativar a Trava se   │
  │   (Menu Iniciar)     │      │  (Claude ou Cursor)  │      │  desejar Computador  │
  └──────────────────────┘      └──────────────────────┘      └──────────────────────┘
 ```
 
-### **Passo 1: Iniciar o BROWSER MTS**
-- Abra o Menu Iniciar do Windows e clique no atalho **BROWSER MTS** (ou execute `python entrypoint.py`).
-- O aplicativo iniciará exibindo o Dashboard moderno. Clicar no botão **'X' apenas fecha a janela e mantém o BROWSER MTS rodando continuamente em segundo plano na Bandeja do Sistema (junto ao relógio)**, garantindo que o agente de IA nunca perca a conexão. Para encerrar o aplicativo por completo, clique com o botão direito no ícone da bandeja e selecione **"Sair do Aplicativo"**.
+### **Passo 1: Iniciar o NAVEGADOR MTS**
+- Abra o Menu Iniciar do Windows e clique no atalho **NAVEGADOR MTS** (ou execute `python entrypoint.py`).
+- O aplicativo exibirá o Dashboard. Clicar no botão **'X' mantém o NAVEGADOR MTS na Bandeja do Sistema (junto ao relógio)**; para encerrar, use **"Sair do Aplicativo"** na bandeja.
 - Certifique-se de que a extensão esteja ativada no Chrome (ícone verde no popup).
 
 ### **Passo 2: Conectar seu Cliente de IA Preferido**
@@ -233,7 +233,7 @@ Para garantir segurança operacional e evitar conflitos caso você já utilize a
      ```
 3. **Ativar a Nova Extensão**:
    - No Chrome/Edge, desative a extensão legada e carregue a nova pasta `src/extension/`.
-4. **Iniciar o Novo BROWSER MTS**:
+4. **Iniciar o Novo NAVEGADOR MTS**:
    - Execute o novo atalho do Menu Iniciar ou `python entrypoint.py`.
    - O dashboard indicará status `ATIVO` na porta 3456 e a extensão mostrará `CONECTADO`.
 
@@ -243,7 +243,7 @@ Para garantir segurança operacional e evitar conflitos caso você já utilize a
 
 Caso precise retornar imediatamente à versão legada por qualquer motivo de contingência:
 
-1. **Fechar o BROWSER MTS Moderno**:
+1. **Fechar o NAVEGADOR MTS Moderno**:
    - Clique com o botão direito no ícone da bandeja (ao lado do relógio do Windows) e selecione **"Encerrar Aplicativo"** (ou feche o processo Python).
 2. **Reativar a Instância Portátil Original**:
    - Navegue até sua pasta portátil legada:
@@ -271,14 +271,14 @@ Caso precise retornar imediatamente à versão legada por qualquer motivo de con
 ### Problema 2: "Extensão no Chrome exibe Desconectado / Tentando reconectar..."
 - **Causa**: O aplicativo desktop não está em execução ou o firewall do Windows bloqueou a conexão loopback local.
 - **Solução**:
-  1. Verifique se o BROWSER MTS está aberto no Windows (olhe se o ícone verde está na bandeja).
+  1. Verifique se o NAVEGADOR MTS está aberto no Windows (olhe se o ícone verde está na bandeja).
   2. Certifique-se de que nenhuma regra de antivírus impede conexões para `127.0.0.1:3456`.
   3. No popup da extensão, clique no botão **"Reconectar"**. O mecanismo de auto-cura restabelece o link em $\le 5$s.
 
 ### Problema 3: "Ação de Computer Use recusada (Erro de Segurança)"
 - **Causa**: O agente tentou mover o mouse ou enviar teclas, mas o interruptor de autorização está desligado (comportamento padrão seguro Fail-Closed).
 - **Solução**:
-  - Abra a janela do BROWSER MTS e ative a chave **"Permitir controle do computador"**.
+  - Abra a janela do NAVEGADOR MTS e ative a chave **"Permitir controle do computador"**.
   - Ou clique no ícone da extensão no Chrome e ative o switch de autorização.
 
 ### Problema 4: "Atalho no Menu Iniciar não foi criado ou sumiu"

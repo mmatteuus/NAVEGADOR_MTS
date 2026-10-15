@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import pytest
-from src.ui.mcp_copy_dialog import MCPConnectDialog, MCP_PROMPT_TEMPLATE
+from src.ui.mcp_copy_dialog import MCPConnectDialog, MCP_PROMPT_TEMPLATE, tunnel_status_display
 from src.computer.safety_gate import safety_gate
 
 
@@ -28,7 +28,7 @@ def test_mcp_dialog_json_generation() -> None:
 def test_mcp_dialog_prompt_template() -> None:
     """Valida o conteúdo do template de prompt para agentes de IA."""
     assert "ws://127.0.0.1:3456" in MCP_PROMPT_TEMPLATE
-    assert "Navegador MTS" in MCP_PROMPT_TEMPLATE
+    assert "NAVEGADOR MTS" in MCP_PROMPT_TEMPLATE
 
 
 def test_mcp_dialog_safety_gate_integration() -> None:
@@ -37,4 +37,11 @@ def test_mcp_dialog_safety_gate_integration() -> None:
     assert not safety_gate.is_authorized()
     safety_gate.authorize()
     assert safety_gate.is_authorized()
+
+
+def test_tunnel_status_uses_readiness_not_process_liveness() -> None:
+    """Exige prontidão confirmada antes de mostrar o túnel como verde."""
+    assert tunnel_status_display(False, False)[0].startswith("⚪")
+    assert tunnel_status_display(True, False)[0] == "🟡 Conectando ao ChatGPT..."
+    assert tunnel_status_display(True, True)[0].startswith("🟢")
 

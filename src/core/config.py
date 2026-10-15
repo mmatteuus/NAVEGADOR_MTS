@@ -15,7 +15,7 @@ import sys
 DEFAULT_HOST: str = "127.0.0.1"
 DEFAULT_DEV_PORT: int = 3456
 DEFAULT_MCP_PORT: int = 3457
-DEFAULT_TUNNEL_ID: str = "tunnel_6a7aea545c408191889cd114d4a99d9b"
+DEFAULT_TUNNEL_ID: str = ""
 
 
 def _get_project_root() -> Path:

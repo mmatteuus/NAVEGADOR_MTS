@@ -10,6 +10,7 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
 (function () {
   const IGNORED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'PATH', 'TEMPLATE', 'IFRAME']);
+  const MAX_VISIBLE_TEXT = 20000;
 
   /**
    * Extrai e formata a árvore do DOM de forma simplificada e indentada.
@@ -93,13 +94,25 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
       el.setAttribute('data-mcp-ref', refId);
 
       const tag = el.tagName.toLowerCase();
-      const label = el.getAttribute('aria-label') || el.innerText || el.placeholder || el.value || '';
+      const isPassword = tag === 'input' && (el.type || '').toLowerCase() === 'password';
+      const label = el.getAttribute('aria-label') || el.innerText || el.placeholder || (isPassword ? '' : el.value) || '';
       snapshotLines.push(`- ${tag} "${label.trim().slice(0, 60)}" [ref=${refId}]`);
     });
 
+    const root = document.body || document.documentElement;
+    const rawVisibleText = root && typeof root.innerText === 'string' ? root.innerText : '';
+    const normalizedText = rawVisibleText.replace(/\s+/g, ' ').trim();
+    const visibleTextTruncated = normalizedText.length > MAX_VISIBLE_TEXT;
+    const visibleText = visibleTextTruncated ? normalizedText.slice(0, MAX_VISIBLE_TEXT) : normalizedText;
+    const textSection = visibleText
+      ? `\n\n[texto visível]\n${visibleText}${visibleTextTruncated ? '\n[texto visível truncado]' : ''}`
+      : '';
+
     return {
       success: true,
-      snapshot: snapshotLines.join('\n'),
+      snapshot: snapshotLines.join('\n') + textSection,
+      visibleText,
+      visibleTextTruncated,
       totalInteractive: snapshotLines.length,
       url: window.location.href,
       title: document.title

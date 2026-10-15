@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 BROWSER_TOOLS: List[Dict[str, Any]] = [
     {
         "name": "browser_navigate",
-        "description": "Navega para uma URL na aba ativa ou especificada e aguarda o carregamento.",
+        "description": "Solicita a navegação para uma URL na aba ativa ou especificada; o retorno não garante que o carregamento terminou.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -121,7 +121,7 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
     },
     {
         "name": "browser_press_key",
-        "description": "Pressiona uma tecla física ou combinação de modificadores no elemento em foco.",
+        "description": "Dispara um evento sintético de teclado no elemento em foco, com os modificadores informados.",
         "inputSchema": {
             "type": "object",
             "properties": {

@@ -9,6 +9,7 @@ import os
 import json
 import subprocess
 from PIL import Image
+from src.core.updater import APP_VERSION
 
 EXTENSION_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "extension")
 
@@ -22,7 +23,7 @@ def test_manifest_v3_structure():
         manifest = json.load(f)
 
     assert manifest.get("manifest_version") == 3
-    assert manifest.get("version") == "2.1.0"
+    assert manifest.get("version") == APP_VERSION
     assert "tabs" in manifest.get("permissions", [])
     assert "activeTab" in manifest.get("permissions", [])
     assert "alarms" in manifest.get("permissions", [])

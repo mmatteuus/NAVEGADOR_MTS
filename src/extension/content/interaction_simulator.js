@@ -24,17 +24,26 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
     const clickX = params.x ?? bounds.centerX;
     const clickY = params.y ?? bounds.centerY;
 
-    const eventInit = { bubbles: true, cancelable: true, view: window, clientX: clickX, clientY: clickY };
+    const button = { left: 0, middle: 1, right: 2 }[params.button] ?? 0;
+    const eventInit = { bubbles: true, cancelable: true, view: window,
+      clientX: clickX, clientY: clickY, button,
+      buttons: button === 0 ? 1 : button === 1 ? 4 : 2 };
     el.dispatchEvent(new PointerEvent('pointerdown', eventInit));
     el.dispatchEvent(new MouseEvent('mousedown', eventInit));
     el.focus();
     el.dispatchEvent(new PointerEvent('pointerup', eventInit));
     el.dispatchEvent(new MouseEvent('mouseup', eventInit));
-    el.dispatchEvent(new MouseEvent('click', eventInit));
+    if (button === 0) {
+      el.dispatchEvent(new MouseEvent('click', eventInit));
+    } else {
+      el.dispatchEvent(new MouseEvent('auxclick', eventInit));
+      if (button === 2) el.dispatchEvent(new MouseEvent('contextmenu', eventInit));
+    }
 
     return {
       success: true,
       clickedTag: el.tagName.toLowerCase(),
+      button: params.button || 'left',
       coordinates: { x: clickX, y: clickY }
     };
   }
@@ -45,24 +54,33 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    * @returns {Promise<object>} Confirmação de caracteres digitados.
    */
   async function typeText(params) {
-    const el = await window.__BrowserMTS__.elementFinder.findTargetElement(params);
+    const hasTarget = params.selector || params.ref ||
+      (typeof params.x === 'number' && typeof params.y === 'number');
+    const el = hasTarget ? await window.__BrowserMTS__.elementFinder.findTargetElement(params) : document.activeElement;
+    if (!el || !('value' in el || el.isContentEditable)) {
+      throw new Error('Nenhum campo editável focado foi encontrado para digitação.');
+    }
+    if (el.disabled || el.readOnly) throw new Error('O campo focado não aceita digitação.');
+    const contentEditable = !!el.isContentEditable;
     el.scrollIntoView({ behavior: 'instant', block: 'center' });
     el.focus();
 
     if (params.clearFirst) {
-      setNativeValue(el, '');
+      if (contentEditable) el.textContent = '';
+      else setNativeValue(el, '');
       el.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     const textToType = String(params.text || '');
-    let currentVal = el.value !== undefined ? el.value : '';
+    let currentVal = contentEditable ? (el.textContent || '') : (el.value ?? '');
 
     for (const char of textToType) {
       const keyInit = { key: char, bubbles: true, cancelable: true };
       el.dispatchEvent(new KeyboardEvent('keydown', keyInit));
       el.dispatchEvent(new KeyboardEvent('keypress', keyInit));
       currentVal += char;
-      setNativeValue(el, currentVal);
+      if (contentEditable) el.textContent = currentVal;
+      else setNativeValue(el, currentVal);
       el.dispatchEvent(new InputEvent('input', { data: char, inputType: 'insertText', bubbles: true }));
       el.dispatchEvent(new KeyboardEvent('keyup', keyInit));
     }
@@ -97,7 +115,8 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
     const el = await window.__BrowserMTS__.elementFinder.findTargetElement(params);
     el.scrollIntoView({ behavior: 'instant', block: 'center' });
     const bounds = window.__BrowserMTS__.elementFinder.getElementBounds(el);
-    const eventInit = { bubbles: true, clientX: bounds.centerX, clientY: bounds.centerY };
+    const eventInit = { bubbles: true,
+      clientX: params.x ?? bounds.centerX, clientY: params.y ?? bounds.centerY };
 
     el.dispatchEvent(new MouseEvent('mouseover', eventInit));
     el.dispatchEvent(new MouseEvent('mouseenter', eventInit));

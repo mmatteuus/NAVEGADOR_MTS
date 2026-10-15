@@ -10,6 +10,7 @@ window.popupUI = (function () {
   const elements = {
     toggle: document.getElementById('automation-toggle'),
     toggleDesc: document.getElementById('toggle-desc'),
+    version: document.getElementById('extension-version'),
     led: document.getElementById('status-led'),
     statusText: document.getElementById('status-text'),
     latencyText: document.getElementById('latency-text'),
@@ -19,6 +20,15 @@ window.popupUI = (function () {
     safetyIcon: document.getElementById('safety-icon'),
     safetyState: document.getElementById('safety-state')
   };
+
+  try {
+    const manifest = chrome.runtime.getManifest();
+    if (elements.version && manifest?.version) {
+      elements.version.textContent = `Automação Web Segura • v${manifest.version}`;
+    }
+  } catch (_) {
+    // O restante do popup continua utilizável se o manifesto não puder ser lido.
+  }
 
   /**
    * Atualiza o indicador luminoso LED e o texto do status da conexão WebSocket.

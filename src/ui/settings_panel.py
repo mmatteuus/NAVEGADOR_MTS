@@ -13,7 +13,7 @@ import customtkinter as ctk
 from .theme import PALETTE
 from ..core.config import current_config, get_tunnel_id, save_tunnel_id
 from ..core.security import encrypt_dpapi, decrypt_dpapi, mask_credential
-
+from ..core.credential_validation import is_runtime_credential
 # Chave do Registro do Windows para inicialização automática
 _REG_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 _REG_APP_NAME = "NavegadorMTS"
@@ -129,7 +129,7 @@ class SettingsPanel(ctk.CTkFrame):
     def save_settings(self) -> None:
         """Salva as configurações alteradas pelo usuário com proteção criptográfica."""
         new_key = self.entry_key.get().strip()
-        if new_key and not new_key.startswith("•") and not new_key.startswith("sk-••"):
+        if is_runtime_credential(new_key):
             try:
                 enc_b64 = encrypt_dpapi(new_key)
                 current_config.ensure_directories()

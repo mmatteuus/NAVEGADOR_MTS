@@ -32,7 +32,7 @@ class UpdateDialog(ctk.CTkToplevel):
 
     def _setup_window(self) -> None:
         """Configurações de dimensões, centralização e estilo visual da janela popup."""
-        self.title("Atualização Disponível — Navegador MTS")
+        self.title("Atualização Disponível — NAVEGADOR MTS")
         self.geometry("520x460")
         self.resizable(False, False)
         self.transient(self.master)

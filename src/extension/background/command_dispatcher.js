@@ -13,6 +13,8 @@ import { isAutomationEnabled, incrementCommandCount } from './state_storage.js';
 import { navigate, newTab, closeTab, switchTab, listTabs, goBack, goForward, getActiveTab } from './tab_manager.js';
 import { captureTabScreenshot } from './screenshot_capture.js';
 import { sendMessage } from './ws_client.js';
+import { evaluatePageScript } from './page_script_executor.js';
+import { requireContentSuccess } from './content_response.js';
 
 let commandQueue = Promise.resolve();
 
@@ -47,6 +49,14 @@ export function dispatchIncomingCommand(message) {
  * Roteia a ação para o módulo especialista adequado.
  */
 async function routeAction(action, params) {
+  if (action === 'browser_manage_tabs') {
+    return executeTabManagement(params);
+  }
+
+  if (action === 'browser_evaluate_js') {
+    return evaluatePageScript(params.tabId, params.script);
+  }
+
   if (TAB_ACTIONS.includes(action)) {
     return executeTabAction(action, params);
   }
@@ -56,6 +66,22 @@ async function routeAction(action, params) {
   }
 
   return sendToContentScript(action, params);
+}
+
+/** Executa a operação composta de abas sem acessar o conteúdo da página. */
+async function executeTabManagement(params) {
+  switch (params.action) {
+    case 'list':
+      return listTabs(params.currentWindowOnly);
+    case 'new':
+      return newTab(params.url, params.active);
+    case 'switch':
+      return switchTab(params.tabId);
+    case 'close':
+      return closeTab(params.tabId);
+    default:
+      throw new Error(`Ação de abas não reconhecida: ${params.action || 'N/A'}`);
+  }
 }
 
 /**
@@ -91,8 +117,9 @@ async function sendToContentScript(action, params) {
     throw new Error('Nenhuma aba ativa encontrada para despachar o comando na página.');
   }
 
+  let response;
   try {
-    return await chrome.tabs.sendMessage(targetTab.id, { action, params });
+    response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
   } catch (err) {
     // Se o content script ainda não foi injetado (ex: página aberta antes da extensão)
     logger.warn(`Injetando content scripts dinamicamente na aba ID ${targetTab.id}...`);
@@ -108,6 +135,7 @@ async function sendToContentScript(action, params) {
       ]
     });
     // Reenvia após injeção
-    return await chrome.tabs.sendMessage(targetTab.id, { action, params });
+    response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
   }
+  return requireContentSuccess(response);
 }

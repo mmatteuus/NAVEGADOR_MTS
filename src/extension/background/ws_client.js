@@ -5,14 +5,18 @@
  * Auto-cura contínua, pulso ativo a cada 4s, backoff exponencial e persistência de porta.
  */
 
-import { PORT_CANDIDATES, WS_BASE_URL, RECONNECT_BACKOFF_STEPS_MS, CONNECTION_STATE, STORAGE_KEYS, MAX_RETRIES_BEFORE_PORT_HOP } from '../common/constants.js';
+import { WS_BASE_URL, RECONNECT_BACKOFF_STEPS_MS, CONNECTION_STATE, STORAGE_KEYS } from '../common/constants.js';
 import { logger } from '../common/logger.js';
 import { buildClientHello } from '../common/protocol.js';
 import { updateConnectionStatus, setComputerUseAllowed, isAutomationEnabled } from './state_storage.js';
 import { getActiveTab } from './tab_manager.js';
 import { createHeartbeatManager } from './ws_heartbeat.js';
+import { createPortRecovery } from './port_recovery.js';
 
-let socket = null, reconnectAttempt = 0, reconnectTimer = null, messageDispatcherFn = null, currentPortIndex = 0, portRetries = 0;
+let socket = null, reconnectAttempt = 0, reconnectTimer = null, messageDispatcherFn = null;
+let connectionInProgress = false, connectionTimer = null, connectionId = 0;
+const CONNECT_TIMEOUT_MS = 2000;
+const portRecovery = createPortRecovery();
 
 const heartbeat = createHeartbeatManager(
   () => { cleanupSocket(); scheduleReconnect(); },
@@ -22,45 +26,64 @@ const heartbeat = createHeartbeatManager(
 export function setCommandDispatcher(dispatcher) { messageDispatcherFn = dispatcher; }
 
 export async function connectWebSocket() {
-  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+  if (connectionInProgress || (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING))) return;
+  connectionInProgress = true;
   const enabled = await isAutomationEnabled();
   if (!enabled) {
+    connectionInProgress = false;
     await updateConnectionStatus(CONNECTION_STATE.DISCONNECTED, 0);
     return;
   }
-
-  const activePort = PORT_CANDIDATES[currentPortIndex];
+  await portRecovery.load();
+  const activePort = portRecovery.currentPort();
   const targetUrl = `${WS_BASE_URL}:${activePort}`;
   await updateConnectionStatus(CONNECTION_STATE.CONNECTING, 0);
   logger.info(`Conectando ao Desktop App em ${targetUrl}...`);
-
   try {
-    socket = new WebSocket(targetUrl);
-    socket.onopen = async () => {
+    const attemptId = ++connectionId;
+    const candidate = new WebSocket(targetUrl);
+    socket = candidate;
+    connectionTimer = setTimeout(() => {
+      const pending = candidate.readyState === 0 || candidate.readyState === WebSocket.CONNECTING;
+      if (connectionId === attemptId && socket === candidate && pending) {
+        logger.warn(`Tempo esgotado ao conectar em ${targetUrl}; testando recuperação.`);
+        portRecovery.advance();
+        cleanupSocket();
+        connectionInProgress = false;
+        scheduleReconnect(250);
+      }
+    }, CONNECT_TIMEOUT_MS);
+    candidate.onopen = async () => {
+      const isCurrent = () => connectionId === attemptId && socket === candidate;
+      clearTimeout(connectionTimer); connectionTimer = null;
+      connectionInProgress = false;
       logger.info(`WebSocket conectado com sucesso na porta ${activePort}.`);
-      reconnectAttempt = 0; portRetries = 0;
+      reconnectAttempt = 0; portRecovery.markSuccess();
       await updateConnectionStatus(CONNECTION_STATE.CONNECTED, 0);
+      if (!isCurrent()) return;
       try { await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_PORT]: activePort }); } catch (_) {}
+      if (!isCurrent()) return;
       const active = await getActiveTab();
+      if (!isCurrent()) return;
       sendMessage(buildClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
       heartbeat.start();
     };
 
-    socket.onmessage = (event) => handleIncomingMessage(event.data);
-    socket.onclose = () => {
+    candidate.onmessage = (event) => handleIncomingMessage(event.data);
+    candidate.onclose = () => {
+      if (connectionId !== attemptId) return;
+      clearTimeout(connectionTimer); connectionTimer = null;
+      connectionInProgress = false;
       logger.warn(`Conexão na porta ${activePort} encerrada. Tentando reconexão...`);
-      portRetries++;
-      if (portRetries >= MAX_RETRIES_BEFORE_PORT_HOP) {
-        currentPortIndex = (currentPortIndex + 1) % PORT_CANDIDATES.length;
-        portRetries = 0;
-      }
+      portRecovery.advance();
       cleanupSocket(); scheduleReconnect();
     };
-    socket.onerror = (err) => logger.debug('Falha de transporte no WebSocket:', err);
+    candidate.onerror = (err) => logger.debug('Falha de transporte no WebSocket:', err);
   } catch (err) {
+    connectionInProgress = false;
     logger.error('Erro na instanciação do WebSocket:', err);
-    currentPortIndex = (currentPortIndex + 1) % PORT_CANDIDATES.length;
-    scheduleReconnect();
+    portRecovery.advance();
+    scheduleReconnect(250);
   }
 }
 
@@ -103,15 +126,17 @@ export function sendMessage(payload) {
   }
 }
 
-function scheduleReconnect() {
+function scheduleReconnect(delayOverride = null) {
   clearTimeout(reconnectTimer);
-  const delayMs = RECONNECT_BACKOFF_STEPS_MS[Math.min(reconnectAttempt++, RECONNECT_BACKOFF_STEPS_MS.length - 1)];
+  const delayMs = delayOverride ?? RECONNECT_BACKOFF_STEPS_MS[Math.min(reconnectAttempt++, RECONNECT_BACKOFF_STEPS_MS.length - 1)];
   updateConnectionStatus(CONNECTION_STATE.RECONNECTING, 0);
-  reconnectTimer = setTimeout(() => connectWebSocket(), delayMs);
+  reconnectTimer = setTimeout(() => { reconnectTimer = null; connectWebSocket(); }, delayMs);
 }
 
 function cleanupSocket() {
   heartbeat.stop();
+  connectionInProgress = false;
+  clearTimeout(connectionTimer); connectionTimer = null;
   if (socket) {
     socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null;
     try { socket.close(); } catch (_) {}

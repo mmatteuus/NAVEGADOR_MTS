@@ -20,7 +20,7 @@ from typing import Callable, Optional
 import urllib.request
 from .config import current_config
 
-APP_VERSION: str = "2.1.1"
+APP_VERSION: str = "2.1.2"
 TARGET_UPDATE_VERSION: str = APP_VERSION
 DEFAULT_RELEASE_URL: str = "https://api.github.com/repos/mmatteuus/browser-mcp-mts/releases/latest"
 

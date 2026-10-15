@@ -48,7 +48,7 @@ if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar ícone." }
 if ($LASTEXITCODE -ne 0) { throw "Falha ao compilar executáveis." }
 & $Python build_installer.py
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup não encontrado ou compilação falhou." }
-$Installer = Join-Path $PSScriptRoot "dist_installer\NAVEGADOR_MTS_Instalador_v2.1.1.exe"
+$Installer = Join-Path $PSScriptRoot "dist_installer\NAVEGADOR_MTS_Instalador_v2.1.2.exe"
 if (-not (Test-Path $Installer)) { throw "Arquivo instalador ausente." }
 Write-Host "[OK] Instalador de TESTE: $Installer" -ForegroundColor Green
 Write-Host "Instalação não executada automaticamente; backup e rollback ficam sob seu controle."

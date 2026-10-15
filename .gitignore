@@ -41,6 +41,7 @@ BROWSER-MCP-MTS-PORTATIL/downloads/
 # 3. Metadados dos Agentes e Orquestração Interna
 # ------------------------------------------------------------------------------
 .agents/
+.playwright-mcp/
 
 # ------------------------------------------------------------------------------
 # 4. Dependências e Caches do Node.js

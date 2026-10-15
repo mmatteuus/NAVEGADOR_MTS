@@ -71,9 +71,9 @@ class DesktopApplication:
 
         # Atualiza a cor e o tooltip no System Tray
         if is_ext:
-            self.tray.update_status("#107C41", f"Navegador MTS (Porta {self.ws_bridge.port}): Conectado e Operacional")
+            self.tray.update_status("#107C41", f"NAVEGADOR MTS (Porta {self.ws_bridge.port}): Conectado e Operacional")
         else:
-            self.tray.update_status("#D83B01", f"Navegador MTS (Porta {self.ws_bridge.port}): Aguardando Extensão")
+            self.tray.update_status("#D83B01", f"NAVEGADOR MTS (Porta {self.ws_bridge.port}): Aguardando Extensão")
 
         self.window.after(1000, self._poll_status_cycle)
 
@@ -104,7 +104,7 @@ class DesktopApplication:
 
         self.window = MainWindow(
             on_close_to_tray=lambda: notifier.notify(
-                "Navegador MTS em Segundo Plano",
+                "NAVEGADOR MTS em Segundo Plano",
                 "O processamento continua ativo! O 'X' apenas fecha a janela. Para encerrar de verdade, use a bandeja."
             ),
             on_quit_app=self.shutdown,
@@ -124,7 +124,7 @@ class DesktopApplication:
         self.window.mainloop()
 def main() -> None:
     """Função principal de entrada CLI do aplicativo."""
-    parser = argparse.ArgumentParser(description="Navegador MTS - Aplicativo Desktop Windows 11")
+    parser = argparse.ArgumentParser(description="NAVEGADOR MTS - Aplicativo Desktop Windows 11")
     parser.add_argument("--minimized", action="store_true", help="Iniciar silenciosamente na bandeja")
     parser.add_argument("--stdio", action="store_true", help="Modo Servidor MCP Stdio para ChatGPT, Claude e túneis")
     args = parser.parse_args()

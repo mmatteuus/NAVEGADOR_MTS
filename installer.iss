@@ -1,8 +1,8 @@
 ; Script de Criacao do Instalador Oficial Windows do Navegador MTS
 ; Compilado com Inno Setup 6
 
-#define MyAppName "Navegador MTS"
-#define MyAppVersion "2.1.1"
+#define MyAppName "NAVEGADOR MTS"
+#define MyAppVersion "2.1.2"
 #define MyAppPublisher "MTS Automacao & IA"
 #define MyAppExeName "NAVEGADOR_MTS.exe"
 
@@ -43,7 +43,7 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "
 Name: "{group}\Pasta da Extensao Chrome"; Filename: "{app}\extension"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\app_icon.ico"
-Name: "{autodesktop}\Extensao Chrome Navegador MTS"; Filename: "{app}\extension"; Tasks: exticon; IconFilename: "{app}\app_icon.ico"
+Name: "{autodesktop}\Extensao Chrome NAVEGADOR MTS"; Filename: "{app}\extension"; Tasks: exticon; IconFilename: "{app}\app_icon.ico"
 ; Não criar atalhos na raiz de D:.
 ; A extensão permanece acessível pelo grupo de programas e área de trabalho.
 
