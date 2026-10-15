@@ -21,14 +21,14 @@ python -m venv .venv
 node tests/test_extension_adversarial.mjs
 
 # Rodar o app
-python src/app.py            # UI (flags: --stdio = servidor MCP stdio, --minimized = bandeja)
+python entrypoint.py            # UI (flags: --stdio = servidor MCP stdio, --minimized = bandeja)
 
 # Gerar instalador .exe (PyInstaller + Inno Setup 6, usa .venv)
 COMPILAR_INSTALADOR.bat      # saída em dist_installer\
 ```
 
-- **Não existe** linter, formatter, typecheck nem CI (`.github/` ausente). A única verificação de sanidade é a suíte pytest + o teste Node da extensão.
-- README e TEST_INFRA.md dizem "74 testes" — desatualizado; o real é 92.
+- CI de testes selecionados e artefato Windows: `.github/workflows/windows-qa.yml`; execução depende de runners habilitados.
+- Contagem histórica de 92 testes; usar `pytest --collect-only -q` para atualizar após mudanças.
 
 ## Arquitetura (o que não é óbvio pelos nomes)
 
@@ -64,3 +64,6 @@ COMPILAR_INSTALADOR.bat      # saída em dist_installer\
 
 - `docs/` (pt-BR) é a documentação por tema; **`docs/01` mostra uma árvore TypeScript que não existe** — o código real é Python/JS. Confiar no código, não nessa árvore.
 - `README.md` = instalação/uso/troubleshooting; `TEST_INFRA.md` = estratégia e comandos de teste; `CONECTAR_AGENTE_IA.md` = como conectar clientes MCP.
+
+- **Não é PWA**: este projeto é Desktop Python com extensão Manifest V3; não acrescentar Service Worker PWA de site sem requisito.
+- **Túnel**: MCP HTTP local 3457; o usuário deve usar um Tunnel ID próprio para evitar conflitos com outras aplicações.
