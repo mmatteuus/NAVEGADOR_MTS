@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 from .router import MCPToolRouter
 from .schemas_browser import get_browser_tools
 from .schemas_computer import get_computer_tools
@@ -21,22 +21,28 @@ logger = logging.getLogger("BrowserMTS.MCPServer")
 class MCPServer:
     """Servidor MCP principal com suporte a Stdio e WebSocket."""
 
-    def __init__(self, host: str = "127.0.0.1", ws_port: int = 3456) -> None:
+    def __init__(self, host: str = "127.0.0.1", ws_port: int = 3456,
+                 ws_bridge: Optional[WebSocketBridge] = None) -> None:
         self.host = host
         self.ws_port = ws_port
         self.name = "browser-mcp-mts"
         from ..core.updater import APP_VERSION
         self.version = APP_VERSION
-        self.ws_bridge = WebSocketBridge(host=self.host, port=self.ws_port)
+        self.ws_bridge = ws_bridge or WebSocketBridge(host=self.host, port=self.ws_port)
+        self._owns_bridge = ws_bridge is None
         from ..computer.safety_gate import safety_gate
-        self.router = MCPToolRouter(ws_bridge=self.ws_bridge, safety_checker=safety_gate.is_authorized)
+        from .computer_dispatch import execute_mcp_computer
+        self.router = MCPToolRouter(
+            ws_bridge=self.ws_bridge, safety_checker=safety_gate.is_authorized,
+            kill_switch_checker=safety_gate.is_kill_switch_triggered,
+            computer_executor=execute_mcp_computer)
         self._running = False
         self._use_active_hub = False
 
     async def start(self, start_ws: bool = True) -> None:
         """Inicia os subsistemas do servidor MCP conectando ao hub central ou subindo ponte."""
         self._running = True
-        if start_ws:
+        if start_ws and self._owns_bridge:
             from .hub_client import is_hub_running
             if await is_hub_running(self.host, self.ws_port):
                 self._use_active_hub = True
@@ -48,7 +54,7 @@ class MCPServer:
     async def stop(self) -> None:
         """Encerra graciosamente todos os componentes do servidor."""
         self._running = False
-        if not self._use_active_hub:
+        if self._owns_bridge and not self._use_active_hub:
             await self.ws_bridge.stop()
         logger.info("Servidor MCP finalizado.")
 
@@ -56,11 +62,16 @@ class MCPServer:
         """Processa requisições JSON-RPC 2.0 da especificação Model Context Protocol."""
         req_id = req.get("id")
         method = req.get("method")
-        params = req.get("params", {})
+        params = req.get("params") or {}
+        if not isinstance(params, dict):
+            return {"jsonrpc": "2.0", "id": req_id,
+                    "error": {"code": -32602, "message": "Parâmetros inválidos"}}
 
         if method == "initialize":
             res = {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": params.get("protocolVersion") if params.get("protocolVersion") in (
+                    "2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"
+                ) else "2024-11-05",
                 "capabilities": {"tools": {"listChanged": True}},
                 "serverInfo": {"name": self.name, "version": self.version}
             }
@@ -74,7 +85,10 @@ class MCPServer:
             return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": tools}}
         elif method == "tools/call":
             name = params.get("name", "")
-            args = params.get("arguments", {})
+            args = params.get("arguments") or {}
+            if not isinstance(args, dict):
+                return {"jsonrpc": "2.0", "id": req_id,
+                        "error": {"code": -32602, "message": "Argumentos inválidos"}}
             if self._use_active_hub:
                 from .hub_client import forward_tool_to_hub
                 call_res = await forward_tool_to_hub(name, args, host=self.host, port=self.ws_port)
