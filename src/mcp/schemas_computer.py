@@ -39,7 +39,7 @@ COMPUTER_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["move", "click", "double_click", "right_click", "middle_click", "mouse_down", "mouse_up", "drag"],
+                    "enum": ["move", "click", "double_click", "right_click", "middle_click", "drag"],
                     "description": "Tipo de ação do mouse a executar"
                 },
                 "x": {"type": "integer", "description": "Coordenada X na tela virtual"},
@@ -59,7 +59,7 @@ COMPUTER_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["type", "press", "key_down", "key_up", "hotkey"],
+                    "enum": ["type", "press", "hotkey"],
                     "description": "Tipo de ação de teclado a ser realizada"
                 },
                 "text": {"type": "string", "description": "Texto Unicode a ser digitado (suporta acentos/cedilha)"},
