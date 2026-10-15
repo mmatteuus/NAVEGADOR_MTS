@@ -37,8 +37,11 @@ class WebSocketBridge:
         if self.server is not None:
             return self.port
         initial_port = self.port
-        for offset in range(max_ports):
+        from ..core.config import current_config
+        for offset in range(max_ports + 1):
             candidate_port = initial_port + offset
+            if candidate_port == current_config.mcp_port:
+                continue
             try:
                 self.server = await serve(self._handle_client, self.host, candidate_port, reuse_address=True)
                 self.port = candidate_port
@@ -110,8 +113,14 @@ class WebSocketBridge:
                 res = await self.send_action(act, params)
                 await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": True, "result": res}))
             elif act.startswith("computer_"):
-                from ..computer import execute_computer_action
-                res = execute_computer_action(act, params)
+                if act in ("computer_mouse_move", "computer_mouse_click",
+                           "computer_mouse_drag", "computer_mouse_scroll",
+                           "computer_keyboard_type", "computer_key_press"):
+                    from ..computer import execute_computer_action
+                    res = await asyncio.to_thread(execute_computer_action, act, params)
+                else:
+                    from .computer_dispatch import execute_mcp_computer
+                    res = await execute_mcp_computer(act, params)
                 await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": res.get("success", False), "result": res}))
             else:
                 await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": f"Ação desconhecida: '{act}'"}))
