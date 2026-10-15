@@ -1,7 +1,7 @@
 """Orquestrador de Compilação do Instalador Distribuível Windows.
 
 Gera o executável standalone através do PyInstaller e em seguida
-invoca o Inno Setup 6 para gerar o arquivo único 'NAVEGADOR_MTS_Instalador_v2.0.exe'.
+invoca o Inno Setup 6 para gerar o arquivo único 'NAVEGADOR_MTS_Instalador_v2.1.1.exe'.
 """
 
 import hashlib
