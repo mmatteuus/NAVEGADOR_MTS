@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import subprocess
 import tempfile
 import time
@@ -47,19 +48,23 @@ def parse_version_tuple(v_str: str) -> tuple[int, ...]:
 
 
 def find_local_installer_path() -> Optional[Path]:
-    """Localiza instalador executável recente gerado localmente na máquina."""
-    candidates = [
-        current_config.project_root / "dist_installer" / f"NAVEGADOR_MTS_Instalador_v{APP_VERSION}.exe",
-        current_config.project_root / "dist_installer" / "NAVEGADOR_MTS_Instalador_v2.1.0.exe",
-        current_config.project_root / "dist_installer" / "NAVEGADOR_MTS_Instalador_v2.1.exe",
-        Path(r"D:\MATEUS\Documentos\GitHub\browser mcp mts\dist_installer\NAVEGADOR_MTS_Instalador_v2.1.0.exe"),
-        current_config.project_root / "dist_installer" / "NAVEGADOR_MTS_Instalador_v2.0.exe",
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Navegador MTS" / "NAVEGADOR_MTS_Instalador_v2.1.0.exe",
+    """Busca o instalador com maior versão em diretórios locais conhecidos."""
+    candidates = []
+    directories = [
+        current_config.project_root / "dist_installer",
+        Path(sys.executable).resolve().parent / "dist_installer",
     ]
-    for p in candidates:
-        if p.exists() and p.stat().st_size > 1_000_000:
-            return p
-    return None
+    for directory in directories:
+        if directory.is_dir():
+            candidates.extend(directory.glob("NAVEGADOR_MTS_Instalador_v*.exe"))
+    valid = [p for p in candidates if p.is_file() and p.stat().st_size > 1_000_000]
+    return max(valid, key=lambda p: parse_version_tuple(p.stem.split("_v")[-1]),
+               default=None)
+
+
+def _installer_version(path: Path) -> str:
+    """Extrai a versão do nome padronizado do instalador."""
+    return path.stem.split("_v")[-1] if "_v" in path.stem else "0.0.0"
 
 
 def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: bool = True) -> Optional[UpdateInfo]:
@@ -80,16 +85,17 @@ def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: 
                     if a.get("name", "").endswith(".exe"):
                         d_url, a_name = a.get("browser_download_url", ""), a.get("name", "")
                         break
-                return UpdateInfo(version=tag, release_notes=notes, download_url=d_url, asset_name=a_name, is_newer=is_newer)
+                return UpdateInfo(version=tag, release_notes=notes, download_url=d_url, asset_name=a_name,
+                                  is_newer=is_newer and bool(d_url))
     except Exception:
         pass
 
     if api_url == DEFAULT_RELEASE_URL and allow_local_fallback:
         loc = find_local_installer_path()
-        if loc and parse_version_tuple(TARGET_UPDATE_VERSION) > parse_version_tuple(APP_VERSION):
+        if loc and parse_version_tuple(_installer_version(loc)) > parse_version_tuple(APP_VERSION):
             return UpdateInfo(
-                version=TARGET_UPDATE_VERSION,
-                release_notes="✨ Transporte Stdio MCP integrado\n✨ Conexão nativa com ChatGPT Tunnel\n✨ Execução de aplicativos locais (Excel, etc.)",
+                version=_installer_version(loc),
+                release_notes="Instalador local mais recente disponível.",
                 download_url=str(loc), asset_name=loc.name, is_newer=True
             )
     return None
@@ -105,7 +111,9 @@ def download_and_launch_update(
         return False
 
     temp_dir = tempfile.gettempdir()
-    target_path = os.path.join(temp_dir, update_info.asset_name or f"BROWSER_MTS_Instalador_{update_info.version}.exe")
+    safe_name = Path(update_info.asset_name or f"NAVEGADOR_MTS_Instalador_{update_info.version}.exe").name
+    target_path = os.path.join(temp_dir, safe_name)
+    staged_path = target_path + ".part"
 
     try:
         if not update_info.download_url.startswith(("http://", "https://")):
@@ -117,12 +125,13 @@ def download_and_launch_update(
                     progress_callback(step)
                 time.sleep(0.02)
             if src_path.resolve() != Path(target_path).resolve():
-                shutil.copyfile(src_path, target_path)
+                shutil.copyfile(src_path, staged_path)
+                os.replace(staged_path, target_path)
             if progress_callback:
                 progress_callback(1.0)
         else:
             req = urllib.request.Request(update_info.download_url, headers={"User-Agent": f"BROWSER-MTS-Updater/{APP_VERSION}"})
-            with urllib.request.urlopen(req, timeout=30) as resp, open(target_path, "wb") as out_file:
+            with urllib.request.urlopen(req, timeout=30) as resp, open(staged_path, "wb") as out_file:
                 total_size = int(resp.headers.get("Content-Length", 0))
                 downloaded, chunk_size = 0, 65536
                 while chunk := resp.read(chunk_size):
@@ -130,6 +139,9 @@ def download_and_launch_update(
                     downloaded += len(chunk)
                     if progress_callback and total_size > 0:
                         progress_callback(min(1.0, downloaded / total_size))
+            if total_size and downloaded != total_size:
+                raise IOError("Download incompleto do instalador.")
+            os.replace(staged_path, target_path)
 
         # Flags Inno Setup para fechar instâncias anteriores e substituir in-place sem travar
         cmd = [target_path, "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS"]
@@ -138,4 +150,8 @@ def download_and_launch_update(
             on_ready_to_install()
         return True
     except Exception:
+        try:
+            Path(staged_path).unlink(missing_ok=True)
+        except OSError:
+            pass
         return False
