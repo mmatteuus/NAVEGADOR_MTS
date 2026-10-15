@@ -61,12 +61,9 @@ def find_local_installer_path() -> Optional[Path]:
     return max(valid, key=lambda p: parse_version_tuple(p.stem.split("_v")[-1]),
                default=None)
 
-
 def _installer_version(path: Path) -> str:
     """Extrai a versão do nome padronizado do instalador."""
     return path.stem.split("_v")[-1] if "_v" in path.stem else "0.0.0"
-
-
 def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: bool = True) -> Optional[UpdateInfo]:
     """Verifica atualizações na API remota com fallback para instalador compilado local."""
     req = urllib.request.Request(
@@ -89,7 +86,6 @@ def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: 
                                   is_newer=is_newer and bool(d_url))
     except Exception:
         pass
-
     if api_url == DEFAULT_RELEASE_URL and allow_local_fallback:
         loc = find_local_installer_path()
         if loc and parse_version_tuple(_installer_version(loc)) > parse_version_tuple(APP_VERSION):
@@ -99,8 +95,6 @@ def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: 
                 download_url=str(loc), asset_name=loc.name, is_newer=True
             )
     return None
-
-
 def download_and_launch_update(
     update_info: UpdateInfo,
     progress_callback: Optional[Callable[[float], None]] = None,
@@ -109,12 +103,10 @@ def download_and_launch_update(
     """Prepara o executável da nova versão e inicia a instalação in-place com substituição forçada."""
     if not update_info.download_url:
         return False
-
     temp_dir = tempfile.gettempdir()
     safe_name = Path(update_info.asset_name or f"NAVEGADOR_MTS_Instalador_{update_info.version}.exe").name
     target_path = os.path.join(temp_dir, safe_name)
     staged_path = target_path + ".part"
-
     try:
         if not update_info.download_url.startswith(("http://", "https://")):
             src_path = Path(update_info.download_url)
@@ -142,7 +134,6 @@ def download_and_launch_update(
             if total_size and downloaded != total_size:
                 raise IOError("Download incompleto do instalador.")
             os.replace(staged_path, target_path)
-
         # Flags Inno Setup para fechar instâncias anteriores e substituir in-place sem travar
         cmd = [target_path, "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS"]
         subprocess.Popen(cmd)
