@@ -9,7 +9,7 @@ import threading
 from typing import Callable, Optional
 from urllib.request import urlopen
 
-from .config import current_config
+from .config import current_config, get_tunnel_id
 from .security import decrypt_dpapi
 from .supervisor import ProcessSupervisor
 
@@ -83,15 +83,15 @@ class TunnelService:
             return True
         binary = find_tunnel_client_binary()
         key = get_runtime_api_key()
-        if not binary or not key:
-            self._status(False, "Configure tunnel-client.exe e Runtime API Key.")
+        if not binary or not key or not get_tunnel_id():
+            self._status(False, "Configure tunnel-client.exe, Runtime API Key e Tunnel ID.")
             return False
         if not local_mcp_is_ready():
             self._status(False, "Servidor MCP HTTP local indisponível.")
             return False
         env = os.environ.copy()
         env["CONTROL_PLANE_API_KEY"] = key
-        env["CONTROL_PLANE_TUNNEL_ID"] = current_config.tunnel_id
+        env["CONTROL_PLANE_TUNNEL_ID"] = get_tunnel_id()
         env["MCP_SERVER_URL"] = f"http://127.0.0.1:{current_config.mcp_port}/mcp"
         supervisor = ProcessSupervisor(command=[str(binary), "run"], env=env,
                                        name="secure_mcp_tunnel", restart_delay=2.0)
