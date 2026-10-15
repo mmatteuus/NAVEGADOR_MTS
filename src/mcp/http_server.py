@@ -48,7 +48,7 @@ class MCPHTTPServer:
         return await handler(request)
 
     async def _health(self, request: web.Request) -> web.Response:
-        return web.json_response({"status": "ok"})
+        return web.json_response({"status": "ok", "service": "browser-mcp-mts"})
 
     async def _get(self, request: web.Request) -> web.Response:
         return web.Response(status=405, headers={"Allow": "POST"})
