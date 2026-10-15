@@ -12,12 +12,14 @@ Se você utiliza **Claude Desktop**, **Cursor** ou outro cliente MCP compatível
 {
   "mcpServers": {
     "browser-mts": {
-      "command": "C:\\Users\\MATEUS\\AppData\\Local\\Programs\\BROWSER MTS\\BROWSER_MTS.exe",
-      "args": ["--stdio"]
+      "command": "C:\\Users\\SEU_USUARIO\\AppData\\Local\\Programs\\Navegador MTS\\mcp_stdio\\NAVEGADOR_MTS_MCP.exe",
+      "args": []
     }
   }
 }
 ```
+
+> Substitua `SEU_USUARIO` pelo usuário do Windows. Para obter o caminho real, use **Conectar com IA → Copiar Bloco JSON** no aplicativo.
 
 > **Localização do arquivo de configuração do Claude Desktop no Windows:**  
 > `%APPDATA%\Claude\claude_desktop_config.json`
@@ -38,7 +40,8 @@ Para conectar o **ChatGPT** ao seu BROWSER MTS:
    - **Autenticação**: Selecione **`Sem autenticação`**
    - Marque a caixa: ☑️ **Entendo e quero continuar**
    - Clique em: **Criar como plugin**
-4. Pronto! O ChatGPT terá acesso completo às ferramentas para navegar no Chrome, inspecionar elementos e interagir com o computador.
+4. Confirme o status `/readyz` do túnel e execute `TESTAR_INTEGRACAO.ps1` antes de considerar a conexão pronta.
+5. Use um Tunnel ID distinto se outra aplicação já utiliza o ID anterior.
 
 ---
 
