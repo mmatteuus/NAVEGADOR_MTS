@@ -107,3 +107,31 @@ def load_config() -> AppConfig:
 
 # Instância global pré-carregada para uso nos módulos
 current_config: AppConfig = load_config()
+
+
+# IDs não são segredos; configuração do usuário persiste fora do repositório.
+def get_tunnel_id() -> str:
+    """Lê o ID efetivo com override por ambiente e persistência local."""
+    import json
+    candidate = os.environ.get("BROWSER_MTS_TUNNEL_ID", "").strip()
+    if not candidate:
+        try:
+            file = current_config.app_data_dir / "tunnel.json"
+            candidate = str(json.loads(file.read_text(encoding="utf-8"))["tunnel_id"])
+        except (OSError, ValueError, KeyError, TypeError):
+            candidate = current_config.tunnel_id
+    return candidate.strip()
+
+
+def save_tunnel_id(value: str) -> None:
+    """Valida e grava somente o identificador do túnel, atomicamente."""
+    import json
+    import re
+    identifier = value.strip()
+    if not re.fullmatch(r"tunnel_[0-9a-f]{32}", identifier):
+        raise ValueError("ID do túnel deve ter prefixo tunnel_ e 32 dígitos hexadecimais.")
+    current_config.ensure_directories()
+    destination = current_config.app_data_dir / "tunnel.json"
+    temp = destination.with_suffix(".tmp")
+    temp.write_text(json.dumps({"tunnel_id": identifier}), encoding="utf-8")
+    os.replace(temp, destination)
