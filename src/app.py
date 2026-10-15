@@ -8,13 +8,11 @@ Responsabilidades:
 
 import argparse
 import asyncio
-import sys
 import threading
 from typing import Optional
 from .core.config import current_config
 from .core.tunnel_service import tunnel_service
 from .computer.kill_switch import kill_switch
-from .computer.safety_gate import safety_gate
 from .mcp.ws_bridge import WebSocketBridge
 from .mcp.server import MCPServer
 from .mcp.http_server import MCPHTTPServer
