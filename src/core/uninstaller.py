@@ -38,13 +38,12 @@ def clean_shortcuts_and_registry() -> None:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE) as key:
             winreg.DeleteValue(key, "NavegadorMTS")
-            winreg.DeleteValue(key, "BrowserMTS")
     except Exception:
         pass
 
     # Atalhos na Área de Trabalho do usuário
     user_desktop = os.path.expandvars(r"%USERPROFILE%\Desktop")
-    for name in ["Navegador MTS.lnk", "Extensão Chrome Navegador MTS.lnk", "BROWSER MTS.lnk", "Extensão Chrome BROWSER MTS.lnk"]:
+    for name in ["Navegador MTS.lnk", "Extensão Chrome Navegador MTS.lnk"]:
         sc_path = os.path.join(user_desktop, name)
         if os.path.isfile(sc_path):
             try:
