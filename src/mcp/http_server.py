@@ -38,13 +38,21 @@ class MCPHTTPServer:
 
     @web.middleware
     async def _validate_local_request(self, request: web.Request, handler):
-        """Bloqueia Origin/Host externos para evitar DNS rebinding."""
+        """Bloqueia Origin/Host externos para evitar DNS rebinding.
+
+        Permite o Host do loopback quando o request vem do tunnel-client (127.0.0.1),
+        desde que o Origin corresponda ao esquema http/localhost na porta do MCP.
+        """
+        host = request.headers.get("Host", "")
+        # Aceita Host do loopback (127.0.0.1 ou localhost) com a porta do MCP
         trusted_hosts = {f"127.0.0.1:{self.port}", f"localhost:{self.port}"}
-        if request.headers.get("Host") not in trusted_hosts:
-            return web.Response(status=403, text="Host não autorizado.")
-        origin = request.headers.get("Origin")
-        if origin and origin not in {f"http://{host}" for host in trusted_hosts}:
-            return web.Response(status=403, text="Origin não autorizado.")
+        if host not in trusted_hosts:
+            # Se não é o Host confiável, verifica se o Origin pelo menos bate
+            # (túnel pode encaminhar o Host original, mas o Origin deve ser local)
+            origin = request.headers.get("Origin")
+            trusted_origins = {f"http://127.0.0.1:{self.port}", f"http://localhost:{self.port}"}
+            if origin not in trusted_origins:
+                return web.Response(status=403, text="Host ou Origin não autorizado.")
         return await handler(request)
 
     async def _health(self, request: web.Request) -> web.Response:

@@ -1,11 +1,10 @@
 """Configurações e Fixtures Globais da Suíte de Testes do BROWSER MTS.
 
-Responsabilidades:
-- Inclusão do diretório raiz no PYTHONPATH.
-- Sentinela de isolamento estrito da instância de produção.
-- Gerenciamento de portas dinâmicas e limpeza de processos filhos nos testes.
-"""
+Inclusão do diretório raiz no PYTHONPATH.
+Sentinela de isolamento estrito da instância de produção.
+Gerenciamento de portas dinâmicas e limpeza de processos filhos nos testes.
 
+"""
 from __future__ import annotations
 
 import os
