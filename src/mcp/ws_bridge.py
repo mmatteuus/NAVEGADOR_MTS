@@ -77,14 +77,12 @@ class WebSocketBridge:
             if self._active_socket == websocket:
                 self._active_socket = None
                 logger.info("Extensão do navegador desconectada da ponte WebSocket.")
-
     async def _process_incoming_message(self, raw_msg: str, websocket: Any) -> None:
         """Interpreta envelopes JSON recebidos da extensão ou de agentes."""
         try:
             data = json.loads(raw_msg)
         except json.JSONDecodeError:
             return
-
         msg_type = data.get("type")
         if msg_type == "client_hello":
             self._active_socket = websocket
@@ -105,7 +103,6 @@ class WebSocketBridge:
             self._resolve_pending_request(data)
         elif msg_type == "agent_action":
             await self._handle_agent_action(data, websocket)
-
     async def _handle_agent_action(self, data: Dict[str, Any], websocket: Any) -> None:
         """Despacha uma ação enviada por um agente externo de IA."""
         act, params, call_id = data.get("action", ""), data.get("params", {}), data.get("id", "agent_cmd")
@@ -127,7 +124,6 @@ class WebSocketBridge:
                 await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": f"Ação desconhecida: '{act}'"}))
         except Exception as exc:
             await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": str(exc)}))
-
     def _resolve_pending_request(self, data: Dict[str, Any]) -> None:
         """Resolve a Future associada à resposta de uma ação enviada à extensão."""
         p = data.get("payload", {}) if "payload" in data else data
@@ -137,7 +133,6 @@ class WebSocketBridge:
             if not fut.done():
                 (fut.set_exception(RuntimeError(str(p["error"]))) if p.get("error")
                  else fut.set_result(p.get("result", p.get("data", {}))))
-
     async def send_action(self, action: str, params: Dict[str, Any], timeout: float = 30.0) -> Any:
         """Envia um comando para execução na extensão e aguarda a resposta."""
         if not self.is_connected:
