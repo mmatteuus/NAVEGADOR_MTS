@@ -68,7 +68,7 @@ echo.
 echo [3/3] Criando atalho no Menu Iniciar do Windows...
 set "SHORTCUT_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
 set "SHORTCUT_PATH=%SHORTCUT_DIR%\BROWSER MTS.lnk"
-set "TARGET_APP=%PROJECT_DIR%\src\app.py"
+set "TARGET_APP=%PROJECT_DIR%\entrypoint.py"
 set "ICON_PATH=%PROJECT_DIR%\docs\screenshots\system_tray_icon.png"
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT_PATH%'); $s.TargetPath = '%PYTHONW_EXE%'; $s.Arguments = '\"%TARGET_APP%\"'; $s.WorkingDirectory = '%PROJECT_DIR%'; $s.Description = 'BROWSER MTS -- Automacao de Navegador e Computador para IA'; if (Test-Path '%ICON_PATH%') { $s.IconLocation = '%ICON_PATH%'; } $s.Save(); Write-Output '[OK] Atalho criado em: %SHORTCUT_PATH%';"
