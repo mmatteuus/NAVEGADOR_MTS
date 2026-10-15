@@ -8,10 +8,10 @@ import sys
 import threading
 from typing import Callable, Optional
 from urllib.request import urlopen
-from urllib.parse import urlparse
 
 from .config import current_config, get_tunnel_id
 from .security import decrypt_dpapi
+from .tunnel_health import probe_tunnel_ready
 from .supervisor import ProcessSupervisor
 
 TUNNEL_ID = current_config.tunnel_id
@@ -85,19 +85,6 @@ class TunnelService:
         if self._on_status_change:
             self._on_status_change(running, message)
 
-    def _probe_ready(self) -> bool:
-        """Testa /readyz somente na URL local escrita pelo tunnel-client."""
-        file = current_config.app_data_dir / "tunnel-health-url.txt"
-        try:
-            url = file.read_text(encoding="utf-8").strip()
-            parsed = urlparse(url)
-            if parsed.scheme != "http" or parsed.hostname not in ("127.0.0.1", "localhost"):
-                return False
-            with urlopen(url.rstrip("/") + "/readyz", timeout=0.4) as response:
-                return response.status == 200
-        except Exception:
-            return False
-
     def start(self) -> bool:
         if self.is_active:
             return True
@@ -139,7 +126,7 @@ class TunnelService:
             if not supervisor:
                 return
             if supervisor.is_alive():
-                self._ready = self._probe_ready()
+                self._ready = probe_tunnel_ready()
                 attempts = 0
                 continue
             self._ready = False
