@@ -1,0 +1,69 @@
+name: QA Windows e instalador
+
+on:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contratos:
+    name: Testes de contrato MCP (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependências do projeto
+        run: python -m pip install -r requirements.txt
+      - name: Compilação de sintaxe
+        run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
+      - name: Testes MCP, segurança e atualização
+        run: |
+          python -m pytest -q tests/test_mcp_protocol.py tests/test_mcp_http.py tests/test_mcp_http_e2e.py tests/test_mcp_ws_bridge.py tests/test_mcp_computer_adapter.py tests/test_tunnel_service.py tests/test_updater.py
+      - name: Testes adversariais da extensão MV3
+        run: node tests/test_extension_adversarial.mjs
+
+  instalador:
+    name: Compilar instalador Windows para teste
+    needs: contratos
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Dependências de compilação
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+      - name: Gerar ícone
+        run: python generate_icon.py
+      - name: Compilar desktop e auxiliar MCP
+        run: python build_exe.py
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress }
+      - name: Gerar instalador
+        run: python build_installer.py
+      - name: Publicar instalador para testes
+        uses: actions/upload-artifact@v4
+        with:
+          name: Navegador-MTS-Windows-Teste
+          path: dist_installer/NAVEGADOR_MTS_Instalador_v2.1.1.exe
+          if-no-files-found: error
+          retention-days: 14
