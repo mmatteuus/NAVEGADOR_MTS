@@ -17,7 +17,8 @@ class MCPHTTPServer:
     async def start(self) -> None:
         if self._runner is not None:
             return
-        app = web.Application(client_max_size=1024 * 1024)
+        app = web.Application(client_max_size=1024 * 1024,
+                              middlewares=[self._validate_local_request])
         app.router.add_post("/mcp", self._post)
         app.router.add_get("/mcp", self._get)
         app.router.add_get("/healthz", self._health)
@@ -34,6 +35,17 @@ class MCPHTTPServer:
         runner, self._runner = self._runner, None
         if runner is not None:
             await runner.cleanup()
+
+    @web.middleware
+    async def _validate_local_request(self, request: web.Request, handler):
+        """Bloqueia Origin/Host externos para evitar DNS rebinding."""
+        trusted_hosts = {f"127.0.0.1:{self.port}", f"localhost:{self.port}"}
+        if request.headers.get("Host") not in trusted_hosts:
+            return web.Response(status=403, text="Host não autorizado.")
+        origin = request.headers.get("Origin")
+        if origin and origin not in {f"http://{host}" for host in trusted_hosts}:
+            return web.Response(status=403, text="Origin não autorizado.")
+        return await handler(request)
 
     async def _health(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
@@ -55,4 +67,6 @@ class MCPHTTPServer:
         result = await self.server.handle_jsonrpc(message)
         if result is None:
             return web.Response(status=202)
-        return web.json_response(result, headers={"MCP-Protocol-Version": "2024-11-05"})
+        negotiated = result.get("result", {}).get("protocolVersion") if isinstance(result, dict) else None
+        version = negotiated or request.headers.get("MCP-Protocol-Version", "2025-06-18")
+        return web.json_response(result, headers={"MCP-Protocol-Version": version})
