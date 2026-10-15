@@ -116,43 +116,33 @@ class DesktopApplication:
             on_quit_app=self.shutdown,
         )
         self.tray.start()
-
         if self.start_minimized:
             self.window.withdraw()
-
         self.window.after(500, self._poll_status_cycle)
         # Verificação automática em segundo plano de novas versões 5s após startup
         self.window.after(5000, lambda: self.window.check_for_updates_ui(auto_open=True))
         self.window.mainloop()
-
-
 def main() -> None:
     """Função principal de entrada CLI do aplicativo."""
     parser = argparse.ArgumentParser(description="Navegador MTS - Aplicativo Desktop Windows 11")
     parser.add_argument("--minimized", action="store_true", help="Iniciar silenciosamente na bandeja")
     parser.add_argument("--stdio", action="store_true", help="Modo Servidor MCP Stdio para ChatGPT, Claude e túneis")
     args = parser.parse_args()
-
     if args.stdio:
         from .mcp.server import MCPServer
         srv = MCPServer(host=current_config.host, ws_port=current_config.port)
-
         async def _run_mcp():
             await srv.start(start_ws=True)
             await srv.run_stdio()
-
         try:
             asyncio.run(_run_mcp())
         except KeyboardInterrupt:
             pass
         return
-
     app = DesktopApplication(start_minimized=args.minimized)
     try:
         app.run()
     except KeyboardInterrupt:
         app.shutdown()
-
-
 if __name__ == "__main__":
     main()
