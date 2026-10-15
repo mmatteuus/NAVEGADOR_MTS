@@ -27,9 +27,7 @@ class DesktopApplication:
     def __init__(self, start_minimized: bool = False) -> None:
         self.start_minimized = start_minimized
         self.ws_bridge = WebSocketBridge(host=current_config.host, port=current_config.port)
-        self.http_mcp = MCPHTTPServer(MCPServer(host=current_config.host, ws_port=current_config.port), current_config.mcp_port)
-        self.http_mcp.server.ws_bridge = self.ws_bridge
-        self.http_mcp.server.router.ws_bridge = self.ws_bridge
+        self.http_mcp = MCPHTTPServer(MCPServer(ws_bridge=self.ws_bridge), current_config.mcp_port)
         self.http_error: Optional[str] = None
         self.ws_loop: Optional[asyncio.AbstractEventLoop] = None
         self.ws_thread: Optional[threading.Thread] = None
@@ -46,7 +44,8 @@ class DesktopApplication:
             self.ws_loop.run_until_complete(self.ws_bridge.start())
             try:
                 self.ws_loop.run_until_complete(self.http_mcp.start())
-                tunnel_service.start()
+                threading.Thread(target=tunnel_service.start, daemon=True,
+                                 name="TunnelStarter").start()
             except OSError as exc:
                 self.http_error = str(exc)
             self.ws_loop.run_forever()
@@ -67,7 +66,8 @@ class DesktopApplication:
         active_tab = self.ws_bridge.client_info.get("activeTabUrl", "")
         self.window.panel_dashboard.update_mcp_status("Ativo", latency_ms=lat, port=self.ws_bridge.port)
         self.window.panel_dashboard.update_extension_status(is_ext, active_tab=active_tab)
-        tun_status = "Processo iniciado (sem confirmação remota)" if tunnel_service.is_active else "Desconectado"
+        tun_status = "Processo iniciado (sem confirmação remota)" if tunnel_service.is_active else (
+            tunnel_service.last_error or self.http_error or "Desconectado")
         self.window.panel_dashboard.lbl_mcp_tunnel.configure(text=f"Túnel ChatGPT: {tun_status}")
 
         # Atualiza a cor e o tooltip no System Tray
