@@ -37,8 +37,13 @@ class MCPConnectDialog(ctk.CTkToplevel):
 
     def _get_mcp_config_json(self) -> str:
         """Gera a configuração formatada compatível com Claude Desktop e Cursor."""
-        exe = sys.executable
-        args = ["--stdio"] if getattr(sys, "frozen", False) else ["-m", "src.app", "--stdio"]
+        from pathlib import Path
+        if getattr(sys, "frozen", False):
+            exe = str(Path(sys.executable).parent / "mcp_stdio" / "NAVEGADOR_MTS_MCP.exe")
+            args = []
+        else:
+            exe = sys.executable
+            args = [str(Path(__file__).resolve().parents[2] / "entrypoint.py"), "--stdio"]
         cfg = {"mcpServers": {"navegador-mts": {"command": exe, "args": args}}}
         return json.dumps(cfg, indent=2, ensure_ascii=False)
 
