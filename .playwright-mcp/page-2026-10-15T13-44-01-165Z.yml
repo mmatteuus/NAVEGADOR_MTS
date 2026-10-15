@@ -1,0 +1,891 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - link "ChatGPT" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Buscar chats" [ref=e6] [cursor=pointer]:
+      - /url: /auth/login?next=%2Fplugins
+    - navigation "Barra lateral" [ref=e9]:
+      - link "Novo chat" [ref=e10] [cursor=pointer]:
+        - /url: /
+      - link "Imagens" [ref=e14] [cursor=pointer]:
+        - /url: /images
+      - link "Plugins" [ref=e18] [cursor=pointer]:
+        - /url: /plugins
+      - link "Investigação" [ref=e21] [cursor=pointer]:
+        - /url: /auth/login?next=%2Fplugins
+      - generic [ref=e24]:
+        - link "Confira planos e preços" [ref=e25] [cursor=pointer]:
+          - /url: https://openai.com/chatgpt/pricing/
+        - button "Configurações" [ref=e29] [cursor=pointer]
+        - link "Ajuda" [ref=e33] [cursor=pointer]:
+          - /url: https://help.openai.com/
+    - generic [ref=e36]:
+      - heading "Receba respostas personalizadas para você" [level=2] [ref=e37]
+      - paragraph [ref=e38]: Entre para receber respostas com base em chats salvos, além de criar imagens e carregar arquivos.
+      - link "Entrar" [ref=e39] [cursor=pointer]:
+        - /url: /auth/login?next=%2Fplugins
+  - button "Fechar barra lateral" [expanded] [ref=e40] [cursor=pointer]
+  - generic [ref=e43]:
+    - banner [ref=e44]:
+      - navigation [ref=e45]:
+        - link "Entrar" [ref=e46] [cursor=pointer]:
+          - /url: /auth/login?next=%2Fplugins
+        - link "Cadastre-se grátis" [ref=e47] [cursor=pointer]:
+          - /url: /auth/login?next=%2Fplugins
+    - main [ref=e48]:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - heading "Plugins" [level=1] [ref=e51]
+          - paragraph [ref=e52]: Trabalhe com o ChatGPT nas suas ferramentas favoritas.
+        - search [ref=e53]:
+          - searchbox "Pesquisar plugins" [ref=e56]
+          - button "Pesquisar" [ref=e57] [cursor=pointer]
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - heading "Populares" [level=2] [ref=e60]
+          - generic [ref=e61]:
+            - generic [ref=e62]:
+              - link [ref=e63] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a057d268ebc81919918d37eec718425
+                - generic [ref=e64]:
+                  - strong [ref=e65]: Remote Desktop Commander
+                  - paragraph [ref=e66]: Build and automate, anywhere
+              - 'link "Instalar plugin: Remote Desktop Commander" [ref=e67] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a057d268ebc81919918d37eec718425
+            - generic [ref=e70]:
+              - link [ref=e71] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_1p_ab21a553bfbc81919ea8fd1858e3ffa7
+                - generic [ref=e72]:
+                  - strong [ref=e73]: Google Drive
+                  - paragraph [ref=e74]: Drive, Docs, Sheets or Slides
+              - 'link "Instalar plugin: Google Drive" [ref=e75] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_1p_ab21a553bfbc81919ea8fd1858e3ffa7
+            - generic [ref=e78]:
+              - link [ref=e79] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69a8f78087e081919e52cacacf00ff36
+                - generic [ref=e80]:
+                  - strong [ref=e81]: Flaim Fantasy
+                  - paragraph [ref=e82]: Fantasy Sports Analysis
+              - 'link "Instalar plugin: Flaim Fantasy" [ref=e83] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69a8f78087e081919e52cacacf00ff36
+            - generic [ref=e86]:
+              - link [ref=e87] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a244fb509e481918985fee76373b0f9
+                - generic [ref=e88]:
+                  - strong [ref=e89]: WPVibe
+                  - paragraph [ref=e90]: AI WordPress tools
+              - 'link "Instalar plugin: WPVibe" [ref=e91] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a244fb509e481918985fee76373b0f9
+            - generic [ref=e94]:
+              - link [ref=e95] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a83901dde988191b3f3cefdcc19acfa
+                - generic [ref=e96]:
+                  - strong [ref=e97]: Atlassian
+                  - paragraph [ref=e98]: Jira, Confluence, Loom, & more
+              - 'link "Instalar plugin: Atlassian" [ref=e99] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a83901dde988191b3f3cefdcc19acfa
+            - generic [ref=e102]:
+              - link [ref=e103] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_1p_e569f8b8dfd08191903c9bd2cd7da9ac
+                - generic [ref=e104]:
+                  - strong [ref=e105]: Health
+                  - paragraph [ref=e106]: Explore your health data in ChatGPT
+              - 'link "Instalar plugin: Health" [ref=e107] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_1p_e569f8b8dfd08191903c9bd2cd7da9ac
+          - link "Ver GitHub, Outlook Email e mais" [ref=e110] [cursor=pointer]:
+            - /url: /plugins?category=featured
+        - generic [ref=e112]:
+          - heading "Novos e imperdíveis" [level=2] [ref=e113]
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - link [ref=e116] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a1f227d5a848191ae3317c66947b440
+                - generic [ref=e117]:
+                  - strong [ref=e118]: Magnific
+                  - paragraph [ref=e119]: Create images, video, designs
+              - 'link "Instalar plugin: Magnific" [ref=e120] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a1f227d5a848191ae3317c66947b440
+            - generic [ref=e123]:
+              - link [ref=e124] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a3293e129088191abf0875820e839da
+                - generic [ref=e125]:
+                  - strong [ref=e126]: Higgsfield
+                  - paragraph [ref=e127]: Every image and video model
+              - 'link "Instalar plugin: Higgsfield" [ref=e128] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a3293e129088191abf0875820e839da
+            - generic [ref=e131]:
+              - link [ref=e132] [cursor=pointer]:
+                - /url: /plugins/plugins_6a9055d25738819198aeedb74e8360f7
+                - generic [ref=e133]:
+                  - strong [ref=e134]: Tripo 3D
+                  - paragraph [ref=e135]: From Text/Image to 3D Models
+              - 'link "Instalar plugin: Tripo 3D" [ref=e136] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugins_6a9055d25738819198aeedb74e8360f7
+            - generic [ref=e139]:
+              - link [ref=e140] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6970230238d8819196e64c67af28ab38
+                - generic [ref=e141]:
+                  - strong [ref=e142]: Common Room
+                  - paragraph [ref=e143]: Find contacts and accounts
+              - 'link "Instalar plugin: Common Room" [ref=e144] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6970230238d8819196e64c67af28ab38
+            - generic [ref=e147]:
+              - link [ref=e148] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69312da8e4dc81919370cb86fd172b6c
+                - generic [ref=e149]:
+                  - strong [ref=e150]: Adobe
+                  - paragraph [ref=e151]: Design, combine, and edit
+              - 'link "Instalar plugin: Adobe" [ref=e152] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69312da8e4dc81919370cb86fd172b6c
+            - generic [ref=e155]:
+              - link [ref=e156] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69e65c430b3081919aa4d962ab5d1698
+                - generic [ref=e157]:
+                  - strong [ref=e158]: Shopify
+                  - paragraph [ref=e159]: Create and manage your store
+              - 'link "Instalar plugin: Shopify" [ref=e160] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69e65c430b3081919aa4d962ab5d1698
+          - link "Ver tldraw, MagicPath e mais" [ref=e163] [cursor=pointer]:
+            - /url: /plugins?category=new-and-noteworthy
+        - generic [ref=e165]:
+          - heading "Pequenas empresas" [level=2] [ref=e166]
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - link [ref=e169] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69b31dc2110c8191b8b47dc98fe5a052
+                - generic [ref=e170]:
+                  - strong [ref=e171]: Dropbox
+                  - paragraph [ref=e172]: Find, create, and take action
+              - 'link "Instalar plugin: Dropbox" [ref=e173] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69b31dc2110c8191b8b47dc98fe5a052
+            - generic [ref=e176]:
+              - link [ref=e177] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_697acb8e53d88191bf7a79e62012ae14
+                - generic [ref=e178]:
+                  - strong [ref=e179]: HubSpot
+                  - paragraph [ref=e180]: Insights to action in HubSpot
+              - 'link "Instalar plugin: HubSpot" [ref=e181] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_697acb8e53d88191bf7a79e62012ae14
+            - generic [ref=e184]:
+              - link [ref=e185] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_690ab09fa43c8191bca40280e4563238
+                - generic [ref=e186]:
+                  - strong [ref=e187]: Stripe
+                  - paragraph [ref=e188]: Accept payments. Grow revenue.
+              - 'link "Instalar plugin: Stripe" [ref=e189] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_690ab09fa43c8191bca40280e4563238
+            - generic [ref=e192]:
+              - link [ref=e193] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_68df33b1a2d081918778431a9cfca8ba
+                - generic [ref=e194]:
+                  - strong [ref=e195]: Canva
+                  - paragraph [ref=e196]: Create, review, edit designs
+              - 'link "Instalar plugin: Canva" [ref=e197] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_68df33b1a2d081918778431a9cfca8ba
+            - generic [ref=e200]:
+              - link [ref=e201] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6941e1d349208191b984b93cb344be5b
+                - generic [ref=e202]:
+                  - strong [ref=e203]: Gusto
+                  - paragraph [ref=e204]: People and payroll, made easy
+              - 'link "Instalar plugin: Gusto" [ref=e205] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6941e1d349208191b984b93cb344be5b
+            - generic [ref=e208]:
+              - link [ref=e209] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_68df038e0ba48191908c8434991bbac2
+                - generic [ref=e210]:
+                  - strong [ref=e211]: Figma
+                  - paragraph [ref=e212]: Create designs, ship to code
+              - 'link "Instalar plugin: Figma" [ref=e213] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_68df038e0ba48191908c8434991bbac2
+          - link "Ver Slack, Shopify e mais" [ref=e216] [cursor=pointer]:
+            - /url: /plugins?category=small-business
+        - generic [ref=e218]:
+          - heading "Produtividade" [level=2] [ref=e219]
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - link [ref=e222] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a314a73f8ac819195b0d55e36b9c609
+                - generic [ref=e223]:
+                  - strong [ref=e224]: Firecrawl
+                  - paragraph [ref=e225]: Search and extract web data
+              - 'link "Instalar plugin: Firecrawl" [ref=e226] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a314a73f8ac819195b0d55e36b9c609
+            - generic [ref=e229]:
+              - link [ref=e230] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69c18c28f1188191bf5b8445c4ab0a2e
+                - generic [ref=e231]:
+                  - strong [ref=e232]: Notion
+                  - paragraph [ref=e233]: Create docs, tasks, databases
+              - 'link "Instalar plugin: Notion" [ref=e234] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69c18c28f1188191bf5b8445c4ab0a2e
+            - generic [ref=e237]:
+              - link [ref=e238] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_697761cab6f48191b5ed345919a3ce8b
+                - generic [ref=e239]:
+                  - strong [ref=e240]: Granola
+                  - paragraph [ref=e241]: Add your meeting context
+              - 'link "Instalar plugin: Granola" [ref=e242] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_697761cab6f48191b5ed345919a3ce8b
+            - generic [ref=e245]:
+              - link [ref=e246] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_694421e60cc88191a1e5bb4aa79950e4
+                - generic [ref=e247]:
+                  - strong [ref=e248]: Klaviyo
+                  - paragraph [ref=e249]: Get insights on your marketing
+              - 'link "Instalar plugin: Klaviyo" [ref=e250] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_694421e60cc88191a1e5bb4aa79950e4
+            - generic [ref=e253]:
+              - link [ref=e254] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a5ae9736be0819199d06d61ac171080
+                - generic [ref=e255]:
+                  - strong [ref=e256]: Wispr Flow
+                  - paragraph [ref=e257]: Ask about your meeting notes
+              - 'link "Instalar plugin: Wispr Flow" [ref=e258] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a5ae9736be0819199d06d61ac171080
+            - generic [ref=e261]:
+              - link [ref=e262] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_695d84e2f06c8191861b9bac9b3fd53b
+                - generic [ref=e263]:
+                  - strong [ref=e264]: Otter.ai
+                  - paragraph [ref=e265]: Search meetings from Otter.ai
+              - 'link "Instalar plugin: Otter.ai" [ref=e266] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_695d84e2f06c8191861b9bac9b3fd53b
+          - link "Ver Metricool, Asana e mais" [ref=e269] [cursor=pointer]:
+            - /url: /plugins?category=productivity
+        - generic [ref=e271]:
+          - heading "Criatividade" [level=2] [ref=e272]
+          - generic [ref=e273]:
+            - generic [ref=e274]:
+              - link [ref=e275] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_68df33b1a2d081918778431a9cfca8ba
+                - generic [ref=e276]:
+                  - strong [ref=e277]: Canva
+                  - paragraph [ref=e278]: Create, review, edit designs
+              - 'link "Instalar plugin: Canva" [ref=e279] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_68df33b1a2d081918778431a9cfca8ba
+            - generic [ref=e282]:
+              - link [ref=e283] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a3293e129088191abf0875820e839da
+                - generic [ref=e284]:
+                  - strong [ref=e285]: Higgsfield
+                  - paragraph [ref=e286]: Every image and video model
+              - 'link "Instalar plugin: Higgsfield" [ref=e287] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a3293e129088191abf0875820e839da
+            - generic [ref=e290]:
+              - link [ref=e291] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a05e3b201788191be12b590b43e6ce3
+                - generic [ref=e292]:
+                  - strong [ref=e293]: Runway
+                  - paragraph [ref=e294]: Generate with every AI model
+              - 'link "Instalar plugin: Runway" [ref=e295] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a05e3b201788191be12b590b43e6ce3
+            - generic [ref=e298]:
+              - link [ref=e299] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a7196b289e081919f53f36a387d971a
+                - generic [ref=e300]:
+                  - strong [ref=e301]: Everygen
+                  - paragraph [ref=e302]: Create videos with AI
+              - 'link "Instalar plugin: Everygen" [ref=e303] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a7196b289e081919f53f36a387d971a
+            - generic [ref=e306]:
+              - link [ref=e307] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69fdb9081018819193707354f21b366e
+                - generic [ref=e308]:
+                  - strong [ref=e309]: Mobbin
+                  - paragraph [ref=e310]: Find UI & UX design references
+              - 'link "Instalar plugin: Mobbin" [ref=e311] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69fdb9081018819193707354f21b366e
+            - generic [ref=e314]:
+              - link [ref=e315] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_68df038e0ba48191908c8434991bbac2
+                - generic [ref=e316]:
+                  - strong [ref=e317]: Figma
+                  - paragraph [ref=e318]: Create designs, ship to code
+              - 'link "Instalar plugin: Figma" [ref=e319] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_68df038e0ba48191908c8434991bbac2
+          - link "Ver Pollo AI, Creative Claw e mais" [ref=e322] [cursor=pointer]:
+            - /url: /plugins?category=creativity
+        - generic [ref=e324]:
+          - heading "Ferramentas para desenvolvedores" [level=2] [ref=e325]
+          - generic [ref=e326]:
+            - generic [ref=e327]:
+              - link [ref=e328] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_1p_1a69035c238881919c4190932b2df699
+                - generic [ref=e329]:
+                  - strong [ref=e330]: GitHub
+                  - paragraph [ref=e331]: Triage PRs, issues, CI, and publish flows
+              - 'link "Instalar plugin: GitHub" [ref=e332] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_1p_1a69035c238881919c4190932b2df699
+            - generic [ref=e335]:
+              - link [ref=e336] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69d3e5ee6a708191baa733f7b8931995
+                - generic [ref=e337]:
+                  - strong [ref=e338]: Supabase
+                  - paragraph [ref=e339]: Manage and query databases
+              - 'link "Instalar plugin: Supabase" [ref=e340] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69d3e5ee6a708191baa733f7b8931995
+            - generic [ref=e343]:
+              - link [ref=e344] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69ea4ed2cf7c8191b742ef3622479ddd
+                - generic [ref=e345]:
+                  - strong [ref=e346]: Exa
+                  - paragraph [ref=e347]: Web search for AI agents
+              - 'link "Instalar plugin: Exa" [ref=e348] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69ea4ed2cf7c8191b742ef3622479ddd
+            - generic [ref=e351]:
+              - link [ref=e352] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a624c56bfe081918f7544f7d58f6faf
+                - generic [ref=e353]:
+                  - strong [ref=e354]: Render
+                  - paragraph [ref=e355]: Manage Render resources
+              - 'link "Instalar plugin: Render" [ref=e356] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a624c56bfe081918f7544f7d58f6faf
+            - generic [ref=e359]:
+              - link [ref=e360] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69fb9378663481919a68e8a2109644e5
+                - generic [ref=e361]:
+                  - strong [ref=e362]: Parallel Search
+                  - paragraph [ref=e363]: Web search for AI
+              - 'link "Instalar plugin: Parallel Search" [ref=e364] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69fb9378663481919a68e8a2109644e5
+            - generic [ref=e367]:
+              - link [ref=e368] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_690a90ec05c881918afb6a55dc9bbaa1
+                - generic [ref=e369]:
+                  - strong [ref=e370]: Vercel
+                  - paragraph [ref=e371]: Build and deploy apps
+              - 'link "Instalar plugin: Vercel" [ref=e372] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_690a90ec05c881918afb6a55dc9bbaa1
+          - link "Ver Railway, SentinelX e mais" [ref=e375] [cursor=pointer]:
+            - /url: /plugins?category=developer-tools
+        - generic [ref=e377]:
+          - heading "Negócios e operações" [level=2] [ref=e378]
+          - generic [ref=e379]:
+            - generic [ref=e380]:
+              - link [ref=e381] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_694a52cfaa3c819192bea84eaa254968
+                - generic [ref=e382]:
+                  - strong [ref=e383]: Windsor.ai
+                  - paragraph [ref=e384]: Connect 350+ data sources
+              - 'link "Instalar plugin: Windsor.ai" [ref=e385] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_694a52cfaa3c819192bea84eaa254968
+            - generic [ref=e388]:
+              - link [ref=e389] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69e65c430b3081919aa4d962ab5d1698
+                - generic [ref=e390]:
+                  - strong [ref=e391]: Shopify
+                  - paragraph [ref=e392]: Create and manage your store
+              - 'link "Instalar plugin: Shopify" [ref=e393] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69e65c430b3081919aa4d962ab5d1698
+            - generic [ref=e396]:
+              - link [ref=e397] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a75165ed2d8819182548553aa4cb6d5
+                - generic [ref=e398]:
+                  - strong [ref=e399]: Upwork
+                  - paragraph [ref=e400]: Hire, apply, and manage work
+              - 'link "Instalar plugin: Upwork" [ref=e401] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a75165ed2d8819182548553aa4cb6d5
+            - generic [ref=e404]:
+              - link [ref=e405] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69461dc91ee48191ae4a14eb9bde1c21
+                - generic [ref=e406]:
+                  - strong [ref=e407]: Adspirer
+                  - paragraph [ref=e408]: Create, launch & analyze ads
+              - 'link "Instalar plugin: Adspirer" [ref=e409] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69461dc91ee48191ae4a14eb9bde1c21
+            - generic [ref=e412]:
+              - link [ref=e413] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_697acb8e53d88191bf7a79e62012ae14
+                - generic [ref=e414]:
+                  - strong [ref=e415]: HubSpot
+                  - paragraph [ref=e416]: Insights to action in HubSpot
+              - 'link "Instalar plugin: HubSpot" [ref=e417] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_697acb8e53d88191bf7a79e62012ae14
+            - generic [ref=e420]:
+              - link [ref=e421] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69dd11f3e50c8191b1ca48d03cf7e2ad
+                - generic [ref=e422]:
+                  - strong [ref=e423]: vidIQ
+                  - paragraph [ref=e424]: Grow on YouTube, IG & TikTok
+              - 'link "Instalar plugin: vidIQ" [ref=e425] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69dd11f3e50c8191b1ca48d03cf7e2ad
+          - link "Ver Ahrefs, Webflow e mais" [ref=e428] [cursor=pointer]:
+            - /url: /plugins?category=business-and-operations
+        - generic [ref=e430]:
+          - heading "Dados e análises" [level=2] [ref=e431]
+          - generic [ref=e432]:
+            - generic [ref=e433]:
+              - link [ref=e434] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_699caef2d680819188727b0ddbb349dd
+                - generic [ref=e435]:
+                  - strong [ref=e436]: PostHog
+                  - paragraph [ref=e437]: Analyze your product data
+              - 'link "Instalar plugin: PostHog" [ref=e438] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_699caef2d680819188727b0ddbb349dd
+            - generic [ref=e441]:
+              - link [ref=e442] [cursor=pointer]:
+                - /url: /plugins/Plugin_fc9843a6fb34819195d6c7802398a8a7
+                - generic [ref=e443]:
+                  - strong [ref=e444]: Data
+                  - paragraph [ref=e445]: Answer questions with data
+              - 'link "Instalar plugin: Data" [ref=e446] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2FPlugin_fc9843a6fb34819195d6c7802398a8a7
+            - generic [ref=e449]:
+              - link [ref=e450] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a3e889766b481919d6b2861e94a8afa
+                - generic [ref=e451]:
+                  - strong [ref=e452]: Typeform
+                  - paragraph [ref=e453]: Build forms, analyze responses
+              - 'link "Instalar plugin: Typeform" [ref=e454] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a3e889766b481919d6b2861e94a8afa
+            - generic [ref=e457]:
+              - link [ref=e458] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a53367747ac8191891c960a0f61b376
+                - generic [ref=e459]:
+                  - strong [ref=e460]: GSC SEO & Content Planner
+                  - paragraph [ref=e461]: Analyze Search Console SEO
+              - 'link "Instalar plugin: GSC SEO & Content Planner" [ref=e462] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a53367747ac8191891c960a0f61b376
+            - generic [ref=e465]:
+              - link [ref=e466] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69a880b0d024819182db60f36cb48420
+                - generic [ref=e467]:
+                  - strong [ref=e468]: Blockscout Blockchain Data
+                  - paragraph [ref=e469]: Find & analyze blockchain data
+              - 'link "Instalar plugin: Blockscout Blockchain Data" [ref=e470] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69a880b0d024819182db60f36cb48420
+            - generic [ref=e473]:
+              - link [ref=e474] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69b9f38bfa248191877ad584f5608b92
+                - generic [ref=e475]:
+                  - strong [ref=e476]: Helium 10
+                  - paragraph [ref=e477]: Access your Helium 10 data
+              - 'link "Instalar plugin: Helium 10" [ref=e478] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69b9f38bfa248191877ad584f5608b92
+          - link "Ver Mixpanel, Amplitude e mais" [ref=e481] [cursor=pointer]:
+            - /url: /plugins?category=data-and-analytics
+        - generic [ref=e483]:
+          - heading "Comunicação" [level=2] [ref=e484]
+          - generic [ref=e485]:
+            - generic [ref=e486]:
+              - link [ref=e487] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_1p_6bcb5879c73c819196abc70016166099
+                - generic [ref=e488]:
+                  - strong [ref=e489]: Outlook Email
+                  - paragraph [ref=e490]: Triage Outlook inboxes
+              - 'link "Instalar plugin: Outlook Email" [ref=e491] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_1p_6bcb5879c73c819196abc70016166099
+            - generic [ref=e494]:
+              - link [ref=e495] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69a1d78e929881919bba0dbda1f6436d
+                - generic [ref=e496]:
+                  - strong [ref=e497]: Slack
+                  - paragraph [ref=e498]: Read and manage Slack
+              - 'link "Instalar plugin: Slack" [ref=e499] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69a1d78e929881919bba0dbda1f6436d
+            - generic [ref=e502]:
+              - link [ref=e503] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69a21e4058dc8191a6220fa911310d7b
+                - generic [ref=e504]:
+                  - strong [ref=e505]: Superhuman Mail
+                  - paragraph [ref=e506]: Best email+calendar assistant
+              - 'link "Instalar plugin: Superhuman Mail" [ref=e507] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69a21e4058dc8191a6220fa911310d7b
+            - generic [ref=e510]:
+              - link [ref=e511] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a8d9699480c8191b355912591c99178
+                - generic [ref=e512]:
+                  - strong [ref=e513]: Brevo
+                  - paragraph [ref=e514]: Access campaigns and contacts
+              - 'link "Instalar plugin: Brevo" [ref=e515] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a8d9699480c8191b355912591c99178
+            - generic [ref=e518]:
+              - link [ref=e519] [cursor=pointer]:
+                - /url: /plugins/plugin_connector_1p_eba8b52fe53881918408d4b46b957644
+                - generic [ref=e520]:
+                  - strong [ref=e521]: Teams
+                  - paragraph [ref=e522]: Summarize Teams and follow up
+              - 'link "Instalar plugin: Teams" [ref=e523] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_connector_1p_eba8b52fe53881918408d4b46b957644
+            - generic [ref=e526]:
+              - link [ref=e527] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a323a8a890c819190480c9044395170
+                - generic [ref=e528]:
+                  - strong [ref=e529]: Hostinger Mail
+                  - paragraph [ref=e530]: Use Hostinger Mail
+              - 'link "Instalar plugin: Hostinger Mail" [ref=e531] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a323a8a890c819190480c9044395170
+          - link "Ver Mailopoly Inbox, Zoom e mais" [ref=e534] [cursor=pointer]:
+            - /url: /plugins?category=communication
+        - generic [ref=e536]:
+          - heading "Educação" [level=2] [ref=e537]
+          - generic [ref=e538]:
+            - generic [ref=e539]:
+              - link [ref=e540] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6943e6f4a928819195962de16fb9ffe4
+                - generic [ref=e541]:
+                  - strong [ref=e542]: Consensus
+                  - paragraph [ref=e543]: Explore scientific research
+              - 'link "Instalar plugin: Consensus" [ref=e544] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6943e6f4a928819195962de16fb9ffe4
+            - generic [ref=e547]:
+              - link [ref=e548] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a393898430881918250b54d31c8799b
+                - generic [ref=e549]:
+                  - strong [ref=e550]: CourtListener
+                  - paragraph [ref=e551]: Legal research for everyone
+              - 'link "Instalar plugin: CourtListener" [ref=e552] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a393898430881918250b54d31c8799b
+            - generic [ref=e555]:
+              - link [ref=e556] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a0bcefe6dbc8191acf88ce22e2eef3a
+                - generic [ref=e557]:
+                  - strong [ref=e558]: Acumen by Talarion
+                  - paragraph [ref=e559]: Keep your AI up to date.
+              - 'link "Instalar plugin: Acumen by Talarion" [ref=e560] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a0bcefe6dbc8191acf88ce22e2eef3a
+            - generic [ref=e563]:
+              - link [ref=e564] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69c50381a40081919232f5027201beef
+                - generic [ref=e565]:
+                  - strong [ref=e566]: Explain Video Generator
+                  - paragraph [ref=e567]: Free AI explainer video maker
+              - 'link "Instalar plugin: Explain Video Generator" [ref=e568] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69c50381a40081919232f5027201beef
+            - generic [ref=e571]:
+              - link [ref=e572] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6952b3a3f1e881918951582d59483c78
+                - generic [ref=e573]:
+                  - strong [ref=e574]: Scite
+                  - paragraph [ref=e575]: Search scientific literature
+              - 'link "Instalar plugin: Scite" [ref=e576] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6952b3a3f1e881918951582d59483c78
+            - generic [ref=e579]:
+              - link [ref=e580] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69439d715a7c8191aed9e2f6649e105f
+                - generic [ref=e581]:
+                  - strong [ref=e582]: SciSpace
+                  - paragraph [ref=e583]: For science and research
+              - 'link "Instalar plugin: SciSpace" [ref=e584] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69439d715a7c8191aed9e2f6649e105f
+          - link "Ver Quizlet, AhaMotion e mais" [ref=e587] [cursor=pointer]:
+            - /url: /plugins?category=education-and-research
+        - generic [ref=e589]:
+          - heading "Pesquisa científica" [level=2] [ref=e590]
+          - generic [ref=e591]:
+            - generic [ref=e592]:
+              - link [ref=e593] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a60df60877081919ad4a8109d27535d
+                - generic [ref=e594]:
+                  - strong [ref=e595]: Undermind
+                  - paragraph [ref=e596]: Find and read research papers
+              - 'link "Instalar plugin: Undermind" [ref=e597] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a60df60877081919ad4a8109d27535d
+            - generic [ref=e600]:
+              - link [ref=e601] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a5fc156fad88191a3977b60131d7391
+                - generic [ref=e602]:
+                  - strong [ref=e603]: Tamarind Bio
+                  - paragraph [ref=e604]: Protein and molecular design
+              - 'link "Instalar plugin: Tamarind Bio" [ref=e605] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a5fc156fad88191a3977b60131d7391
+            - generic [ref=e608]:
+              - link [ref=e609] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a5f875215108191ae5d449352363219
+                - generic [ref=e610]:
+                  - strong [ref=e611]: Inductive
+                  - paragraph [ref=e612]: State-of-the-art ADMET models
+              - 'link "Instalar plugin: Inductive" [ref=e613] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a5f875215108191ae5d449352363219
+            - generic [ref=e616]:
+              - link [ref=e617] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a8a0cf734e48191aec4c958de2d145c
+                - generic [ref=e618]:
+                  - strong [ref=e619]: Proto
+                  - paragraph [ref=e620]: Biological AI models and tools
+              - 'link "Instalar plugin: Proto" [ref=e621] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a8a0cf734e48191aec4c958de2d145c
+            - generic [ref=e624]:
+              - link [ref=e625] [cursor=pointer]:
+                - /url: /plugins/Plugin_32edf73dc4f48191980d50e2cad2b3e4
+                - generic [ref=e626]:
+                  - strong [ref=e627]: NGS Analysis Workbench
+                  - paragraph [ref=e628]: Analyze sequencing data
+              - 'link "Somente para desktop: NGS Analysis Workbench" [ref=e629] [cursor=pointer]':
+                - /url: /plugins/Plugin_32edf73dc4f48191980d50e2cad2b3e4
+            - generic [ref=e632]:
+              - link [ref=e633] [cursor=pointer]:
+                - /url: /plugins/Plugin_3d180245a1a881918476af7b5061e1e4
+                - generic [ref=e634]:
+                  - strong [ref=e635]: Life Sciences Literature
+                  - paragraph [ref=e636]: Find biomedical papers, preprints, and open-access full text
+              - 'link "Instalar plugin: Life Sciences Literature" [ref=e637] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2FPlugin_3d180245a1a881918476af7b5061e1e4
+          - link "Ver Rowan, Pendar e mais" [ref=e640] [cursor=pointer]:
+            - /url: /plugins?category=scientific-research
+        - generic [ref=e642]:
+          - heading "Segurança" [level=2] [ref=e643]
+          - generic [ref=e644]:
+            - generic [ref=e645]:
+              - link [ref=e646] [cursor=pointer]:
+                - /url: /plugins/Plugin_1e648473be9c8191a91ac3947151af55
+                - generic [ref=e647]:
+                  - strong [ref=e648]: Codex Security
+                  - paragraph [ref=e649]: Security scanning for your codebase
+              - 'link "Somente para desktop: Codex Security" [ref=e650] [cursor=pointer]':
+                - /url: /plugins/Plugin_1e648473be9c8191a91ac3947151af55
+            - generic [ref=e653]:
+              - link [ref=e654] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6943d1778c8c81918f4c9ddf4849ca41
+                - generic [ref=e655]:
+                  - strong [ref=e656]: Malwarebytes
+                  - paragraph [ref=e657]: Verify links, domains, phones.
+              - 'link "Instalar plugin: Malwarebytes" [ref=e658] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6943d1778c8c81918f4c9ddf4849ca41
+            - generic [ref=e661]:
+              - link [ref=e662] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69ac8cc11bf48191816e305e37953f06
+                - generic [ref=e663]:
+                  - strong [ref=e664]: PrivacyHawk
+                  - paragraph [ref=e665]: Protect your personal data
+              - 'link "Instalar plugin: PrivacyHawk" [ref=e666] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69ac8cc11bf48191816e305e37953f06
+            - generic [ref=e669]:
+              - link [ref=e670] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_698d2bdf0eb08191890a55606150ecc2
+                - generic [ref=e671]:
+                  - strong [ref=e672]: AJAXX Data Scrubber
+                  - paragraph [ref=e673]: Remove exposed personal data
+              - 'link "Instalar plugin: AJAXX Data Scrubber" [ref=e674] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_698d2bdf0eb08191890a55606150ecc2
+            - generic [ref=e677]:
+              - link [ref=e678] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69c6417ce320819192d4b9edf3daf4ce
+                - generic [ref=e679]:
+                  - strong [ref=e680]: Soluvery
+                  - paragraph [ref=e681]: Audit Google Drive Permissions
+              - 'link "Instalar plugin: Soluvery" [ref=e682] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69c6417ce320819192d4b9edf3daf4ce
+            - generic [ref=e685]:
+              - link [ref=e686] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a6109bb0d3081919f5cd03b3085e944
+                - generic [ref=e687]:
+                  - strong [ref=e688]: Ansvar Gateway
+                  - paragraph [ref=e689]: Laws, Security and Compliance
+              - 'link "Instalar plugin: Ansvar Gateway" [ref=e690] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a6109bb0d3081919f5cd03b3085e944
+          - link "Ver Radar Lite, CertScore.ai Privacy Scanner e mais" [ref=e693] [cursor=pointer]:
+            - /url: /plugins?category=security
+        - generic [ref=e695]:
+          - heading "Finanças" [level=2] [ref=e696]
+          - generic [ref=e697]:
+            - generic [ref=e698]:
+              - link [ref=e699] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69bc11db874881918718abaca20b68ce
+                - generic [ref=e700]:
+                  - strong [ref=e701]: Interactive Brokers (IBKR)
+                  - paragraph [ref=e702]: Analyze global markets
+              - 'link "Instalar plugin: Interactive Brokers (IBKR)" [ref=e703] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69bc11db874881918718abaca20b68ce
+            - generic [ref=e706]:
+              - link [ref=e707] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a207f00eed0819181227b2ea257ff0b
+                - generic [ref=e708]:
+                  - strong [ref=e709]: IOL invertironline
+                  - paragraph [ref=e710]: Trade Argentine investments
+              - 'link "Instalar plugin: IOL invertironline" [ref=e711] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a207f00eed0819181227b2ea257ff0b
+            - generic [ref=e714]:
+              - link [ref=e715] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a5a6774ddc08191a0750a0dc4b10b97
+                - generic [ref=e716]:
+                  - strong [ref=e717]: Alpha Vantage
+                  - paragraph [ref=e718]: Global stock market data
+              - 'link "Instalar plugin: Alpha Vantage" [ref=e719] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a5a6774ddc08191a0750a0dc4b10b97
+            - generic [ref=e722]:
+              - link [ref=e723] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a59480048788191838477826d4ee97a
+                - generic [ref=e724]:
+                  - strong [ref=e725]: QBO Connector by Meridian
+                  - paragraph [ref=e726]: Read and update QuickBooks
+              - 'link "Instalar plugin: QBO Connector by Meridian" [ref=e727] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a59480048788191838477826d4ee97a
+            - generic [ref=e730]:
+              - link [ref=e731] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69491eceef3c8191beb70788b7840429
+                - generic [ref=e732]:
+                  - strong [ref=e733]: Bigdata.com
+                  - paragraph [ref=e734]: Finance research, news & data
+              - 'link "Instalar plugin: Bigdata.com" [ref=e735] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69491eceef3c8191beb70788b7840429
+            - generic [ref=e738]:
+              - link [ref=e739] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a4d14f6bfa48191a49bc4f42980ae38
+                - generic [ref=e740]:
+                  - strong [ref=e741]: Massive
+                  - paragraph [ref=e742]: Real-time stocks data and more
+              - 'link "Instalar plugin: Massive" [ref=e743] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a4d14f6bfa48191a49bc4f42980ae38
+          - link "Ver Longbridge, CoinGecko e mais" [ref=e746] [cursor=pointer]:
+            - /url: /plugins?category=finance
+        - generic [ref=e748]:
+          - heading "Saúde" [level=2] [ref=e749]
+          - generic [ref=e750]:
+            - generic [ref=e751]:
+              - link [ref=e752] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69aef5b699a0819184512d57743fc1cd
+                - generic [ref=e753]:
+                  - strong [ref=e754]: Tredict
+                  - paragraph [ref=e755]: Analyze workouts, create plans
+              - 'link "Instalar plugin: Tredict" [ref=e756] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69aef5b699a0819184512d57743fc1cd
+            - generic [ref=e759]:
+              - link [ref=e760] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69beacb8780c81919104bb111b56346b
+                - generic [ref=e761]:
+                  - strong [ref=e762]: Fitness AI Connector
+                  - paragraph [ref=e763]: AI coach for your Garmin data
+              - 'link "Instalar plugin: Fitness AI Connector" [ref=e764] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69beacb8780c81919104bb111b56346b
+            - generic [ref=e767]:
+              - link [ref=e768] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a0694cbb2608191bbefb74ba810ab68
+                - generic [ref=e769]:
+                  - strong [ref=e770]: COROS
+                  - paragraph [ref=e771]: Training and health insights
+              - 'link "Instalar plugin: COROS" [ref=e772] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a0694cbb2608191bbefb74ba810ab68
+            - generic [ref=e775]:
+              - link [ref=e776] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a322b52a82c8191b7fb653f9e9f7891
+                - generic [ref=e777]:
+                  - strong [ref=e778]: freddy
+                  - paragraph [ref=e779]: Ask about your health data
+              - 'link "Instalar plugin: freddy" [ref=e780] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a322b52a82c8191b7fb653f9e9f7891
+            - generic [ref=e783]:
+              - link [ref=e784] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69b5c48a72348191b3ad5abf6ec5dbfb
+                - generic [ref=e785]:
+                  - strong [ref=e786]: Calorie Tracker
+                  - paragraph [ref=e787]: Track your food and calories
+              - 'link "Instalar plugin: Calorie Tracker" [ref=e788] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69b5c48a72348191b3ad5abf6ec5dbfb
+            - generic [ref=e791]:
+              - link [ref=e792] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6999ccabf45481919788bd190c6be537
+                - generic [ref=e793]:
+                  - strong [ref=e794]: LiftTrack
+                  - paragraph [ref=e795]: Weightlifting For Garmin
+              - 'link "Instalar plugin: LiftTrack" [ref=e796] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6999ccabf45481919788bd190c6be537
+          - link "Ver FitAI Pro, Fitbod e mais" [ref=e799] [cursor=pointer]:
+            - /url: /plugins?category=healthcare
+        - generic [ref=e801]:
+          - heading "Viagens" [level=2] [ref=e802]
+          - generic [ref=e803]:
+            - generic [ref=e804]:
+              - link [ref=e805] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_694546cd042881919bb746a8dc300f38
+                - generic [ref=e806]:
+                  - strong [ref=e807]: Skyscanner
+                  - paragraph [ref=e808]: Find cheap flights
+              - 'link "Instalar plugin: Skyscanner" [ref=e809] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_694546cd042881919bb746a8dc300f38
+            - generic [ref=e812]:
+              - link [ref=e813] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a15368c058c819199ba791afd7c9818
+                - generic [ref=e814]:
+                  - strong [ref=e815]: FlightPoints
+                  - paragraph [ref=e816]: Find award flights
+              - 'link "Instalar plugin: FlightPoints" [ref=e817] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a15368c058c819199ba791afd7c9818
+            - generic [ref=e820]:
+              - link [ref=e821] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69848e517d0c819191695bf9b23f0208
+                - generic [ref=e822]:
+                  - strong [ref=e823]: Flight Network
+                  - paragraph [ref=e824]: Search and book flights
+              - 'link "Instalar plugin: Flight Network" [ref=e825] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69848e517d0c819191695bf9b23f0208
+            - generic [ref=e828]:
+              - link [ref=e829] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69b16f24bc488191aace1d08c6ddfd4d
+                - generic [ref=e830]:
+                  - strong [ref=e831]: trivago
+                  - paragraph [ref=e832]: Find your ideal hotel, fast.
+              - 'link "Instalar plugin: trivago" [ref=e833] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69b16f24bc488191aace1d08c6ddfd4d
+            - generic [ref=e836]:
+              - link [ref=e837] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69c4d4163c8c819183a9bdcf6d2ac262
+                - generic [ref=e838]:
+                  - strong [ref=e839]: Trip.com
+                  - paragraph [ref=e840]: All-in-one Travel Companion
+              - 'link "Instalar plugin: Trip.com" [ref=e841] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69c4d4163c8c819183a9bdcf6d2ac262
+            - generic [ref=e844]:
+              - link [ref=e845] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69d5132eaa908191a79e4ea0cee15425
+                - generic [ref=e846]:
+                  - strong [ref=e847]: AnyWhereMap - Navigate+Locate
+                  - paragraph [ref=e848]: Find/Explore Places+Locations
+              - 'link "Instalar plugin: AnyWhereMap - Navigate+Locate" [ref=e849] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69d5132eaa908191a79e4ea0cee15425
+          - link "Ver komoot, MakeMyTrip e mais" [ref=e852] [cursor=pointer]:
+            - /url: /plugins?category=travel
+        - generic [ref=e854]:
+          - heading "Outros" [level=2] [ref=e855]
+          - generic [ref=e856]:
+            - generic [ref=e857]:
+              - link [ref=e858] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a837ebb63688191887b5c55c3a6e072
+                - generic [ref=e859]:
+                  - strong [ref=e860]: PC Toplama Aracı
+                  - paragraph [ref=e861]: Sistem toplama ve PC parçaları
+              - 'link "Instalar plugin: PC Toplama Aracı" [ref=e862] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a837ebb63688191887b5c55c3a6e072
+            - generic [ref=e865]:
+              - link [ref=e866] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a53190aea1481919a9070ad976cc283
+                - generic [ref=e867]:
+                  - strong [ref=e868]: Destiny AI Astrology
+                  - paragraph [ref=e869]: Birth Charts & Horoscopes
+              - 'link "Instalar plugin: Destiny AI Astrology" [ref=e870] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a53190aea1481919a9070ad976cc283
+            - generic [ref=e873]:
+              - link [ref=e874] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69a0e374670c819190761772d2092135
+                - generic [ref=e875]:
+                  - strong [ref=e876]: Chessy
+                  - paragraph [ref=e877]: Play Chess Against ChatGPT
+              - 'link "Instalar plugin: Chessy" [ref=e878] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69a0e374670c819190761772d2092135
+            - generic [ref=e881]:
+              - link [ref=e882] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69c28d6aedac81919502a88c2179e20c
+                - generic [ref=e883]:
+                  - strong [ref=e884]: Smart Chess:Train+Learn to win
+                  - paragraph [ref=e885]: "Play+improve: coach+strategy"
+              - 'link "Instalar plugin: Smart Chess:Train+Learn to win" [ref=e886] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69c28d6aedac81919502a88c2179e20c
+            - generic [ref=e889]:
+              - link [ref=e890] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_69fb0ed2dbc4819182d9d1f0acb2a256
+                - generic [ref=e891]:
+                  - strong [ref=e892]: drawDash
+                  - paragraph [ref=e893]: You draw... ChatGPT guesses!
+              - 'link "Instalar plugin: drawDash" [ref=e894] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_69fb0ed2dbc4819182d9d1f0acb2a256
+            - generic [ref=e897]:
+              - link [ref=e898] [cursor=pointer]:
+                - /url: /plugins/plugin_asdk_app_6a68b707c6cc819181fdb2bc0b1fb045
+                - generic [ref=e899]:
+                  - strong [ref=e900]: SoundBreak
+                  - paragraph [ref=e901]: Create AI Music with Artists
+              - 'link "Instalar plugin: SoundBreak" [ref=e902] [cursor=pointer]':
+                - /url: /auth/login?next=%2Fplugins%2Fplugin_asdk_app_6a68b707c6cc819181fdb2bc0b1fb045
+          - link "Ver Spotify, Evelyn Tarot e mais" [ref=e905] [cursor=pointer]:
+            - /url: /plugins?category=other
