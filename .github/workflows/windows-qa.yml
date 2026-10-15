@@ -13,6 +13,21 @@ permissions:
   contents: read
 
 jobs:
+  sintaxe:
+    name: Sintaxe e extensão (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
+      - run: node tests/test_extension_adversarial.mjs
+
   contratos:
     name: Testes de contrato MCP (Windows)
     runs-on: windows-latest
@@ -21,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -31,7 +46,7 @@ jobs:
         run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
       - name: Testes MCP, segurança e atualização
         run: |
-          python -m pytest -q tests/test_mcp_protocol.py tests/test_mcp_http.py tests/test_mcp_http_e2e.py tests/test_mcp_ws_bridge.py tests/test_mcp_computer_adapter.py tests/test_tunnel_service.py tests/test_updater.py
+          python -m pytest -q tests/test_mcp_protocol.py tests/test_mcp_http.py tests/test_mcp_http_e2e.py tests/test_mcp_ws_bridge.py tests/test_mcp_computer_adapter.py tests/test_tunnel_service.py tests/test_updater.py tests/test_updater_regression.py
       - name: Testes adversariais da extensão MV3
         run: node tests/test_extension_adversarial.mjs
 
@@ -44,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
       - name: Dependências de compilação
         run: |
           python -m pip install -r requirements.txt
