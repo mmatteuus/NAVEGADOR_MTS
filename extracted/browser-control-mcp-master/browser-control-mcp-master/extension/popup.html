@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+    <meta charset="utf-8" />
+    <title>Local Browser Control</title>
+    <style>
+        body {
+            width: 280px;
+            padding: 16px;
+            margin: 0;
+            font: 14px system-ui;
+            color: #18212c;
+            background: #f7f9fc;
+        }
+        h1 {
+            font-size: 18px;
+            margin: 0 0 12px;
+        }
+        p {
+            line-height: 1.5;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            font: inherit;
+            cursor: pointer;
+        }
+    </style>
+    <h1>Local Browser Control</h1>
+    <p id="status" role="status">Checking connection...</p>
+    <p>
+        Connects only to the MCP bridge on this computer. Enabled access lets your MCP client read and control browser
+        tabs.
+    </p>
+    <button id="toggle" type="button" disabled>Checking...</button>
+    <form id="cleanup-settings">
+        <p><label for="idle-hours">Close idle automation tabs after (hours)</label></p>
+        <input id="idle-hours" type="number" min="0" max="720" step="0.25" value="4" required />
+        <p>
+            0 disables cleanup. Selected, pinned, playing-audio and marked tabs are kept. Only tabs created by this
+            extension are eligible.
+        </p>
+        <button type="submit">Save timeout</button>
+        <p id="settings-status" role="status"></p>
+    </form>
+    <script src="popup.js"></script>
+</html>

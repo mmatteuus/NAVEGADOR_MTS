@@ -21,21 +21,22 @@ export async function getActiveTab() {
  * Navega para uma URL específica e aguarda a conclusão da carga.
  * @param {string} url - Endereço de destino.
  * @param {number} [tabId] - ID da aba alvo (se omitido usa a aba ativa).
+ * @param {boolean} [active=false] - Se a aba deve receber foco (padrão: falso).
  * @returns {Promise<object>} Detalhes da navegação concluída.
  */
-export async function navigate(url, tabId) {
+export async function navigate(url, tabId, active = false) {
   let targetTabId = tabId;
   if (!targetTabId) {
-    const active = await getActiveTab();
-    if (!active || !active.id) {
-      const created = await chrome.tabs.create({ url, active: true });
+    const activeTab = await getActiveTab();
+    if (!activeTab || !activeTab.id) {
+      const created = await chrome.tabs.create({ url, active: active });
       return { success: true, url, tabId: created.id, title: created.title || '' };
     }
-    targetTabId = active.id;
+    targetTabId = activeTab.id;
   }
 
-  const updated = await chrome.tabs.update(targetTabId, { url });
-  logger.info(`Navegação iniciada para '${url}' na aba ID ${targetTabId}.`);
+  const updated = await chrome.tabs.update(targetTabId, { url, active: active });
+  logger.info(`Navegação iniciada para '${url}' na aba ID ${targetTabId} (Ativar: ${active}).`);
   return { success: true, url, tabId: targetTabId, title: updated.title || '' };
 }
 
@@ -81,11 +82,12 @@ export async function closeTab(tabId) {
 /**
  * Alterna o foco para a aba solicitada.
  * @param {number} tabId - ID da aba a ativar.
+ * @param {boolean} [bringWindowToFront=false] - Se deve trazer a janela do navegador para frente.
  * @returns {Promise<object>} Confirmação da aba ativada.
  */
-export async function switchTab(tabId) {
+export async function switchTab(tabId, bringWindowToFront = false) {
   const tab = await chrome.tabs.update(tabId, { active: true });
-  if (tab.windowId) {
+  if (bringWindowToFront && tab.windowId) {
     await chrome.windows.update(tab.windowId, { focused: true });
   }
   return { success: true, activeTabId: tabId, title: tab.title || '', url: tab.url || '' };

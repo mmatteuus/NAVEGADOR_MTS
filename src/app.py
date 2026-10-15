@@ -68,6 +68,8 @@ class DesktopApplication:
             else "Processo iniciado, aguardando prontidão" if tunnel_service.is_active
             else self.http_error or tunnel_service.last_error or "Desconectado")
         self.window.panel_dashboard.lbl_mcp_tunnel.configure(text=f"Túnel ChatGPT: {tun_status}")
+        if hasattr(self.window, "panel_settings"):
+            self.window.panel_settings.update_tunnel_button()
 
         # Atualiza a cor e o tooltip no System Tray
         if is_ext:

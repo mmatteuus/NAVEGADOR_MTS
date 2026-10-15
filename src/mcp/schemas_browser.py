@@ -16,7 +16,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "url": {"type": "string", "description": "URL completa para navegação (ex: https://github.com)"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."},
+                "active": {"type": "boolean", "default": False, "description": "Se True, traz a aba para o primeiro plano. Padrão: False para não atrapalhar o usuário."}
             },
             "required": ["url"]
         }
@@ -32,7 +33,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
                 "element": {"type": "string", "description": "Descrição amigável do elemento para auditoria"},
                 "x": {"type": "number", "description": "Coordenada horizontal opcional para clique"},
                 "y": {"type": "number", "description": "Coordenada vertical opcional para clique"},
-                "button": {"type": "string", "enum": ["left", "right", "middle"], "default": "left"}
+                "button": {"type": "string", "enum": ["left", "right", "middle"], "default": "left"},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             }
         }
     },
@@ -46,7 +48,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
                 "selector": {"type": "string", "description": "Seletor CSS do campo de texto"},
                 "ref": {"type": "string", "description": "Referência do elemento via browser_snapshot"},
                 "clearFirst": {"type": "boolean", "default": False, "description": "Se True, limpa o texto antes"},
-                "submit": {"type": "boolean", "default": False, "description": "Se True, pressiona Enter após digitar"}
+                "submit": {"type": "boolean", "default": False, "description": "Se True, pressiona Enter após digitar"},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             },
             "required": ["text"]
         }
@@ -56,7 +59,9 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
         "description": "Captura a árvore de acessibilidade semântica (ARIA) da página ativa para a IA.",
         "inputSchema": {
             "type": "object",
-            "properties": {}
+            "properties": {
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+            }
         }
     },
     {
@@ -66,7 +71,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "format": {"type": "string", "enum": ["png", "jpeg"], "default": "png"},
-                "quality": {"type": "integer", "minimum": 1, "maximum": 100, "default": 90}
+                "quality": {"type": "integer", "minimum": 1, "maximum": 100, "default": 90},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             }
         }
     },
@@ -78,7 +84,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "action": {"type": "string", "enum": ["list", "new", "switch", "close"]},
                 "url": {"type": "string", "description": "URL para abrir em caso de ação 'new'"},
-                "tabId": {"type": "integer", "description": "ID da aba alvo para ações 'switch' ou 'close'"}
+                "tabId": {"type": "integer", "description": "ID da aba alvo para ações 'switch' ou 'close'"},
+                "focusWindow": {"type": "boolean", "default": False, "description": "Para a ação 'switch', se True traz a janela principal do sistema para o primeiro plano."}
             },
             "required": ["action"]
         }
@@ -89,7 +96,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "script": {"type": "string", "description": "Código JavaScript a ser executado"}
+                "script": {"type": "string", "description": "Código JavaScript a ser executado"},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             },
             "required": ["script"]
         }
@@ -102,7 +110,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "direction": {"type": "string", "enum": ["up", "down", "left", "right"], "default": "down"},
                 "amount": {"type": "number", "default": 400, "description": "Distância em pixels"},
-                "selector": {"type": "string", "description": "Seletor CSS opcional do container rolável"}
+                "selector": {"type": "string", "description": "Seletor CSS opcional do container rolável"},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             }
         }
     },
@@ -115,7 +124,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
                 "selector": {"type": "string", "description": "Seletor CSS do elemento"},
                 "ref": {"type": "string", "description": "Referência do elemento obtida via snapshot"},
                 "x": {"type": "number", "description": "Posição X relativa"},
-                "y": {"type": "number", "description": "Posição Y relativa"}
+                "y": {"type": "number", "description": "Posição Y relativa"},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             }
         }
     },
@@ -126,7 +136,8 @@ BROWSER_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "key": {"type": "string", "description": "Nome da tecla (ex: Enter, Tab, Escape, Backspace)"},
-                "modifiers": {"type": "array", "items": {"type": "string"}, "description": "Modificadores (Control, Alt, Shift)"}
+                "modifiers": {"type": "array", "items": {"type": "string"}, "description": "Modificadores (Control, Alt, Shift)"},
+                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
             },
             "required": ["key"]
         }

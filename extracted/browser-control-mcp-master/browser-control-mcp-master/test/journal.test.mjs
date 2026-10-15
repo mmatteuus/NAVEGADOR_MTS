@@ -1,0 +1,30 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, readdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createJournal, operationId } from "../dist/journal.js";
+
+test("durable operation claims reject duplicates and payload collisions without persisting secrets", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "browser-journal-"));
+    const journal = createJournal(directory, "test-token");
+    const id = operationId();
+    const request = { action: "fill", args: { text: "private-password", selector: "#private-name" } };
+    assert.equal(await journal.claim(id, request), true);
+    await journal.phase(id, "dispatched");
+    const restarted = createJournal(directory, "test-token");
+    assert.equal(await restarted.claim(id, { args: request.args, action: "fill" }), false);
+    await assert.rejects(restarted.claim(id, { action: "click" }), /different request/);
+    assert.equal((await restarted.status(id)).phase, "dispatched");
+    await restarted.phase(id, "completed");
+    assert.equal((await journal.status(id)).phase, "completed");
+    const unknown = operationId();
+    await journal.claim(unknown, {});
+    await journal.phase(unknown, "unknown");
+    assert.equal((await restarted.status(unknown)).phase, "unknown");
+    const stored = await readFile(join(directory, `${id}.json`), "utf8");
+    assert.doesNotMatch(stored, /private-password|private-name|selector/);
+    await assert.rejects(journal.claim(`0000000000000_${id.split("_")[1]}`, {}), /expired/);
+    await assert.rejects(journal.status("../../secret"), /Invalid/);
+    assert.equal((await readdir(directory)).length, 2);
+});

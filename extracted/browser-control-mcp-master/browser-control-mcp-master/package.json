@@ -1,0 +1,61 @@
+{
+  "name": "browser-control-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local browser automation for MCP clients, with Chrome and Firefox extensions.",
+  "bin": {
+    "browser-control-mcp": "bin/browser-control-mcp.mjs"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "extension/",
+    "scripts/extensions.mjs",
+    "scripts/install-native.mjs",
+    "docs/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kierandrewett/browser-control-mcp.git"
+  },
+  "homepage": "https://github.com/kierandrewett/browser-control-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/kierandrewett/browser-control-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "browser",
+    "automation",
+    "chrome",
+    "firefox",
+    "helium"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/build.mjs",
+    "start": "node dist/server.js",
+    "test": "node --test test/*.test.mjs",
+    "check": "tsc --noEmit",
+    "setup": "node bin/browser-control-mcp.mjs --setup",
+    "release:extensions": "tsc && node scripts/release.mjs",
+    "prepack": "tsc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.0",
+    "playwright": "^1.55.0",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.0"
+  }
+}

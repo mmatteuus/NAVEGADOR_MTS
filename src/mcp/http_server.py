@@ -38,21 +38,28 @@ class MCPHTTPServer:
 
     @web.middleware
     async def _validate_local_request(self, request: web.Request, handler):
-        """Bloqueia Origin/Host externos para evitar DNS rebinding.
+        """Permite requisições vindas do loopback e do túnel (ChatGPT/OpenAI/Local).
 
-        Permite o Host do loopback quando o request vem do tunnel-client (127.0.0.1),
-        desde que o Origin corresponda ao esquema http/localhost na porta do MCP.
+        Protege contra DNS rebinding sem bloquear o encaminhamento de cabeçalhos pelo túnel.
         """
-        host = request.headers.get("Host", "")
-        # Aceita Host do loopback (127.0.0.1 ou localhost) com a porta do MCP
-        trusted_hosts = {f"127.0.0.1:{self.port}", f"localhost:{self.port}"}
-        if host not in trusted_hosts:
-            # Se não é o Host confiável, verifica se o Origin pelo menos bate
-            # (túnel pode encaminhar o Host original, mas o Origin deve ser local)
-            origin = request.headers.get("Origin")
-            trusted_origins = {f"http://127.0.0.1:{self.port}", f"http://localhost:{self.port}"}
-            if origin not in trusted_origins:
-                return web.Response(status=403, text="Host ou Origin não autorizado.")
+        # Garante que a conexão física é estritamente local (loopback)
+        remote = request.remote
+        if remote not in ("127.0.0.1", "::1", "localhost"):
+            return web.Response(status=403, text="Acesso externo direto não permitido.")
+
+        origin = request.headers.get("Origin")
+        if origin:
+            # Se a requisição contiver um cabeçalho Origin, aceita se for local ou das plataformas suportadas
+            allowed_origin_prefixes = (
+                f"http://127.0.0.1:{self.port}",
+                f"http://localhost:{self.port}",
+                "https://chatgpt.com",
+                "https://chat.openai.com",
+                "https://claude.ai",
+            )
+            if not any(origin.startswith(prefix) for prefix in allowed_origin_prefixes):
+                return web.Response(status=403, text="Origin não autorizado.")
+
         return await handler(request)
 
     async def _health(self, request: web.Request) -> web.Response:

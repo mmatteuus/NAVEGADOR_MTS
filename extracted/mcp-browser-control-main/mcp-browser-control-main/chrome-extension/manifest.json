@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "MCP Browser Control",
+  "version": "0.3.0",
+  "description": "Connects this browser profile to a local MCP browser control server.",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "alarms", "scripting", "storage", "tabs", "webNavigation"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "optional_permissions": [
+    "bookmarks",
+    "browsingData",
+    "clipboardRead",
+    "clipboardWrite",
+    "cookies",
+    "debugger",
+    "downloads",
+    "history",
+    "webRequest",
+    "sessions",
+    "tabGroups"
+  ],
+  "background": {
+    "service_worker": "src/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "MCP Browser Control",
+    "default_popup": "src/popup.html"
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  }
+}

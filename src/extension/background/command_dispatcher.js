@@ -74,9 +74,9 @@ async function executeTabManagement(params) {
     case 'list':
       return listTabs(params.currentWindowOnly);
     case 'new':
-      return newTab(params.url, params.active);
+      return newTab(params.url, params.active !== false); // Mantém padrão ativo para criação direta
     case 'switch':
-      return switchTab(params.tabId);
+      return switchTab(params.tabId, params.focusWindow === true);
     case 'close':
       return closeTab(params.tabId);
     default:
@@ -90,13 +90,13 @@ async function executeTabManagement(params) {
 async function executeTabAction(action, params) {
   switch (action) {
     case 'browser_navigate':
-      return navigate(params.url, params.tabId);
+      return navigate(params.url, params.tabId, params.active === true);
     case 'browser_new_tab':
-      return newTab(params.url, params.active);
+      return newTab(params.url, params.active !== false);
     case 'browser_close_tab':
       return closeTab(params.tabId);
     case 'browser_switch_tab':
-      return switchTab(params.tabId);
+      return switchTab(params.tabId, params.focusWindow === true);
     case 'browser_list_tabs':
       return listTabs(params.currentWindowOnly);
     case 'browser_go_back':

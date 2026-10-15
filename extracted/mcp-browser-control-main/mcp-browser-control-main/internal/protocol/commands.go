@@ -1,0 +1,265 @@
+package protocol
+
+const (
+	// CommandBrowserPing checks extension responsiveness.
+	CommandBrowserPing = "browser.ping"
+
+	// CommandWindowsList returns browser windows.
+	CommandWindowsList = "windows.list"
+
+	// CommandWindowsGet returns one browser window.
+	CommandWindowsGet = "windows.get"
+
+	// CommandWindowsCreate creates a browser window.
+	CommandWindowsCreate = "windows.create"
+
+	// CommandWindowsUpdate changes window bounds or state.
+	CommandWindowsUpdate = "windows.update"
+
+	// CommandWindowsFocus focuses a browser window.
+	CommandWindowsFocus = "windows.focus"
+
+	// CommandWindowsClose closes a browser window.
+	CommandWindowsClose = "windows.close"
+
+	// CommandTabsList returns tabs in the selected browser.
+	CommandTabsList = "tabs.list"
+
+	// CommandTabsGet returns one browser tab.
+	CommandTabsGet = "tabs.get"
+
+	// CommandTabsCreate creates a browser tab.
+	CommandTabsCreate = "tabs.create"
+
+	// CommandTabsActivate activates a browser tab.
+	CommandTabsActivate = "tabs.activate"
+
+	// CommandTabsNavigate navigates a browser tab.
+	CommandTabsNavigate = "tabs.navigate"
+
+	// CommandTabsReload reloads a browser tab.
+	CommandTabsReload = "tabs.reload"
+
+	// CommandTabsStop stops loading a browser tab.
+	CommandTabsStop = "tabs.stop"
+
+	// CommandTabsBack navigates a browser tab backward.
+	CommandTabsBack = "tabs.back"
+
+	// CommandTabsForward navigates a browser tab forward.
+	CommandTabsForward = "tabs.forward"
+
+	// CommandTabsMove moves a browser tab.
+	CommandTabsMove = "tabs.move"
+
+	// CommandTabsDuplicate duplicates a browser tab.
+	CommandTabsDuplicate = "tabs.duplicate"
+
+	// CommandTabsClose closes a browser tab.
+	CommandTabsClose = "tabs.close"
+
+	// CommandTabsPin changes a browser tab's pinned state.
+	CommandTabsPin = "tabs.pin"
+
+	// CommandTabsMute changes a browser tab's muted state.
+	CommandTabsMute = "tabs.mute"
+
+	// CommandTabsGetZoom returns a browser tab's zoom factor.
+	CommandTabsGetZoom = "tabs.getZoom"
+
+	// CommandTabsSetZoom changes a browser tab's zoom factor.
+	CommandTabsSetZoom = "tabs.setZoom"
+
+	// CommandTabsGroup adds tabs to a new or existing group.
+	CommandTabsGroup = "tabs.group"
+
+	// CommandTabsUngroup removes tabs from their groups.
+	CommandTabsUngroup = "tabs.ungroup"
+
+	// CommandTabGroupsUpdate changes tab group presentation.
+	CommandTabGroupsUpdate = "tabGroups.update"
+
+	// CommandSessionsRecentlyClosed lists recently closed tabs and windows.
+	CommandSessionsRecentlyClosed = "sessions.recentlyClosed"
+
+	// CommandSessionsRestore reopens a recently closed tab or window.
+	CommandSessionsRestore = "sessions.restore"
+
+	// CommandPageGetHTML returns page or element HTML.
+	CommandPageGetHTML = "page.getHTML"
+
+	// CommandPageInfo returns bounded page and frame metadata.
+	CommandPageInfo = "page.info"
+
+	// CommandPageGetText returns normalized visible page text.
+	CommandPageGetText = "page.getText"
+
+	// CommandPageQuery returns paginated locator matches.
+	CommandPageQuery = "page.query"
+
+	// CommandPageGetElement returns normalized details for one element.
+	CommandPageGetElement = "page.getElement"
+
+	// CommandPageSnapshot returns a compact semantic page tree.
+	CommandPageSnapshot = "page.snapshot"
+
+	// CommandPageGetHTMLBySelector returns HTML for matching elements.
+	CommandPageGetHTMLBySelector = "page.getHTMLBySelector"
+
+	// CommandPageClick clicks a page element.
+	CommandPageClick = "page.click"
+
+	// CommandPageFill fills a page input.
+	CommandPageFill = "page.fill"
+
+	// CommandPageHover moves the synthetic pointer over an element.
+	CommandPageHover = "page.hover"
+	// CommandPageFocus focuses an element.
+	CommandPageFocus = "page.focus"
+	// CommandPageBlur removes focus from an element.
+	CommandPageBlur = "page.blur"
+	// CommandPageType appends text through input events.
+	CommandPageType = "page.type"
+	// CommandPageClear clears an editable element.
+	CommandPageClear = "page.clear"
+	// CommandPagePress dispatches a keyboard chord.
+	CommandPagePress = "page.press"
+	// CommandPageSelect selects option values.
+	CommandPageSelect = "page.select"
+	// CommandPageSetChecked sets or toggles a checkable element.
+	CommandPageSetChecked = "page.setChecked"
+	// CommandPageScroll scrolls the page or an element.
+	CommandPageScroll = "page.scroll"
+	// CommandPageDrag drags one element to another target.
+	CommandPageDrag = "page.drag"
+	// CommandPageDispatch dispatches a validated DOM event shape.
+	CommandPageDispatch = "page.dispatch"
+	// CommandPageSubmit submits a form or an element's owning form.
+	CommandPageSubmit = "page.submit"
+
+	// CommandPageWait waits for a bounded page or browser condition.
+	CommandPageWait = "page.wait"
+
+	// CommandPageScreenshot captures a browser tab viewport, full page, or element.
+	CommandPageScreenshot = "page.screenshot"
+	// CommandPagePrintToPDF prints a browser tab to PDF through a managed CDP session.
+	CommandPagePrintToPDF = "page.printToPDF"
+
+	// CommandAccessibilityGetTree returns a bounded normalized accessibility tree.
+	CommandAccessibilityGetTree = "accessibility.getTree"
+
+	// CommandEmulationSet replaces the emulation overrides for a tab.
+	CommandEmulationSet = "emulation.set"
+	// CommandEmulationGet returns the managed emulation state for a tab.
+	CommandEmulationGet = "emulation.get"
+	// CommandEmulationReset clears every managed emulation override for a tab.
+	CommandEmulationReset = "emulation.reset"
+
+	// CommandRuntimeEvaluateIsolated evaluates a bounded expression in an ephemeral isolated world.
+	CommandRuntimeEvaluateIsolated = "runtime.evaluateIsolated"
+	// CommandCDPSendReadOnly sends one allowlisted read-only CDP method.
+	CommandCDPSendReadOnly = "cdp.sendReadOnly"
+	// CommandPerformanceMetrics reads bounded runtime performance metrics.
+	CommandPerformanceMetrics = "performance.metrics"
+	// CommandPerformanceCapture runs one bounded diagnostic capture.
+	CommandPerformanceCapture = "performance.capture"
+
+	// CommandConsoleStart starts console and page error capture.
+	CommandConsoleStart = "console.start"
+	// CommandConsoleStop stops console and page error capture.
+	CommandConsoleStop = "console.stop"
+	// CommandConsoleClear clears buffered console and page error entries.
+	CommandConsoleClear = "console.clear"
+	// CommandConsoleRead reads captured console and page error entries.
+	CommandConsoleRead = "console.read"
+
+	// CommandNetworkStart starts bounded root-document network capture.
+	CommandNetworkStart = "network.start"
+	// CommandNetworkStop stops network capture while retaining bounded metadata.
+	CommandNetworkStop = "network.stop"
+	// CommandNetworkClear clears retained network metadata.
+	CommandNetworkClear = "network.clear"
+	// CommandNetworkRead reads captured network entries.
+	CommandNetworkRead = "network.read"
+	// CommandNetworkGetBody retrieves one bounded same-origin textual body.
+	CommandNetworkGetBody = "network.getBody"
+	// CommandNetworkExportHAR exports bounded HAR-like metadata.
+	CommandNetworkExportHAR = "network.exportHAR"
+
+	// CommandCookiesList lists bounded masked cookie metadata.
+	CommandCookiesList = "cookies.list"
+	// CommandCookiesListSensitive lists cookies with explicitly enabled values.
+	CommandCookiesListSensitive = "cookies.listSensitive"
+	// CommandCookiesGet gets one cookie with a masked value.
+	CommandCookiesGet = "cookies.get"
+	// CommandCookiesGetSensitive gets one explicitly enabled cookie value.
+	CommandCookiesGetSensitive = "cookies.getSensitive"
+	// CommandCookiesSet sets one origin-scoped cookie.
+	CommandCookiesSet = "cookies.set"
+	// CommandCookiesRemove removes one origin-scoped cookie.
+	CommandCookiesRemove = "cookies.remove"
+
+	// CommandStorageList lists bounded masked Web Storage items.
+	CommandStorageList = "storage.list"
+	// CommandStorageListSensitive lists Web Storage items with explicitly enabled values.
+	CommandStorageListSensitive = "storage.listSensitive"
+	// CommandStorageGet gets one masked Web Storage item.
+	CommandStorageGet = "storage.get"
+	// CommandStorageGetSensitive gets one explicitly enabled Web Storage value.
+	CommandStorageGetSensitive = "storage.getSensitive"
+	// CommandStorageSet sets one Web Storage item.
+	CommandStorageSet = "storage.set"
+	// CommandStorageRemove removes one Web Storage item.
+	CommandStorageRemove = "storage.remove"
+	// CommandStorageCacheMetadata lists bounded Cache Storage names.
+	CommandStorageCacheMetadata = "storage.cacheMetadata"
+	// CommandStorageIndexedDBMetadata lists bounded IndexedDB database metadata.
+	CommandStorageIndexedDBMetadata = "storage.indexedDBMetadata"
+	// CommandStorageClear clears explicitly confirmed storage types for one origin.
+	CommandStorageClear = "storage.clear"
+	// CommandDownloadsList lists bounded download metadata.
+	CommandDownloadsList = "downloads.list"
+	// CommandDownloadsGet gets one download status.
+	CommandDownloadsGet = "downloads.get"
+	// CommandDownloadsCreate starts one constrained HTTP(S) download.
+	CommandDownloadsCreate = "downloads.create"
+	// CommandDownloadsPause pauses one active download.
+	CommandDownloadsPause = "downloads.pause"
+	// CommandDownloadsResume resumes one resumable download.
+	CommandDownloadsResume = "downloads.resume"
+	// CommandDownloadsCancel cancels one active download.
+	CommandDownloadsCancel = "downloads.cancel"
+	// CommandDownloadsErase erases one terminal download history entry.
+	CommandDownloadsErase = "downloads.erase"
+
+	// CommandHistorySearch searches bounded browser history metadata.
+	CommandHistorySearch = "history.search"
+	// CommandHistoryGetVisits lists bounded visits for one HTTP(S) URL.
+	CommandHistoryGetVisits = "history.getVisits"
+	// CommandHistoryDeleteURL removes every visit for one exact HTTP(S) URL.
+	CommandHistoryDeleteURL = "history.deleteUrl"
+	// CommandHistoryDeleteRange removes history visits in one confirmed time range.
+	CommandHistoryDeleteRange = "history.deleteRange"
+	// CommandHistoryDeleteAll clears browser history after explicit confirmation.
+	CommandHistoryDeleteAll = "history.deleteAll"
+
+	// CommandBookmarksList lists or searches bounded bookmark nodes.
+	CommandBookmarksList = "bookmarks.list"
+	// CommandBookmarksCreate creates one bookmark or folder.
+	CommandBookmarksCreate = "bookmarks.create"
+	// CommandBookmarksUpdate changes one bookmark or folder.
+	CommandBookmarksUpdate = "bookmarks.update"
+	// CommandBookmarksMove moves one bookmark or folder.
+	CommandBookmarksMove = "bookmarks.move"
+	// CommandBookmarksRemove removes one bookmark, empty folder, or confirmed folder tree.
+	CommandBookmarksRemove = "bookmarks.remove"
+
+	// CommandReadingListList lists bounded reading-list entries.
+	CommandReadingListList = "readingList.list"
+	// CommandReadingListAdd adds one reading-list entry.
+	CommandReadingListAdd = "readingList.add"
+	// CommandReadingListUpdate changes one reading-list entry.
+	CommandReadingListUpdate = "readingList.update"
+	// CommandReadingListRemove removes one reading-list entry.
+	CommandReadingListRemove = "readingList.remove"
+)

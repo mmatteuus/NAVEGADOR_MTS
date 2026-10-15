@@ -12,6 +12,7 @@ from typing import Optional
 import customtkinter as ctk
 from .theme import PALETTE
 from ..core.config import current_config, get_tunnel_id, save_tunnel_id
+from ..core.tunnel_service import tunnel_service
 from ..core.security import encrypt_dpapi, decrypt_dpapi, mask_credential
 from ..core.credential_validation import is_runtime_credential
 # Chave do Registro do Windows para inicialização automática
@@ -102,10 +103,18 @@ class SettingsPanel(ctk.CTkFrame):
 
         f_row2 = ctk.CTkFrame(sec_net, fg_color="transparent")
         f_row2.pack(fill="x", padx=12, pady=(4, 10))
-        ctk.CTkLabel(f_row2, text="ID do Túnel:", width=140, anchor="w").pack(side="left")
-        self.entry_tunnel = ctk.CTkEntry(f_row2, width=320)
+        ctk.CTkLabel(f_row2, text="ID do Túnel:", width=120, anchor="w").pack(side="left")
+        self.entry_tunnel = ctk.CTkEntry(f_row2, width=300)
         self.entry_tunnel.insert(0, get_tunnel_id())
         self.entry_tunnel.pack(side="left")
+
+        self.btn_toggle_tunnel = ctk.CTkButton(
+            f_row2, text="Ligar Túnel", width=130, height=28,
+            command=self._on_click_toggle_tunnel,
+            fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover
+        )
+        self.btn_toggle_tunnel.pack(side="left", padx=(10, 0))
+        self.update_tunnel_button()
 
         # Seção 3: Sistema e Inicialização
         sec_sys = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
@@ -147,3 +156,32 @@ class SettingsPanel(ctk.CTkFrame):
             return
         set_autostart_enabled(self.switch_autostart.get() == 1)
         self.lbl_feedback.configure(text="✅ Configurações salvas com sucesso!", text_color=PALETTE.success)
+
+    def _on_click_toggle_tunnel(self) -> None:
+        """Inicia ou encerra o processo do túnel dependendo do estado atual."""
+        if tunnel_service.is_active:
+            tunnel_service.stop()
+            self.lbl_feedback.configure(text="Túnel encerrado com sucesso.", text_color=PALETTE.success)
+        else:
+            # Primeiro tenta salvar as configurações para garantir que o ID do túnel está atualizado
+            self.save_settings()
+            if tunnel_service.start():
+                self.lbl_feedback.configure(text="Túnel iniciado! Verifique o status no Dashboard.", text_color=PALETTE.success)
+            else:
+                self.lbl_feedback.configure(text=f"Erro ao iniciar túnel: {tunnel_service.last_error}", text_color=PALETTE.error)
+        self.update_tunnel_button()
+
+    def update_tunnel_button(self) -> None:
+        """Atualiza o texto e cor do botão de acordo com o status do tunnel_service."""
+        if tunnel_service.is_active:
+            self.btn_toggle_tunnel.configure(
+                text="Desligar Túnel",
+                fg_color=PALETTE.error,
+                hover_color="#A80000"
+            )
+        else:
+            self.btn_toggle_tunnel.configure(
+                text="Ligar Túnel",
+                fg_color=PALETTE.accent,
+                hover_color=PALETTE.accent_hover
+            )
