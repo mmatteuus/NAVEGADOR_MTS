@@ -8,6 +8,7 @@ import sys
 import threading
 from typing import Callable, Optional
 from urllib.request import urlopen
+from urllib.parse import urlparse
 
 from .config import current_config, get_tunnel_id
 from .security import decrypt_dpapi
@@ -65,10 +66,16 @@ class TunnelService:
         self._monitor_thread: Optional[threading.Thread] = None
         self._on_status_change: Optional[Callable[[bool, str], None]] = None
         self.last_error = ""
+        self._ready = False
 
     @property
     def is_active(self) -> bool:
         return bool(self._supervisor and self._supervisor.is_alive())
+
+    @property
+    def is_ready(self) -> bool:
+        """A leitura assíncrona da prontidão é feita pelo monitor."""
+        return self.is_active and self._ready
 
     def set_status_callback(self, cb: Callable[[bool, str], None]) -> None:
         self._on_status_change = cb
@@ -77,6 +84,19 @@ class TunnelService:
         self.last_error = "" if running else message
         if self._on_status_change:
             self._on_status_change(running, message)
+
+    def _probe_ready(self) -> bool:
+        """Testa /readyz somente na URL local escrita pelo tunnel-client."""
+        file = current_config.app_data_dir / "tunnel-health-url.txt"
+        try:
+            url = file.read_text(encoding="utf-8").strip()
+            parsed = urlparse(url)
+            if parsed.scheme != "http" or parsed.hostname not in ("127.0.0.1", "localhost"):
+                return False
+            with urlopen(url.rstrip("/") + "/readyz", timeout=0.4) as response:
+                return response.status == 200
+        except Exception:
+            return False
 
     def start(self) -> bool:
         if self.is_active:
@@ -89,7 +109,12 @@ class TunnelService:
         if not local_mcp_is_ready():
             self._status(False, "Servidor MCP HTTP local indisponível.")
             return False
+        current_config.ensure_directories()
+        health_file = current_config.app_data_dir / "tunnel-health-url.txt"
+        health_file.unlink(missing_ok=True)
         env = os.environ.copy()
+        env["HEALTH_LISTEN_ADDR"] = "127.0.0.1:0"
+        env["HEALTH_URL_FILE"] = str(health_file)
         env["CONTROL_PLANE_API_KEY"] = key
         env["CONTROL_PLANE_TUNNEL_ID"] = get_tunnel_id()
         env["MCP_SERVER_URL"] = f"http://127.0.0.1:{current_config.mcp_port}/mcp"
@@ -99,6 +124,7 @@ class TunnelService:
             self._status(False, "Falha ao executar tunnel-client.exe.")
             return False
         self._supervisor = supervisor
+        self._ready = False
         self._stop = threading.Event()
         self._monitor_thread = threading.Thread(target=self._monitor, args=(self._stop,),
                                                 daemon=True, name="TunnelMonitor")
@@ -110,9 +136,13 @@ class TunnelService:
         attempts = 0
         while not stop.wait(2.0):
             supervisor = self._supervisor
-            if not supervisor or supervisor.is_alive():
+            if not supervisor:
+                return
+            if supervisor.is_alive():
+                self._ready = self._probe_ready()
                 attempts = 0
                 continue
+            self._ready = False
             self._status(False, "Túnel encerrou; verificando recuperação.")
             if stop.wait(min(30, 2 ** min(attempts + 1, 5))):
                 break
@@ -124,6 +154,7 @@ class TunnelService:
 
     def stop(self) -> None:
         self._stop.set()
+        self._ready = False
         supervisor, self._supervisor = self._supervisor, None
         if supervisor:
             supervisor.terminate_tree(timeout=1.5)
