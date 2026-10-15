@@ -120,7 +120,9 @@ def get_tunnel_id() -> str:
             candidate = str(json.loads(file.read_text(encoding="utf-8"))["tunnel_id"])
         except (OSError, ValueError, KeyError, TypeError):
             candidate = current_config.tunnel_id
-    return candidate.strip()
+    import re
+    candidate = candidate.strip()
+    return candidate if re.fullmatch(r"tunnel_[0-9a-f]{32}", candidate) else ""
 
 
 def save_tunnel_id(value: str) -> None:
