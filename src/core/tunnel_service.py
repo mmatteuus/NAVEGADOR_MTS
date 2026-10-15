@@ -118,7 +118,6 @@ class TunnelService:
         self._monitor_thread.start()
         self._status(True, "Processo do túnel iniciado; conexão remota não verificada.")
         return True
-
     def _monitor(self, stop: threading.Event) -> None:
         attempts = 0
         while not stop.wait(2.0):
@@ -138,7 +137,6 @@ class TunnelService:
                 self._status(True, "Túnel reiniciado; confirme /readyz do cliente.")
             else:
                 attempts += 1
-
     def stop(self) -> None:
         self._stop.set()
         self._ready = False
@@ -146,6 +144,5 @@ class TunnelService:
         if supervisor:
             supervisor.terminate_tree(timeout=1.5)
         self._status(False, "Túnel desligado pelo aplicativo.")
-
 
 tunnel_service = TunnelService()
