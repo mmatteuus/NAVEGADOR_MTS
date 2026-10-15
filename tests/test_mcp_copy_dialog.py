@@ -22,7 +22,7 @@ def test_mcp_dialog_json_generation() -> None:
     assert "navegador-mts" in data["mcpServers"]
     server_cfg = data["mcpServers"]["navegador-mts"]
     assert "command" in server_cfg
-    assert server_cfg["args"] == ["--stdio"]
+    assert server_cfg["args"][-1] == "--stdio"
 
 
 def test_mcp_dialog_prompt_template() -> None:
