@@ -29,7 +29,6 @@ def is_autostart_enabled() -> bool:
             return True
     except Exception:
         return False
-
 def set_autostart_enabled(enabled: bool) -> bool:
     """Habilita ou desabilita a inicialização automática no Registro do Windows."""
     if sys.platform != "win32":
