@@ -44,7 +44,7 @@ def test_tunnel_process_environment_and_command():
          patch("src.core.tunnel_service.ProcessSupervisor", FakeSupervisor):
         assert tunnel.start()
         try:
-            assert created[0]["command"] == ["C:/Fake/tunnel-client.exe", "run"]
+            assert created[0]["command"] == ["C:\\Fake\\tunnel-client.exe", "run"]
             assert "sk-test-hidden" not in " ".join(created[0]["command"])
             assert created[0]["env"]["CONTROL_PLANE_API_KEY"] == "sk-test-hidden"
             assert created[0]["env"]["MCP_SERVER_URL"].endswith("/mcp")
