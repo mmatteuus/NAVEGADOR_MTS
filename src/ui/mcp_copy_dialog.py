@@ -13,7 +13,8 @@ import customtkinter as ctk
 from .theme import PALETTE
 from ..computer.safety_gate import safety_gate
 from ..computer.mouse import get_cursor_position
-from ..core.tunnel_service import tunnel_service, TUNNEL_ID
+from ..core.tunnel_service import tunnel_service
+from ..core.config import current_config, get_tunnel_id
 
 MCP_PROMPT_TEMPLATE = (
     "Você é meu assistente de IA com acesso ao Navegador MTS. "
@@ -54,7 +55,7 @@ class MCPConnectDialog(ctk.CTkToplevel):
         f_t = ctk.CTkFrame(card_t, fg_color="transparent")
         f_t.pack(fill="x", padx=12, pady=(2, 6))
         self.ent_tunnel = ctk.CTkEntry(f_t, width=300)
-        self.ent_tunnel.insert(0, TUNNEL_ID)
+        self.ent_tunnel.insert(0, get_tunnel_id())
         self.ent_tunnel.configure(state="readonly")
         self.ent_tunnel.pack(side="left", padx=(0, 6))
         ctk.CTkButton(f_t, text="📋 Copiar ID", width=95, height=28, command=self._copy_tunnel).pack(side="left", padx=2)
@@ -63,11 +64,11 @@ class MCPConnectDialog(ctk.CTkToplevel):
         # 2. Universal (Aba 'URL do Servidor' no ChatGPT e Outros Agentes)
         card_u = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         card_u.pack(fill="x", padx=20, pady=4)
-        ctk.CTkLabel(card_u, text="2. Qualquer Agente ou ChatGPT (Aba 'URL do Servidor'):", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(6, 2))
+        ctk.CTkLabel(card_u, text="2. URL MCP local (não pública; use túnel no ChatGPT):", font=(PALETTE.font_family, 12, "bold")).pack(anchor="w", padx=12, pady=(6, 2))
         f_u = ctk.CTkFrame(card_u, fg_color="transparent")
         f_u.pack(fill="x", padx=12, pady=(2, 6))
         self.ent_url = ctk.CTkEntry(f_u, width=300)
-        self.ent_url.insert(0, "URL pública MCP HTTPS exigida no ChatGPT")
+        self.ent_url.insert(0, f"http://127.0.0.1:{current_config.mcp_port}/mcp")
         self.ent_url.configure(state="readonly")
         self.ent_url.pack(side="left", padx=(0, 6))
         ctk.CTkButton(f_u, text="📋 Copiar URL", width=95, height=28, command=self._copy_url).pack(side="left", padx=2)
@@ -91,11 +92,11 @@ class MCPConnectDialog(ctk.CTkToplevel):
 
     def _copy_tunnel(self) -> None:
         self.clipboard_clear()
-        self.clipboard_append(TUNNEL_ID)
-        self.lbl_feedback.configure(text="✅ ID do Túnel copiado! Cole no ChatGPT.", text_color=PALETTE.success)
+        self.clipboard_append(get_tunnel_id())
+        self.lbl_feedback.configure(text="ID copiado. Configure na aba Túnel do ChatGPT.", text_color=PALETTE.success)
 
     def _copy_url(self) -> None:
-        url = f"http://127.0.0.1:3457/mcp"
+        url = f"http://127.0.0.1:{current_config.mcp_port}/mcp"
         self.clipboard_clear()
         self.clipboard_append(url)
         self.lbl_feedback.configure(text="Endpoint local: exige túnel HTTPS para ChatGPT.", text_color=PALETTE.warning)
@@ -108,7 +109,7 @@ class MCPConnectDialog(ctk.CTkToplevel):
     def _start_tunnel(self) -> None:
         started = tunnel_service.start()
         if started:
-            self.lbl_feedback.configure(text="🟢 Túnel iniciado com sucesso pelo aplicativo!", text_color=PALETTE.success)
+            self.lbl_feedback.configure(text="Processo iniciado; confirme conexão remota.", text_color=PALETTE.success)
         else:
             self.lbl_feedback.configure(text="⚠️ Não foi possível iniciar o túnel.", text_color=PALETTE.error)
 
