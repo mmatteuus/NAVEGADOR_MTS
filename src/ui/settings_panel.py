@@ -7,6 +7,7 @@ Responsabilidades:
 """
 
 import sys
+from pathlib import Path
 from typing import Optional
 import customtkinter as ctk
 from .theme import PALETTE
@@ -15,7 +16,7 @@ from ..core.security import encrypt_dpapi, decrypt_dpapi, mask_credential
 
 # Chave do Registro do Windows para inicialização automática
 _REG_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_REG_APP_NAME = "BrowserMTS"
+_REG_APP_NAME = "NavegadorMTS"
 
 def is_autostart_enabled() -> bool:
     """Verifica se o aplicativo está configurado para iniciar com o Windows."""
@@ -40,7 +41,8 @@ def set_autostart_enabled(enabled: bool) -> bool:
                 if getattr(sys, "frozen", False):
                     cmd = f'"{sys.executable}" --minimized'
                 else:
-                    cmd = f'"{sys.executable}" -m src.app --minimized'
+                    entrypoint = Path(__file__).resolve().parents[2] / "entrypoint.py"
+                    cmd = f'"{sys.executable}" "{entrypoint}" --minimized'
                 winreg.SetValueEx(key, _REG_APP_NAME, 0, winreg.REG_SZ, cmd)
             else:
                 try:
