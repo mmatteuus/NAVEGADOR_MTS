@@ -26,7 +26,8 @@ def _plan(name: str, args: dict[str, Any]) -> list[tuple[str, dict]]:
             if "x" in args or "y" in args:
                 ops.append(("computer_mouse_move", {"x": args["x"], "y": args["y"]}))
             ops.append(("computer_mouse_click", {
-                "button": args.get("button", buttons[action]),
+                "button": buttons[action] if action in ("right_click", "middle_click")
+                          else args.get("button", buttons[action]),
                 "double": action == "double_click"}))
             return ops
         raise ValueError(f"Ação de mouse não suportada: {action!r}")
