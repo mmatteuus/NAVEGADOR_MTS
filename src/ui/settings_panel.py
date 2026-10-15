@@ -110,12 +110,10 @@ class SettingsPanel(ctk.CTkFrame):
         sec_sys = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         sec_sys.grid(row=2, column=0, sticky="ew", padx=16, pady=6)
         ctk.CTkLabel(sec_sys, text="⚙️ Inicialização do Sistema", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
-        
         self.switch_autostart = ctk.CTkSwitch(sec_sys, text="Iniciar silenciosamente com o Windows (Bandeja)")
         if is_autostart_enabled():
             self.switch_autostart.select()
         self.switch_autostart.pack(anchor="w", padx=12, pady=(4, 10))
-
         # Botões de Ação
         self.lbl_feedback = ctk.CTkLabel(self, text="", text_color=PALETTE.success)
         self.lbl_feedback.grid(row=3, column=0, pady=(2, 2))
@@ -123,12 +121,10 @@ class SettingsPanel(ctk.CTkFrame):
         btn_box.grid(row=4, column=0, pady=(2, 10))
         ctk.CTkButton(btn_box, text="💾 Salvar Configurações", width=170, height=32, command=self.save_settings).pack(side="left", padx=6)
         ctk.CTkButton(btn_box, text="🗑️ Desinstalar da Máquina", fg_color=PALETTE.error, hover_color="#A80000", width=190, height=32, command=self._on_click_uninstall).pack(side="left", padx=6)
-
     def _on_click_uninstall(self) -> None:
         """Abre diálogo para desinstalar o BROWSER MTS desta máquina."""
         from .uninstaller_dialog import show_uninstall_dialog
         show_uninstall_dialog(self, on_shutdown=self.on_shutdown_app)
-
     def save_settings(self) -> None:
         """Salva as configurações alteradas pelo usuário com proteção criptográfica."""
         new_key = self.entry_key.get().strip()
@@ -143,7 +139,6 @@ class SettingsPanel(ctk.CTkFrame):
             except Exception as exc:
                 self.lbl_feedback.configure(text=f"Erro ao proteger credencial: {exc}", text_color=PALETTE.error)
                 return
-
         try:
             save_tunnel_id(self.entry_tunnel.get())
         except ValueError as exc:
