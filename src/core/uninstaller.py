@@ -19,7 +19,6 @@ def find_uninstaller_binary() -> Optional[str]:
     candidates = [
         os.path.join(exe_dir, "unins000.exe"),
         os.path.expandvars(r"%LOCALAPPDATA%\Programs\Navegador MTS\unins000.exe"),
-        os.path.expandvars(r"%LOCALAPPDATA%\Programs\BROWSER MTS\unins000.exe"),
         os.path.expandvars(r"%APPDATA%\Programs\Navegador MTS\unins000.exe"),
     ]
     for path in candidates:
