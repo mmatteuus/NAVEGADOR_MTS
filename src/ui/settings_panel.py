@@ -10,7 +10,7 @@ import sys
 from typing import Optional
 import customtkinter as ctk
 from .theme import PALETTE
-from ..core.config import current_config
+from ..core.config import current_config, get_tunnel_id, save_tunnel_id
 from ..core.security import encrypt_dpapi, decrypt_dpapi, mask_credential
 
 # Chave do Registro do Windows para inicialização automática
@@ -103,7 +103,7 @@ class SettingsPanel(ctk.CTkFrame):
         f_row2.pack(fill="x", padx=12, pady=(4, 10))
         ctk.CTkLabel(f_row2, text="ID do Túnel:", width=140, anchor="w").pack(side="left")
         self.entry_tunnel = ctk.CTkEntry(f_row2, width=320)
-        self.entry_tunnel.insert(0, current_config.tunnel_id)
+        self.entry_tunnel.insert(0, get_tunnel_id())
         self.entry_tunnel.pack(side="left")
 
         # Seção 3: Sistema e Inicialização
@@ -144,5 +144,10 @@ class SettingsPanel(ctk.CTkFrame):
                 self.lbl_feedback.configure(text=f"Erro ao proteger credencial: {exc}", text_color=PALETTE.error)
                 return
 
+        try:
+            save_tunnel_id(self.entry_tunnel.get())
+        except ValueError as exc:
+            self.lbl_feedback.configure(text=str(exc), text_color=PALETTE.error)
+            return
         set_autostart_enabled(self.switch_autostart.get() == 1)
         self.lbl_feedback.configure(text="✅ Configurações salvas com sucesso!", text_color=PALETTE.success)
