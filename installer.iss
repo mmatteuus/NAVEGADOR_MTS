@@ -2,7 +2,7 @@
 ; Compilado com Inno Setup 6
 
 #define MyAppName "Navegador MTS"
-#define MyAppVersion "2.1.0"
+#define MyAppVersion "2.1.1"
 #define MyAppPublisher "MTS Automacao & IA"
 #define MyAppExeName "NAVEGADOR_MTS.exe"
 
@@ -14,7 +14,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=dist_installer
-OutputBaseFilename=NAVEGADOR_MTS_Instalador_v2.1.0
+OutputBaseFilename=NAVEGADOR_MTS_Instalador_v{#MyAppVersion}
 SetupIconFile=app_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/ultra64
@@ -31,7 +31,7 @@ RestartApplications=no
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [InstallDelete]
-Type: filesandordirs; Name: "{localappdata}\Programs\BROWSER MTS"
+; Não apagar instalações independentes ou perfis legados na atualização.
 Type: files; Name: "{autodesktop}\BROWSER MTS.lnk"
 Type: files; Name: "{autodesktop}\Extensão Chrome BROWSER MTS.lnk"
 Type: files; Name: "{autodesktop}\Extensao Chrome BROWSER MTS.lnk"
@@ -53,8 +53,8 @@ Name: "{group}\Pasta da Extensao Chrome"; Filename: "{app}\extension"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\app_icon.ico"
 Name: "{autodesktop}\Extensao Chrome Navegador MTS"; Filename: "{app}\extension"; Tasks: exticon; IconFilename: "{app}\app_icon.ico"
-Name: "D:\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\app_icon.ico"
-Name: "D:\Extensao Chrome Navegador MTS"; Filename: "{app}\extension"; Tasks: exticon; IconFilename: "{app}\app_icon.ico"
+; Não criar atalhos na raiz de D:.
+; A extensão permanece acessível pelo grupo de programas e área de trabalho.
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait

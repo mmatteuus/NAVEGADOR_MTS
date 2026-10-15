@@ -137,7 +137,7 @@ if ($ShouldCreate) {
     }
 
     $ShortcutPath = Join-Path $ProgramsFolder "BROWSER MTS.lnk"
-    $TargetScript = Join-Path $ScriptDir "src\app.py"
+    $TargetScript = Join-Path $ScriptDir "entrypoint.py"
     $IconPath = Join-Path $ScriptDir "docs\screenshots\system_tray_icon.png"
 
     $WshShell = New-Object -ComObject WScript.Shell
@@ -176,7 +176,7 @@ Write-Host ""
 
 if ($StartNow) {
     Write-Info "Iniciando BROWSER MTS agora..."
-    $TargetScript = Join-Path $ScriptDir "src\app.py"
+    $TargetScript = Join-Path $ScriptDir "entrypoint.py"
     Start-Process -FilePath $PythonwExe -ArgumentList ('"{0}"' -f $TargetScript) -WorkingDirectory $ScriptDir
     Write-Success "Aplicativo disparado em segundo plano."
 }

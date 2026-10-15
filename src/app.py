@@ -16,6 +16,8 @@ from .core.tunnel_service import tunnel_service
 from .computer.kill_switch import kill_switch
 from .computer.safety_gate import safety_gate
 from .mcp.ws_bridge import WebSocketBridge
+from .mcp.server import MCPServer
+from .mcp.http_server import MCPHTTPServer
 from .ui import MainWindow, SystemTrayManager, configure_app_theme, notifier
 
 
@@ -25,6 +27,10 @@ class DesktopApplication:
     def __init__(self, start_minimized: bool = False) -> None:
         self.start_minimized = start_minimized
         self.ws_bridge = WebSocketBridge(host=current_config.host, port=current_config.port)
+        self.http_mcp = MCPHTTPServer(MCPServer(host=current_config.host, ws_port=current_config.port), current_config.mcp_port)
+        self.http_mcp.server.ws_bridge = self.ws_bridge
+        self.http_mcp.server.router.ws_bridge = self.ws_bridge
+        self.http_error: Optional[str] = None
         self.ws_loop: Optional[asyncio.AbstractEventLoop] = None
         self.ws_thread: Optional[threading.Thread] = None
         self.window: Optional[MainWindow] = None
@@ -38,6 +44,11 @@ class DesktopApplication:
         def _run_ws():
             asyncio.set_event_loop(self.ws_loop)
             self.ws_loop.run_until_complete(self.ws_bridge.start())
+            try:
+                self.ws_loop.run_until_complete(self.http_mcp.start())
+                tunnel_service.start()
+            except OSError as exc:
+                self.http_error = str(exc)
             self.ws_loop.run_forever()
 
         self.ws_thread = threading.Thread(target=_run_ws, daemon=True, name="WSBridgeThread")
@@ -45,7 +56,6 @@ class DesktopApplication:
 
         # Inicia a escuta global do Kill-Switch e o Túnel persistente OpenAI
         kill_switch.start()
-        tunnel_service.start()
 
     def _poll_status_cycle(self) -> None:
         """Ciclo periódico (1s) para sincronização de métricas e status com a UI."""
@@ -57,7 +67,7 @@ class DesktopApplication:
         active_tab = self.ws_bridge.client_info.get("activeTabUrl", "")
         self.window.panel_dashboard.update_mcp_status("Ativo", latency_ms=lat, port=self.ws_bridge.port)
         self.window.panel_dashboard.update_extension_status(is_ext, active_tab=active_tab)
-        tun_status = "🟢 Ativo" if tunnel_service.is_active else "🟡 Conectando"
+        tun_status = "Processo iniciado (sem confirmação remota)" if tunnel_service.is_active else "Desconectado"
         self.window.panel_dashboard.lbl_mcp_tunnel.configure(text=f"Túnel ChatGPT: {tun_status}")
 
         # Atualiza a cor e o tooltip no System Tray
@@ -76,7 +86,13 @@ class DesktopApplication:
         if self.tray:
             self.tray.stop()
         if self.ws_loop and self.ws_loop.is_running():
-            asyncio.run_coroutine_threadsafe(self.ws_bridge.stop(), self.ws_loop)
+            async def _close():
+                await self.http_mcp.stop()
+                await self.ws_bridge.stop()
+            try:
+                asyncio.run_coroutine_threadsafe(_close(), self.ws_loop).result(timeout=5)
+            except Exception:
+                pass
             self.ws_loop.call_soon_threadsafe(self.ws_loop.stop())
         if self.window:
             self.window.destroy()

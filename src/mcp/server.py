@@ -24,10 +24,12 @@ class MCPServer:
     def __init__(self, host: str = "127.0.0.1", ws_port: int = 3456) -> None:
         self.host = host
         self.ws_port = ws_port
-        self.name = "navegador-mcp-mts"
-        self.version = "2.1.0"
+        self.name = "browser-mcp-mts"
+        from ..core.updater import APP_VERSION
+        self.version = APP_VERSION
         self.ws_bridge = WebSocketBridge(host=self.host, port=self.ws_port)
-        self.router = MCPToolRouter(ws_bridge=self.ws_bridge)
+        from ..computer.safety_gate import safety_gate
+        self.router = MCPToolRouter(ws_bridge=self.ws_bridge, safety_checker=safety_gate.is_authorized)
         self._running = False
         self._use_active_hub = False
 

@@ -25,7 +25,7 @@ set "PROJECT_DIR=%~dp0"
 if "%PROJECT_DIR:~-1%"=="\" set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 set "PYTHONW_EXE=%PROJECT_DIR%\.venv\Scripts\pythonw.exe"
 if not exist "%PYTHONW_EXE%" set "PYTHONW_EXE=pythonw"
-set "TARGET_APP=%PROJECT_DIR%\src\app.py"
+set "TARGET_APP=%PROJECT_DIR%\entrypoint.py"
 set "ICON_PATH=%PROJECT_DIR%\docs\screenshots\system_tray_icon.png"
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%DESKTOP_SHORTCUT%'); $s.TargetPath = '%PYTHONW_EXE%'; $s.Arguments = '\"%TARGET_APP%\"'; $s.WorkingDirectory = '%PROJECT_DIR%'; $s.Description = 'BROWSER MTS -- Automacao de Navegador e Computador para IA'; if (Test-Path '%ICON_PATH%') { $s.IconLocation = '%ICON_PATH%'; } $s.Save();" 2>nul

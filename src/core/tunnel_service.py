@@ -22,7 +22,7 @@ def find_tunnel_client_binary() -> Optional[Path]:
     """Localiza o binário oficial do tunnel-client no sistema."""
     candidates = [
         current_config.tunnel_bin_path,
-        Path(r"C:\Users\MATEUS\browser mcp mts\BROWSER-MCP-MTS-PORTATIL\tunnel-client.exe"),
+        current_config.project_root / "BROWSER-MCP-MTS-PORTATIL" / "tunnel-client.exe",
         Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "BROWSER MTS" / "tunnel-client.exe",
         current_config.project_root / "tunnel-client.exe",
     ]
@@ -35,7 +35,7 @@ def find_tunnel_client_binary() -> Optional[Path]:
 def get_tunnel_config_path() -> Optional[Path]:
     """Retorna o caminho do arquivo de perfil YAML do túnel."""
     candidates = [
-        Path(r"C:\Users\MATEUS\browser mcp mts\BROWSER-MCP-MTS-PORTATIL\config\profiles\browser-mts-runtime.yaml"),
+        current_config.app_data_dir / "browser-mts-runtime.yaml",
         current_config.project_root / "BROWSER-MCP-MTS-PORTATIL" / "config" / "profiles" / "browser-mts-runtime.yaml",
         current_config.app_data_dir / "browser-mts-runtime.yaml",
     ]
@@ -76,7 +76,7 @@ class TunnelService:
                 self._on_status_change(False, "Binário ou perfil de túnel não encontrado")
             return False
 
-        cmd = [str(bin_path), "run", "--profile-file", str(cfg_path)]
+        cmd = [str(bin_path), "run", "--config", str(cfg_path)]
         self._supervisor = ProcessSupervisor(command=cmd, name="openai_tunnel_supervisor", restart_delay=1.0)
         started = self._supervisor.start()
         self._running = started
@@ -84,7 +84,7 @@ class TunnelService:
         if started:
             self._start_monitor_loop()
             if self._on_status_change:
-                self._on_status_change(True, f"Conectado ({TUNNEL_ID})")
+                self._on_status_change(True, "Processo de túnel iniciado (conexão remota não verificada)")
         return started
 
     def _start_monitor_loop(self) -> None:

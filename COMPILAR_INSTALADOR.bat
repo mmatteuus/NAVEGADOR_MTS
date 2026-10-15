@@ -33,7 +33,7 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo ========================================================
 echo     INSTALADOR GERADO COM SUCESSO!
-echo     Local: dist_installer\NAVEGADOR_MTS_Instalador_v2.0.exe
+echo     Local: dist_installer\NAVEGADOR_MTS_Instalador_v2.1.1.exe
 echo ========================================================
 echo.
 explorer.exe /select,"dist_installer\NAVEGADOR_MTS_Instalador_v2.0.exe"
