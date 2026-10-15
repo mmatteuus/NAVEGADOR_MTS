@@ -57,7 +57,7 @@ class DesktopApplication:
         active_tab = self.ws_bridge.client_info.get("activeTabUrl", "")
         self.window.panel_dashboard.update_mcp_status("Ativo", latency_ms=lat, port=self.ws_bridge.port)
         self.window.panel_dashboard.update_extension_status(is_ext, active_tab=active_tab)
-        tun_status = "🟢 Ativo" if tunnel_service.is_active else "🟡 Conectando"
+        tun_status = "Processo iniciado (sem confirmação remota)" if tunnel_service.is_active else "Desconectado"
         self.window.panel_dashboard.lbl_mcp_tunnel.configure(text=f"Túnel ChatGPT: {tun_status}")
 
         # Atualiza a cor e o tooltip no System Tray
