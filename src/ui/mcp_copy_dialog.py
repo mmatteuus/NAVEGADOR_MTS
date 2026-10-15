@@ -36,8 +36,9 @@ class MCPConnectDialog(ctk.CTkToplevel):
 
     def _get_mcp_config_json(self) -> str:
         """Gera a configuração formatada compatível com Claude Desktop e Cursor."""
-        exe = sys.executable if getattr(sys, "frozen", False) else "C:\\Users\\MATEUS\\AppData\\Local\\Programs\\Navegador MTS\\NAVEGADOR_MTS.exe"
-        cfg = {"mcpServers": {"navegador-mts": {"command": exe, "args": ["--stdio"]}}}
+        exe = sys.executable
+        args = ["--stdio"] if getattr(sys, "frozen", False) else ["-m", "src.app", "--stdio"]
+        cfg = {"mcpServers": {"navegador-mts": {"command": exe, "args": args}}}
         return json.dumps(cfg, indent=2, ensure_ascii=False)
 
     def _setup_ui(self) -> None:
@@ -66,7 +67,7 @@ class MCPConnectDialog(ctk.CTkToplevel):
         f_u = ctk.CTkFrame(card_u, fg_color="transparent")
         f_u.pack(fill="x", padx=12, pady=(2, 6))
         self.ent_url = ctk.CTkEntry(f_u, width=300)
-        self.ent_url.insert(0, f"http://127.0.0.1:{self.port}/sse")
+        self.ent_url.insert(0, "URL pública MCP HTTPS exigida no ChatGPT")
         self.ent_url.configure(state="readonly")
         self.ent_url.pack(side="left", padx=(0, 6))
         ctk.CTkButton(f_u, text="📋 Copiar URL", width=95, height=28, command=self._copy_url).pack(side="left", padx=2)
@@ -94,10 +95,10 @@ class MCPConnectDialog(ctk.CTkToplevel):
         self.lbl_feedback.configure(text="✅ ID do Túnel copiado! Cole no ChatGPT.", text_color=PALETTE.success)
 
     def _copy_url(self) -> None:
-        url = f"http://127.0.0.1:{self.port}/sse"
+        url = f"http://127.0.0.1:3457/mcp"
         self.clipboard_clear()
         self.clipboard_append(url)
-        self.lbl_feedback.configure(text="✅ URL do Servidor copiada!", text_color=PALETTE.success)
+        self.lbl_feedback.configure(text="Endpoint local: exige túnel HTTPS para ChatGPT.", text_color=PALETTE.warning)
 
     def _copy_json(self) -> None:
         self.clipboard_clear()
