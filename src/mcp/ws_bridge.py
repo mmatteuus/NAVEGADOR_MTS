@@ -2,6 +2,7 @@
 import asyncio, json, logging, time, uuid
 from typing import Any, Dict, Optional
 from websockets.asyncio.server import Server, serve
+from ..core.updater import APP_VERSION
 
 logger = logging.getLogger("BrowserMTS.WSBridge")
 
@@ -90,7 +91,7 @@ class WebSocketBridge:
             self.client_info = data.get("payload", {})
             reply = {
                 "type": "server_hello",
-                "payload": {"status": "connected", "desktopVersion": "2.1.0", "heartbeatIntervalMs": 4000, "reloadRequired": False}
+                "payload": {"status": "connected", "desktopVersion": APP_VERSION, "heartbeatIntervalMs": 4000, "reloadRequired": False}
             }
             await websocket.send(json.dumps(reply))
         elif msg_type == "ping":
