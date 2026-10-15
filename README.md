@@ -1,3 +1,14 @@
+## Testar a versão 2.1.1 (Windows)
+
+Este projeto é o **NAVEGADOR MTS** do repositório `mmatteuus/browser-mcp-mts`.
+Não utilize outro conector instalado no ChatGPT como evidência de funcionamento.
+
+Rode `powershell -NoProfile -ExecutionPolicy Bypass -File .\\TESTAR_E_COMPILAR.ps1` para
+verificar contratos MCP, extensão e gerar um instalador sem instalá-lo.
+Após instalar com backup, execute `TESTAR_INTEGRACAO.ps1 -StartApp`.
+A validação remota do túnel exige verificar `/readyz` e a conexão criada no ChatGPT.
+Veja [guia de testes](docs/09-TESTES-INTEGRACAO-WINDOWS.md).
+
 # 🌐 BROWSER MTS — Modernização & Plataforma Unificada para Windows 11
 
 [![Windows 11 Fluent](https://img.shields.io/badge/Windows%2011-Fluent%20%2F%20Mica-blue.svg)](https://microsoft.com/windows)
@@ -153,7 +164,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt
-python src/app.py
+python entrypoint.py
 ```
 
 ---
@@ -171,7 +182,7 @@ O BROWSER MTS foi concebido com a filosofia de **"Zero Cliques"**: ele roda em s
 ```
 
 ### **Passo 1: Iniciar o BROWSER MTS**
-- Abra o Menu Iniciar do Windows e clique no atalho **BROWSER MTS** (ou execute `python src/app.py`).
+- Abra o Menu Iniciar do Windows e clique no atalho **BROWSER MTS** (ou execute `python entrypoint.py`).
 - O aplicativo iniciará exibindo o Dashboard moderno. Clicar no botão **'X' apenas fecha a janela e mantém o BROWSER MTS rodando continuamente em segundo plano na Bandeja do Sistema (junto ao relógio)**, garantindo que o agente de IA nunca perca a conexão. Para encerrar o aplicativo por completo, clique com o botão direito no ícone da bandeja e selecione **"Sair do Aplicativo"**.
 - Certifique-se de que a extensão esteja ativada no Chrome (ícone verde no popup).
 
@@ -223,7 +234,7 @@ Para garantir segurança operacional e evitar conflitos caso você já utilize a
 3. **Ativar a Nova Extensão**:
    - No Chrome/Edge, desative a extensão legada e carregue a nova pasta `src/extension/`.
 4. **Iniciar o Novo BROWSER MTS**:
-   - Execute o novo atalho do Menu Iniciar ou `python src/app.py`.
+   - Execute o novo atalho do Menu Iniciar ou `python entrypoint.py`.
    - O dashboard indicará status `ATIVO` na porta 3456 e a extensão mostrará `CONECTADO`.
 
 ---
