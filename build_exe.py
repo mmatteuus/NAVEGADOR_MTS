@@ -41,10 +41,12 @@ def build_standalone_executable() -> bool:
         dist_ext = os.path.join("dist", "NAVEGADOR_MTS", "extension")
         shutil.copytree(os.path.join("src", "extension"), dist_ext, dirs_exist_ok=True)
         shutil.copy2("app_icon.ico", os.path.join("dist", "NAVEGADOR_MTS", "app_icon.ico"))
-        tunnel = os.path.join("BROWSER-MCP-MTS-PORTATIL", "tunnel-client.exe")
-        if not os.path.isfile(tunnel):
-            raise FileNotFoundError("tunnel-client.exe ausente; pacote incompleto.")
-        shutil.copy2(tunnel, os.path.join("dist", "NAVEGADOR_MTS", "tunnel-client.exe"))
+        for dependency in ("tunnel-client.exe", "cloudflared.exe",
+                           "cloudflared-manifest.json"):
+            origin = os.path.join("BROWSER-MCP-MTS-PORTATIL", dependency)
+            if not os.path.isfile(origin):
+                raise FileNotFoundError(f"Dependência do túnel ausente: {dependency}")
+            shutil.copy2(origin, os.path.join("dist", "NAVEGADOR_MTS", dependency))
         stdio_cmd = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--onefile",
                      "--console", "--name=NAVEGADOR_MTS_MCP", "--icon=app_icon.ico",
                      "--distpath=dist/NAVEGADOR_MTS/mcp_stdio", "stdio_entrypoint.py"]
