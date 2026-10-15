@@ -1,11 +1,8 @@
 {
   "mcpServers": {
-    "browser-mts": {
-      "command": "C:\\Users\\MATEUS\\AppData\\Local\\Programs\\BROWSER MTS\\BROWSER_MTS.exe",
-      "args": [
-        "--stdio"
-      ]
+    "navegador-mts": {
+      "command": "C:\\Users\\SEU_USUARIO\\AppData\\Local\\Programs\\Navegador MTS\\mcp_stdio\\NAVEGADOR_MTS_MCP.exe",
+      "args": []
     }
   }
 }
-
