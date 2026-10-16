@@ -3,7 +3,7 @@
 
 #define MyAppName "NAVEGADOR MTS"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.1.3"
+  #define MyAppVersion "2.2.0"
 #endif
 #define MyAppPublisher "MTS Automacao & IA"
 #define MyAppExeName "NAVEGADOR_MTS.exe"
@@ -24,7 +24,11 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=commandline
+DisableWelcomePage=yes
+DisableDirPage=auto
 DisableProgramGroupPage=auto
+DisableReadyPage=yes
+DisableFinishedPage=yes
 CloseApplications=force
 CloseApplicationsFilter=NAVEGADOR_MTS.exe,NAVEGADOR_MTS_MCP.exe,tunnel-client.exe,cloudflared.exe
 RestartApplications=no
@@ -54,6 +58,11 @@ Name: "{autodesktop}\Extensao Chrome NAVEGADOR MTS"; Filename: "{app}\extension"
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait
 
 [Code]
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := FileExists(ExpandConstant('{app}\{#MyAppExeName}'));
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;

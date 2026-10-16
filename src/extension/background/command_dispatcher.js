@@ -1,9 +1,7 @@
 /**
  * @file command_dispatcher.js
  * @description Roteador central e fila sequencial de execução de comandos do agente.
- * 
- * Processa requisições recebidas via WebSocket, garantindo execução ordenada
- * sem condições de corrida, roteando entre API de abas e Content Scripts.
+ * Garante execução ordenada, roteando entre API de abas, CDP e Content Scripts.
  */
 
 import { logger } from '../common/logger.js';
@@ -45,36 +43,30 @@ export function dispatchIncomingCommand(message) {
   });
 }
 
-/**
- * Roteia a ação para o módulo especialista adequado.
- */
+/** Roteia a ação para o módulo especialista adequado. */
 async function routeAction(action, params) {
   if (action === 'browser_manage_tabs') {
     return executeTabManagement(params);
   }
-
   if (action === 'browser_evaluate_js') {
     return evaluatePageScript(params.tabId, params.script);
   }
-
   if (TAB_ACTIONS.includes(action)) {
     return executeTabAction(action, params);
   }
-
   if (action === 'browser_screenshot' || action === 'screenshot_page' || action === 'screenshot_tab') {
-    return captureTabScreenshot(params.format, params.quality);
+    return captureTabScreenshot(params.format, params.quality, params.tabId);
   }
-
   return sendToContentScript(action, params);
 }
 
-/** Executa a operação composta de abas sem acessar o conteúdo da página. */
+/** Executa a operação composta de abas mantendo background por padrão. */
 async function executeTabManagement(params) {
   switch (params.action) {
     case 'list':
       return listTabs(params.currentWindowOnly);
     case 'new':
-      return newTab(params.url, params.active !== false); // Mantém padrão ativo para criação direta
+      return newTab(params.url, params.active === true);
     case 'switch':
       return switchTab(params.tabId, params.focusWindow === true);
     case 'close':
@@ -84,15 +76,13 @@ async function executeTabManagement(params) {
   }
 }
 
-/**
- * Executa ações no nível do gerenciador de abas.
- */
+/** Executa ações no nível do gerenciador de abas. */
 async function executeTabAction(action, params) {
   switch (action) {
     case 'browser_navigate':
       return navigate(params.url, params.tabId, params.active === true);
     case 'browser_new_tab':
-      return newTab(params.url, params.active !== false);
+      return newTab(params.url, params.active === true);
     case 'browser_close_tab':
       return closeTab(params.tabId);
     case 'browser_switch_tab':
@@ -108,9 +98,7 @@ async function executeTabAction(action, params) {
   }
 }
 
-/**
- * Encaminha comandos de inspeção e interação DOM para o Content Script da aba.
- */
+/** Encaminha comandos de inspeção e interação para o Content Script da aba. */
 async function sendToContentScript(action, params) {
   const targetTab = params.tabId ? { id: params.tabId } : await getActiveTab();
   if (!targetTab || !targetTab.id) {
@@ -120,8 +108,7 @@ async function sendToContentScript(action, params) {
   let response;
   try {
     response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
-  } catch (err) {
-    // Se o content script ainda não foi injetado (ex: página aberta antes da extensão)
+  } catch (_err) {
     logger.warn(`Injetando content scripts dinamicamente na aba ID ${targetTab.id}...`);
     await chrome.scripting.executeScript({
       target: { tabId: targetTab.id },
@@ -131,10 +118,11 @@ async function sendToContentScript(action, params) {
         'content/element_finder.js',
         'content/interaction_simulator.js',
         'content/keyboard_scroll.js',
-        'content/eval_runner.js'
+        'content/eval_runner.js',
+        'content/virtual_cursor.js',
+        'content/drag_simulator.js'
       ]
     });
-    // Reenvia após injeção
     response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
   }
   return requireContentSuccess(response);

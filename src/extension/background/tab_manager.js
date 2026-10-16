@@ -46,10 +46,10 @@ export async function navigate(url, tabId, active = false) {
  * @param {boolean} [active=true] - Se a nova aba deve receber foco imediato.
  * @returns {Promise<object>} Identificador e URL da aba criada.
  */
-export async function newTab(url = 'about:blank', active = true) {
+export async function newTab(url = 'about:blank', active = false) {
   const tab = await chrome.tabs.create({ url, active });
   logger.info(`Nova aba criada (ID: ${tab.id}, Ativa: ${active}).`);
-  return { success: true, tabId: tab.id, url: tab.url || url };
+  return { success: true, tabId: tab.id, url: tab.url || url, active: tab.active ?? active };
 }
 
 /**

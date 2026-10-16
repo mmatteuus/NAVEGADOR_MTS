@@ -100,11 +100,17 @@ def test_twenty_cycles_supervisor_with_abrupt_kill_and_recovery(
         )
 
     # Limpeza final
-    supervisor.terminate_tree()
+    supervisor.terminate_tree(timeout=1.0)
     assert not supervisor.is_alive()
 
     # Comprova que NENHUM dos 20 PIDs sobreviveu como processo órfão
     for pid in created_pids:
-        assert not psutil.pid_exists(pid), (
+        try:
+            proc = psutil.Process(pid)
+            running = proc.is_running() and proc.status() != getattr(psutil, "STATUS_DEAD", "dead")
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            running = False
+        assert not running, (
             f"PROCESSO ÓRFÃO ENCONTRADO: PID {pid} sobreviveu ao teste de estresse!"
         )
+

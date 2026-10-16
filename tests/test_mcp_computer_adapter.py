@@ -12,13 +12,13 @@ from src.mcp.router import MCPToolRouter
 def test_mapping_mouse_keyboard_and_screenshot():
     """Cada opção anunciada deve ter ação nativa equivalente."""
     assert _plan("computer_mouse_action", {"action": "move", "x": 2, "y": 3}) == [
-        ("computer_mouse_move", {"x": 2, "y": 3})]
+        ("computer_mouse_move", {"x": 2, "y": 3, "background": True})]
     assert _plan("computer_mouse_action", {"action": "double_click"})[0][1]["double"]
     assert _plan("computer_mouse_action", {"action": "drag", "x": 1, "y": 2,
                                           "end_x": 3, "end_y": 4})[0][1]["endX"] == 3
     assert _plan("computer_keyboard_action", {"action": "hotkey",
                                                "keys": ["ctrl", "a"]})[0][1] == {
-        "key": "a", "modifiers": ["ctrl"]}
+        "key": "a", "modifiers": ["ctrl"], "background": True}
     assert _plan("computer_screenshot", {}) == [("computer_screenshot", {})]
 
 

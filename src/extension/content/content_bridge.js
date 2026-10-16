@@ -1,9 +1,8 @@
 /**
  * @file content_bridge.js
  * @description Ponte de comunicação entre o Service Worker e os submódulos de página.
- * 
- * Escuta requisições encaminhadas via chrome.tabs.sendMessage, aciona os módulos
- * de inspeção/interação correspondentes e devolve respostas assíncronas ao worker.
+ * Escuta requisições via chrome.tabs.sendMessage, aciona os módulos correspondentes
+ * e mantém o cursor virtual do agente sincronizado no DOM.
  */
 
 window.__BrowserMTS__ = window.__BrowserMTS__ || {};
@@ -11,11 +10,9 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 (function () {
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const { action, params = {} } = message;
-
     handleAction(action, params)
       .then((data) => sendResponse({ success: true, data }))
       .catch((err) => sendResponse({ success: false, error: err.message || String(err) }));
-
     return true; // Mantém canal aberto para resposta assíncrona
   });
 
@@ -23,20 +20,47 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    * Encaminha o comando recebido para a função correspondente.
    * @param {string} action - Nome da ação solicitada.
    * @param {object} params - Parâmetros da ação.
-   * @returns {Promise<any>} Resultado da operação.
    */
   async function handleAction(action, params) {
     const modules = window.__BrowserMTS__;
 
     switch (action) {
-      case 'browser_click':
-        return modules.interaction.clickElement(params);
+      case 'browser_click': {
+        const res = await modules.interaction.clickElement(params);
+        if (modules.virtualCursor && res?.coordinates) {
+          modules.virtualCursor.showClick(res.coordinates.x, res.coordinates.y, params.button || 'left');
+        }
+        return res;
+      }
 
       case 'browser_type':
         return modules.interaction.typeText(params);
 
-      case 'browser_hover':
-        return modules.interaction.hoverElement(params);
+      case 'browser_hover': {
+        const res = await modules.interaction.hoverElement(params);
+        if (modules.virtualCursor && typeof params.x === 'number' && typeof params.y === 'number') {
+          modules.virtualCursor.updatePosition(params.x, params.y, true);
+        }
+        return res;
+      }
+
+      case 'browser_drag':
+        return modules.dragSimulator.simulateDrag(params);
+
+      case 'browser_mouse_action': {
+        const act = params.action || 'move';
+        const vCursor = modules.virtualCursor;
+        if (act === 'move' && vCursor) {
+          return { success: true, position: vCursor.updatePosition(params.x || 0, params.y || 0, params.smooth !== false) };
+        }
+        if ((act === 'click' || act === 'double_click' || act === 'right_click') && vCursor) {
+          return { success: true, click: vCursor.showClick(params.x || 0, params.y || 0, params.button || 'left') };
+        }
+        if (act === 'drag' && modules.dragSimulator) {
+          return modules.dragSimulator.simulateDrag(params);
+        }
+        return { success: true, action: act };
+      }
 
       case 'browser_select':
       case 'browser_select_option':

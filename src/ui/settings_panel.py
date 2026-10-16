@@ -1,57 +1,22 @@
 """Módulo do Painel de Configurações (Settings Panel).
 
-Responsabilidades:
-- Gerenciamento seguro da Runtime API Key com criptografia DPAPI e máscara visual.
-- Configuração de parâmetros de rede (porta WebSocket e identificador de túnel).
-- Gerenciamento de inicialização automática com o Windows via Registro (HKCU\\Run).
+Responsabilidades: Gerenciamento de credenciais DPAPI, rede e inicialização.
 """
 
-import sys
-from pathlib import Path
+from __future__ import annotations
+
 from typing import Optional
 import customtkinter as ctk
 from .theme import PALETTE
+from .autostart import is_autostart_enabled, set_autostart_enabled
+from .uninstaller_dialog import show_uninstall_dialog
 from ..core.config import current_config, get_tunnel_id, save_tunnel_id
 from ..core.tunnel_service import tunnel_service
 from ..core.security import encrypt_dpapi, decrypt_dpapi, mask_credential
 from ..core.credential_validation import is_runtime_credential
-# Chave do Registro do Windows para inicialização automática
-_REG_SUBKEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_REG_APP_NAME = "NavegadorMTS"
 
-def is_autostart_enabled() -> bool:
-    """Verifica se o aplicativo está configurado para iniciar com o Windows."""
-    if sys.platform != "win32":
-        return False
-    try:
-        import winreg
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _REG_SUBKEY, 0, winreg.KEY_READ) as key:
-            winreg.QueryValueEx(key, _REG_APP_NAME)
-            return True
-    except Exception:
-        return False
-def set_autostart_enabled(enabled: bool) -> bool:
-    """Habilita ou desabilita a inicialização automática no Registro do Windows."""
-    if sys.platform != "win32":
-        return False
-    try:
-        import winreg
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _REG_SUBKEY, 0, winreg.KEY_SET_VALUE) as key:
-            if enabled:
-                if getattr(sys, "frozen", False):
-                    cmd = f'"{sys.executable}" --minimized'
-                else:
-                    entrypoint = Path(__file__).resolve().parents[2] / "entrypoint.py"
-                    cmd = f'"{sys.executable}" "{entrypoint}" --minimized'
-                winreg.SetValueEx(key, _REG_APP_NAME, 0, winreg.REG_SZ, cmd)
-            else:
-                try:
-                    winreg.DeleteValue(key, _REG_APP_NAME)
-                except FileNotFoundError:
-                    pass
-            return True
-    except Exception:
-        return False
+__all__ = ["SettingsPanel", "is_autostart_enabled", "set_autostart_enabled"]
+
 
 class SettingsPanel(ctk.CTkFrame):
     """Painel gráfico de configurações do BROWSER MTS."""
@@ -69,8 +34,7 @@ class SettingsPanel(ctk.CTkFrame):
         cred_file = current_config.credentials_file
         if cred_file.exists():
             try:
-                enc_data = cred_file.read_text(encoding="utf-8").strip()
-                self._raw_api_key = decrypt_dpapi(enc_data)
+                self._raw_api_key = decrypt_dpapi(cred_file.read_text(encoding="utf-8").strip())
             except Exception:
                 self._raw_api_key = None
 
@@ -82,10 +46,8 @@ class SettingsPanel(ctk.CTkFrame):
         sec_api = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         sec_api.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 6))
         ctk.CTkLabel(sec_api, text="🔑 Runtime API Key (OpenAI Secure Tunnel)", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
-        
-        masked = mask_credential(self._raw_api_key)
         self.entry_key = ctk.CTkEntry(sec_api, placeholder_text="Cole a nova chave sk-...", width=400)
-        self.entry_key.insert(0, masked)
+        self.entry_key.insert(0, mask_credential(self._raw_api_key))
         self.entry_key.pack(fill="x", padx=12, pady=4)
         ctk.CTkLabel(sec_api, text="Protegido via DPAPI do Windows. Nunca exibida em texto puro.", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark).pack(anchor="w", padx=12, pady=(0, 10))
 
@@ -93,7 +55,6 @@ class SettingsPanel(ctk.CTkFrame):
         sec_net = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         sec_net.grid(row=1, column=0, sticky="ew", padx=16, pady=6)
         ctk.CTkLabel(sec_net, text="🌐 Parâmetros de Rede e Portas", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
-        
         f_row = ctk.CTkFrame(sec_net, fg_color="transparent")
         f_row.pack(fill="x", padx=12, pady=4)
         ctk.CTkLabel(f_row, text="Porta WebSocket:", width=140, anchor="w").pack(side="left")
@@ -107,11 +68,9 @@ class SettingsPanel(ctk.CTkFrame):
         self.entry_tunnel = ctk.CTkEntry(f_row2, width=300)
         self.entry_tunnel.insert(0, get_tunnel_id())
         self.entry_tunnel.pack(side="left")
-
         self.btn_toggle_tunnel = ctk.CTkButton(
             f_row2, text="Ligar Túnel", width=130, height=28,
-            command=self._on_click_toggle_tunnel,
-            fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover
+            command=self._on_click_toggle_tunnel, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover
         )
         self.btn_toggle_tunnel.pack(side="left", padx=(10, 0))
         self.update_tunnel_button()
@@ -124,6 +83,7 @@ class SettingsPanel(ctk.CTkFrame):
         if is_autostart_enabled():
             self.switch_autostart.select()
         self.switch_autostart.pack(anchor="w", padx=12, pady=(4, 10))
+
         # Botões de Ação
         self.lbl_feedback = ctk.CTkLabel(self, text="", text_color=PALETTE.success)
         self.lbl_feedback.grid(row=3, column=0, pady=(2, 2))
@@ -131,10 +91,11 @@ class SettingsPanel(ctk.CTkFrame):
         btn_box.grid(row=4, column=0, pady=(2, 10))
         ctk.CTkButton(btn_box, text="💾 Salvar Configurações", width=170, height=32, command=self.save_settings).pack(side="left", padx=6)
         ctk.CTkButton(btn_box, text="🗑️ Desinstalar da Máquina", fg_color=PALETTE.error, hover_color="#A80000", width=190, height=32, command=self._on_click_uninstall).pack(side="left", padx=6)
+
     def _on_click_uninstall(self) -> None:
         """Abre diálogo para desinstalar o BROWSER MTS desta máquina."""
-        from .uninstaller_dialog import show_uninstall_dialog
         show_uninstall_dialog(self, on_shutdown=self.on_shutdown_app)
+
     def save_settings(self) -> None:
         """Salva as configurações alteradas pelo usuário com proteção criptográfica."""
         new_key = self.entry_key.get().strip()
@@ -163,25 +124,13 @@ class SettingsPanel(ctk.CTkFrame):
             tunnel_service.stop()
             self.lbl_feedback.configure(text="Túnel encerrado com sucesso.", text_color=PALETTE.success)
         else:
-            # Primeiro tenta salvar as configurações para garantir que o ID do túnel está atualizado
             self.save_settings()
-            if tunnel_service.start():
-                self.lbl_feedback.configure(text="Túnel iniciado! Verifique o status no Dashboard.", text_color=PALETTE.success)
-            else:
-                self.lbl_feedback.configure(text=f"Erro ao iniciar túnel: {tunnel_service.last_error}", text_color=PALETTE.error)
+            msg, col = ("Túnel iniciado! Verifique o status no Dashboard.", PALETTE.success) if tunnel_service.start() else (f"Erro ao iniciar túnel: {tunnel_service.last_error}", PALETTE.error)
+            self.lbl_feedback.configure(text=msg, text_color=col)
         self.update_tunnel_button()
 
     def update_tunnel_button(self) -> None:
         """Atualiza o texto e cor do botão de acordo com o status do tunnel_service."""
-        if tunnel_service.is_active:
-            self.btn_toggle_tunnel.configure(
-                text="Desligar Túnel",
-                fg_color=PALETTE.error,
-                hover_color="#A80000"
-            )
-        else:
-            self.btn_toggle_tunnel.configure(
-                text="Ligar Túnel",
-                fg_color=PALETTE.accent,
-                hover_color=PALETTE.accent_hover
-            )
+        active = tunnel_service.is_active
+        txt, fg, hov = ("Desligar Túnel", PALETTE.error, "#A80000") if active else ("Ligar Túnel", PALETTE.accent, PALETTE.accent_hover)
+        self.btn_toggle_tunnel.configure(text=txt, fg_color=fg, hover_color=hov)

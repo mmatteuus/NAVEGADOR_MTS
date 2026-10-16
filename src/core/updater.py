@@ -97,7 +97,7 @@ def download_and_launch_update(info: UpdateInfo, progress_callback: Optional[Cal
     try:
         installer = download_installer(info, progress_callback)
         log_path = Path(os.environ.get("TEMP", str(Path.cwd()))) / "NAVEGADOR_MTS_installer.log"
-        args = [str(installer), "/CURRENTUSER", "/NORESTART", f"/LOG={log_path}"]
+        args = [str(installer), "/SILENT", "/SUPPRESSMSGBOXES", "/CURRENTUSER", "/NORESTART", f"/LOG={log_path}"]
         if getattr(sys, "frozen", False):
             args.append(f"/DIR={Path(sys.executable).resolve().parent}")
         subprocess.Popen(args, close_fds=True)
