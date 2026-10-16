@@ -8,6 +8,9 @@ import hashlib
 import os
 import subprocess
 import sys
+from src.version import APP_VERSION
+import json
+from PyInstaller.archive.readers import CArchiveReader
 
 
 def find_iscc_compiler() -> str:
@@ -24,6 +27,17 @@ def find_iscc_compiler() -> str:
     raise FileNotFoundError("Compilador Inno Setup 6 (ISCC.exe) não encontrado.")
 
 
+def validate_packaged_executable(path: str) -> None:
+    """Confirma archive PyInstaller e constante de src.version sem executar."""
+    if not os.path.isfile(path):
+        raise FileNotFoundError("Executável desktop do pacote não encontrado.")
+    archive = CArchiveReader(path)
+    pyz = archive.open_embedded_archive("PYZ.pyz")
+    code = pyz.extract("src.version")
+    if APP_VERSION not in getattr(code, "co_consts", ()):
+        raise RuntimeError("A versão do executável congelado diverge da canônica.")
+
+
 def build_final_installer() -> None:
     """Compila o instalador único para distribuição final."""
     print("=== Iniciando Criação do Instalador NAVEGADOR MTS ===")
@@ -31,8 +45,15 @@ def build_final_installer() -> None:
     print(f"Compilador localizado: {iscc_path}")
 
     os.makedirs("dist_installer", exist_ok=True)
+    packaged_manifest = os.path.join("dist", "NAVEGADOR_MTS", "extension", "manifest.json")
+    if not os.path.isfile(packaged_manifest):
+        raise FileNotFoundError("Pacote PyInstaller ausente; execute build_exe.py primeiro.")
+    with open(packaged_manifest, encoding="utf-8") as stream:
+        if json.load(stream).get("version") != APP_VERSION:
+            raise RuntimeError("O pacote e a versão canônica estão divergentes.")
+    validate_packaged_executable(os.path.join("dist", "NAVEGADOR_MTS", "NAVEGADOR_MTS.exe"))
 
-    cmd = [iscc_path, "installer.iss"]
+    cmd = [iscc_path, f"/DMyAppVersion={APP_VERSION}", "installer.iss"]
     print(f"Executando: {' '.join(cmd)}")
     result = subprocess.run(cmd)
 
@@ -40,7 +61,7 @@ def build_final_installer() -> None:
         print(f"Erro ao compilar instalador (código {result.returncode})")
         sys.exit(1)
 
-    installer_exe = os.path.join("dist_installer", "NAVEGADOR_MTS_Instalador_v2.1.3.exe")
+    installer_exe = os.path.join("dist_installer", f"NAVEGADOR_MTS_Instalador_v{APP_VERSION}.exe")
     if os.path.exists(installer_exe):
         size_mb = os.path.getsize(installer_exe) / (1024 * 1024)
         hasher = hashlib.sha256()

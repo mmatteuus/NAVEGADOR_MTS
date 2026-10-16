@@ -1,5 +1,4 @@
 name: QA Windows e instalador
-
 on:
   push:
     branches:
@@ -8,10 +7,8 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   sintaxe:
     name: Sintaxe e extensão (Linux)
@@ -27,7 +24,6 @@ jobs:
           node-version: '22'
       - run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
       - run: node tests/test_extension_adversarial.mjs
-
   contratos:
     name: Testes de contrato MCP (Windows)
     runs-on: windows-latest
@@ -41,15 +37,15 @@ jobs:
         with:
           node-version: '22'
       - name: Dependências do projeto
-        run: python -m pip install -r requirements.txt
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
       - name: Compilação de sintaxe
         run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
       - name: Testes MCP, segurança e atualização
-        run: |
-          python -m pytest -q tests/test_mcp_protocol.py tests/test_mcp_http.py tests/test_mcp_http_e2e.py tests/test_mcp_ws_bridge.py tests/test_mcp_computer_adapter.py tests/test_tunnel_service.py tests/test_updater.py tests/test_updater_regression.py
+        run: python -m pytest -q
       - name: Testes adversariais da extensão MV3
         run: node tests/test_extension_adversarial.mjs
-
   instalador:
     name: Compilar instalador Windows para teste
     needs: contratos
@@ -75,10 +71,71 @@ jobs:
           if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress }
       - name: Gerar instalador
         run: python build_installer.py
+      - name: Validar caminho do instalador canônico
+        id: installer
+        shell: pwsh
+        run: |
+          $version = (python -c "from src.version import APP_VERSION; print(APP_VERSION)").Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) { throw "Fonte canônica de versão vazia." }
+          $installer = "dist_installer/NAVEGADOR_MTS_Instalador_v$version.exe"
+          if (!(Test-Path -LiteralPath $installer)) { throw "Instalador canônico ausente: $installer" }
+          "path=$installer" >> $env:GITHUB_OUTPUT
       - name: Publicar instalador para testes
         uses: actions/upload-artifact@v4
         with:
           name: Navegador-MTS-Windows-Teste
-          path: dist_installer/NAVEGADOR_MTS_Instalador_v2.1.2.exe
+          path: ${{ steps.installer.outputs.path }}
           if-no-files-found: error
           retention-days: 14
+  release:
+    name: Release versionada de main
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: [sintaxe, contratos]
+    runs-on: windows-latest
+    timeout-minutes: 60
+    concurrency:
+      group: release-main
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependências e versão efêmera
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'; $PSNativeCommandUseErrorActionPreference = $true
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+          $base = (python -c "from src.version import APP_VERSION; print(APP_VERSION)").Trim()
+          python prepare_release.py --base-version $base --run-number $env:GITHUB_RUN_NUMBER --commit $env:GITHUB_SHA --metadata release-metadata.json
+      - name: Compilar instalador
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'; $PSNativeCommandUseErrorActionPreference = $true
+          python generate_icon.py
+          python build_exe.py
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          python build_installer.py
+      - name: Validar digest e identidade
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'; $PSNativeCommandUseErrorActionPreference = $true
+          $meta = Get-Content release-metadata.json | ConvertFrom-Json
+          if ((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA) { throw "Checkout diverge de GITHUB_SHA." }
+          $installer = Join-Path $PWD "dist_installer\$($meta.asset)"
+          if (!(Test-Path -LiteralPath $installer)) { throw "Asset ausente: $($meta.asset)" }
+          $digest = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$digest  $($meta.asset)" | Set-Content -Encoding ascii "dist_installer\$($meta.checksum_asset)"
+          if ((Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant() -ne $digest) { throw "Digest instável." }
+          "version=$($meta.version)" >> $env:GITHUB_OUTPUT
+      - name: Publicar release imutável
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'; $PSNativeCommandUseErrorActionPreference = $true
+          python publish_release.py --metadata release-metadata.json --installer-dir dist_installer --repository $env:GITHUB_REPOSITORY

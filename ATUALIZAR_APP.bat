@@ -2,14 +2,16 @@
 setlocal
 cd /d "%~dp0"
 title BROWSER MTS - Atualizar
-set "INSTALLER=%~dp0dist_installer\NAVEGADOR_MTS_Instalador_v2.1.1.exe"
+for /f "delims=" %%V in ('python -c "from src.version import APP_VERSION; print(APP_VERSION)" 2^>nul') do set "MTS_VERSION=%%V"
+if not defined MTS_VERSION exit /b 1
+set "INSTALLER=%~dp0dist_installer\NAVEGADOR_MTS_Instalador_v%MTS_VERSION%.exe"
 if not exist "%INSTALLER%" (
   echo [ERRO] Instalador nao encontrado: "%INSTALLER%"
   echo Execute COMPILAR_INSTALADOR.bat antes de atualizar.
   pause
   exit /b 1
 )
-echo Instalando versao 2.1.1 sobre a instalacao existente...
+echo Instalando versao %MTS_VERSION% sobre a instalacao existente...
 start /wait "" "%INSTALLER%" /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS
 if errorlevel 1 (
   echo [ERRO] O instalador nao concluiu com sucesso.

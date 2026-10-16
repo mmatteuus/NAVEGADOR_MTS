@@ -19,6 +19,15 @@ from src.core.updater import (
 )
 
 
+def _pe_stub(size=100):
+    """Monta o menor cabeçalho PE necessário para o teste de integridade."""
+    data = bytearray(max(size, 96))
+    data[:2] = b"MZ"
+    data[0x3C:0x40] = (64).to_bytes(4, "little")
+    data[64:68] = b"PE\0\0"
+    return bytes(data)
+
+
 def test_parse_version_tuple_variants():
     """Valida a conversão de strings de versão em tuplas numéricas comparáveis."""
     assert parse_version_tuple("2.0.0") == (2, 0, 0)
@@ -77,17 +86,19 @@ def test_check_for_updates_same_version():
     assert info.is_newer is False
 
 
-def test_check_for_updates_network_failure_returns_none():
-    """Garante que instabilidades de rede não geram exceções não tratadas."""
+def test_check_for_updates_network_failure_is_visible():
+    """Garante que a falha de rede fica explícita para a interface."""
     with patch("urllib.request.urlopen", side_effect=OSError("Network unreachable")):
         info = check_for_updates("https://mock.api/latest")
-    assert info is None
+    assert info is not None
+    assert info.status == "unavailable"
+    assert info.error
 
 
 def test_download_and_launch_update_flow(tmp_path):
     """Valida o ciclo completo de download em chunks e acionamento do instalador."""
     info = UpdateInfo(
-        version="v2.1.0",
+        version="v2.2.0",
         release_notes="Notas",
         download_url="https://mock.api/download.exe",
         asset_name="Instalador_Teste.exe",
@@ -97,7 +108,8 @@ def test_download_and_launch_update_flow(tmp_path):
     mock_resp = MagicMock()
     mock_resp.headers = {"Content-Length": "100"}
     # Simula 2 chunks de 50 bytes
-    mock_resp.read.side_effect = [b"A" * 50, b"B" * 50, b""]
+    payload = _pe_stub(100)
+    mock_resp.read.side_effect = [payload[:50], payload[50:], b""]
     mock_resp.__enter__.return_value = mock_resp
 
     progress_reports = []
@@ -123,8 +135,8 @@ def test_download_and_launch_update_flow(tmp_path):
 def test_download_and_launch_update_local_file(tmp_path):
     """Valida cópia e lançamento do instalador quando download_url é local."""
     installer = tmp_path / "Instalador_Local.exe"
-    installer.write_bytes(b"MZ" + b"\x00" * 50)
-    info = UpdateInfo("2.0.1", "Notas", str(installer), "Instalador_Local.exe", True)
+    installer.write_bytes(_pe_stub(52))
+    info = UpdateInfo("2.2.0", "Notas", str(installer), "Instalador_Local.exe", True)
 
     reports = []
     with patch("subprocess.Popen") as mock_popen, \

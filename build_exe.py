@@ -6,13 +6,19 @@ em uma pasta distribuível 'dist/NAVEGADOR_MTS'.
 """
 
 import os
+import json
+from pathlib import Path
 import subprocess
 import sys
+from src.version import APP_VERSION
 
 
 def build_standalone_executable() -> bool:
     """Executa o PyInstaller com todas as dependências e assets embutidos."""
-    print("Iniciando compilação do Navegador MTS...")
+    print(f"Iniciando compilação do Navegador MTS v{APP_VERSION}...")
+    manifest = json.loads(Path("src/extension/manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("version") != APP_VERSION:
+        raise RuntimeError("A versão da extensão diverge da versão canônica.")
 
     cmd = [
         sys.executable,

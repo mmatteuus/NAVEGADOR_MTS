@@ -2,7 +2,9 @@
 ; Compilado com Inno Setup 6
 
 #define MyAppName "NAVEGADOR MTS"
-#define MyAppVersion "2.1.3"
+#ifndef MyAppVersion
+  #define MyAppVersion "2.1.3"
+#endif
 #define MyAppPublisher "MTS Automacao & IA"
 #define MyAppExeName "NAVEGADOR_MTS.exe"
 
@@ -24,7 +26,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=commandline
 DisableProgramGroupPage=auto
 CloseApplications=force
-CloseApplicationsFilter=*.exe
+CloseApplicationsFilter=NAVEGADOR_MTS.exe,NAVEGADOR_MTS_MCP.exe,tunnel-client.exe,cloudflared.exe
 RestartApplications=no
 
 [Languages]
@@ -35,6 +37,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "exticon"; Description: "Criar atalho na Area de Trabalho para a Extensao Chrome"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
+Source: "installer\close_owned_processes.ps1"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "dist\NAVEGADOR_MTS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "src\extension\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 
@@ -51,10 +54,15 @@ Name: "{autodesktop}\Extensao Chrome NAVEGADOR MTS"; Filename: "{app}\extension"
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait
 
 [Code]
-function InitializeSetup(): Boolean;
+function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
 begin
-  Exec('taskkill.exe', '/F /IM NAVEGADOR_MTS.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Result := True;
+  ExtractTemporaryFile('close_owned_processes.ps1');
+  if not Exec(ExpandConstant('{sysnative}\WindowsPowerShell\v1.0\powershell.exe'),
+    ExpandConstant('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{tmp}\close_owned_processes.ps1" -InstallDir "{app}"'),
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+    Result := 'Não foi possível fechar os processos do NAVEGADOR MTS na pasta instalada.'
+  else
+    Result := '';
 end;

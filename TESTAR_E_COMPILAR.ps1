@@ -28,7 +28,9 @@ if ($LASTEXITCODE -ne 0) { throw "Falha ao instalar dependências." }
 
 & $Python -m compileall -q src entrypoint.py stdio_entrypoint.py
 if ($LASTEXITCODE -ne 0) { throw "Falha na sintaxe Python." }
-& $Python -m pytest -q tests/test_mcp_protocol.py tests/test_mcp_http.py tests/test_mcp_http_e2e.py tests/test_mcp_ws_bridge.py tests/test_mcp_computer_adapter.py tests/test_tunnel_service.py tests/test_updater.py tests/test_updater_regression.py
+& $Python -m pip install pyinstaller
+if ($LASTEXITCODE -ne 0) { throw "PyInstaller indisponível." }
+& $Python -m pytest -q
 if ($LASTEXITCODE -ne 0) { throw "Testes Python falharam; compilação suspensa." }
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -40,15 +42,15 @@ if ($LASTEXITCODE -ne 0) { throw "Teste da extensão falhou." }
 Write-Host "[OK] Testes de contrato concluídos." -ForegroundColor Green
 if ($SemCompilar) { return }
 
-& $Python -m pip install pyinstaller
-if ($LASTEXITCODE -ne 0) { throw "PyInstaller indisponível." }
 & $Python generate_icon.py
 if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar ícone." }
 & $Python build_exe.py
 if ($LASTEXITCODE -ne 0) { throw "Falha ao compilar executáveis." }
 & $Python build_installer.py
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup não encontrado ou compilação falhou." }
-$Installer = Join-Path $PSScriptRoot "dist_installer\NAVEGADOR_MTS_Instalador_v2.1.3.exe"
+$Version = (& $Python -c "from src.version import APP_VERSION; print(APP_VERSION)").Trim()
+if ([string]::IsNullOrWhiteSpace($Version)) { throw "Fonte canonica de versão vazia." }
+$Installer = Join-Path $PSScriptRoot "dist_installer\NAVEGADOR_MTS_Instalador_v$Version.exe"
 if (-not (Test-Path $Installer)) { throw "Arquivo instalador ausente." }
 Write-Host "[OK] Instalador de TESTE: $Installer" -ForegroundColor Green
 Write-Host "Instalação não executada automaticamente; backup e rollback ficam sob seu controle."

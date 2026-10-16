@@ -12,7 +12,6 @@ from .theme import PALETTE, apply_mica_theme, configure_app_theme
 from .dashboard_panel import DashboardPanel
 from .settings_panel import SettingsPanel
 
-
 class MainWindow(ctk.CTk):
     """Janela principal do aplicativo BROWSER MTS no Windows 11."""
 
@@ -21,6 +20,8 @@ class MainWindow(ctk.CTk):
         self.on_close_to_tray = on_close_to_tray
         self.on_quit_app = on_quit_app
         self.latest_update_info = None
+        self._update_timer = None
+        self._update_dialog = None; self._update_check_in_flight = False
         self._current_theme = "dark"
         self._setup_window()
         self._setup_layout()
@@ -119,18 +120,28 @@ class MainWindow(ctk.CTk):
         import threading
         from ..core.updater import check_for_updates
         from .update_dialog import UpdateDialog
-
+        if self._update_check_in_flight:
+            return
+        self._update_check_in_flight = True
+        if self._update_timer:
+            self.after_cancel(self._update_timer); self._update_timer = None
         self.btn_update.configure(state="disabled", text="Verificando...")
 
         def _worker():
             info = check_for_updates()
             def _update_ui():
+                self._update_check_in_flight = False; self._update_timer = self.after(3600000, lambda: self.check_for_updates_ui(auto_open=True))
                 self.btn_update.configure(state="normal")
-                if info and info.is_newer:
+                if not info or info.status in ("error", "unavailable"):
+                    self.btn_update.configure(text="⚠ Falha ao verificar", fg_color=PALETTE.error)
+                    self.after(5000, lambda: self.btn_update.configure(text="🔄 Atualizações", fg_color="transparent"))
+                elif info.is_newer:
                     self.latest_update_info = info
                     self.btn_update.configure(text=f"✨ Atualizar ({info.version})", fg_color=PALETTE.success)
                     if auto_open:
-                        UpdateDialog(self, update_info=info, on_shutdown_for_update=self.on_quit_app)
+                        if self._update_dialog and self._update_dialog.winfo_exists():
+                            return
+                        self._update_dialog = UpdateDialog(self, update_info=info, on_shutdown_for_update=self.on_quit_app)
                 else:
                     self.btn_update.configure(text="✓ Atualizado", fg_color="transparent")
                     self.after(3000, lambda: self.btn_update.configure(text="🔄 Atualizações"))
