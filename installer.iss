@@ -2,7 +2,7 @@
 ; Compilado com Inno Setup 6
 
 #define MyAppName "NAVEGADOR MTS"
-#define MyAppVersion "2.1.2"
+#define MyAppVersion "2.1.3"
 #define MyAppPublisher "MTS Automacao & IA"
 #define MyAppExeName "NAVEGADOR_MTS.exe"
 

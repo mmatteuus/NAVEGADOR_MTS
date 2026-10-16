@@ -40,7 +40,7 @@ def build_final_installer() -> None:
         print(f"Erro ao compilar instalador (código {result.returncode})")
         sys.exit(1)
 
-    installer_exe = os.path.join("dist_installer", "NAVEGADOR_MTS_Instalador_v2.1.2.exe")
+    installer_exe = os.path.join("dist_installer", "NAVEGADOR_MTS_Instalador_v2.1.3.exe")
     if os.path.exists(installer_exe):
         size_mb = os.path.getsize(installer_exe) / (1024 * 1024)
         hasher = hashlib.sha256()
