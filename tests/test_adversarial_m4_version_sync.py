@@ -1,6 +1,6 @@
-"""Testes Adversariais de Consistência e Sincronização de Versão v2.2.1.
+"""Testes Adversariais de Consistência e Sincronização de Versão v2.3.0.
 
-Valida a paridade estrita da versão canônica 2.2.1 entre src/version.py,
+Valida a paridade estrita da versão canônica 2.3.0 entre src/version.py,
 o manifesto da extensão MV3, script Inno Setup e o instalador gerado.
 """
 from __future__ import annotations
@@ -15,8 +15,8 @@ from src.version import APP_VERSION
 
 
 def test_version_canonical_format_and_exact_match() -> None:
-    """Garante que a versão canônica seja exatamente 2.2.1 no formato semver."""
-    assert APP_VERSION == "2.2.1", f"Versão canônica esperada '2.2.1', obtido '{APP_VERSION}'"
+    """Garante que a versão canônica seja exatamente 2.3.0 no formato semver."""
+    assert APP_VERSION == "2.3.0", f"Versão canônica esperada '2.3.0', obtido '{APP_VERSION}'"
     assert re.fullmatch(r"^\d+\.\d+\.\d+$", APP_VERSION) is not None
 
 
@@ -34,7 +34,7 @@ def test_extension_manifest_version_sync() -> None:
 
 
 def test_inno_setup_script_version_sync() -> None:
-    """Valida que o script Inno Setup installer.iss define MyAppVersion como 2.2.1."""
+    """Valida que o script Inno Setup installer.iss define MyAppVersion como 2.3.0."""
     iss_path = Path("installer.iss")
     assert iss_path.is_file(), "Arquivo installer.iss não encontrado"
 

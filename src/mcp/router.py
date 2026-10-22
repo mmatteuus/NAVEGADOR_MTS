@@ -1,14 +1,15 @@
-"""
-Módulo Roteador de Ferramentas (MCP Tool Router).
+"""Módulo Roteador de Ferramentas (MCP Tool Router).
 
-Despacha requisições de ferramentas (tools/call) para a extensão do navegador
-via WebSocket Bridge ou para o motor nativo de Computer Use sob a Trava de Segurança.
-Padroniza as respostas de acordo com a especificação Model Context Protocol.
+Despacha requisições tools/call para a extensão via WebSocket Bridge ou para o motor
+nativo de Computer Use sob a Trava de Segurança, garantindo validação de sessão e anti-forja.
 """
-import json
+from __future__ import annotations
+
 import logging
 from typing import Any, Awaitable, Callable, Dict, Optional
 from .session_manager import session_manager
+from .session_context import get_current_session_id
+from .response_formatter import format_mcp_result, format_mcp_error
 
 logger = logging.getLogger("BrowserMTS.Router")
 
@@ -38,49 +39,57 @@ class MCPToolRouter:
     async def dispatch(
         self, tool_name: str, arguments: Dict[str, Any], session_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Despacha a ferramenta solicitada para o executor correspondente."""
-        effective_sid = arguments.get("sessionId") or session_id
+        """Despacha a ferramenta solicitada para o executor correspondente com defesa anti-forja."""
+        trusted_sid = session_id or get_current_session_id()
+
+        forged_sid = arguments.get("sessionId")
+        if forged_sid is None:
+            forged_sid = arguments.get("session_id")
+
+        if forged_sid is not None:
+            if trusted_sid:
+                if str(forged_sid).strip() != str(trusted_sid).strip():
+                    logger.warning(f"FORGERY BLOCKED: Tentativa de forja {forged_sid} sob transporte {trusted_sid}")
+                    return format_mcp_error("Acesso recusado: Tentativa de forja de sessão detectada (sessionId nos argumentos).")
+            else:
+                trusted_sid = str(forged_sid).strip()
+
+        clean_args = {k: v for k, v in arguments.items() if k not in ("sessionId", "session_id")}
+        if trusted_sid:
+            clean_args["sessionId"] = trusted_sid
+
         try:
             if tool_name.startswith("browser_"):
-                return await self._dispatch_browser(tool_name, arguments, effective_sid)
+                return await self._dispatch_browser(tool_name, clean_args, trusted_sid)
             elif tool_name.startswith("computer_"):
-                return await self._dispatch_computer(tool_name, arguments)
-            else:
-                return self._error_response(f"Ferramenta desconhecida: '{tool_name}'")
+                return await self._dispatch_computer(tool_name, clean_args)
+            return format_mcp_error(f"Ferramenta desconhecida: '{tool_name}'")
         except Exception as exc:
             logger.error(f"Erro ao executar {tool_name}: {exc}")
-            return self._error_response(f"Falha na execução de {tool_name}: {exc}")
+            return format_mcp_error(f"Falha na execução de {tool_name}: {exc}")
 
     async def _dispatch_browser(
         self, name: str, args: Dict[str, Any], session_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Despacha ferramentas de navegador para a extensão via WebSocket Bridge."""
         if not self.ws_bridge or not self.ws_bridge.is_connected:
-            msg = (
-                "A extensão do navegador não está conectada. "
-                "Verifique se o navegador está aberto e se a extensão Browser MTS está ligada."
-            )
-            return self._error_response(msg)
+            return format_mcp_error("A extensão do navegador não está conectada.")
 
         tab_id = args.get("tabId")
         if tab_id is not None:
             try:
                 if not session_manager.validate_tab_access(session_id, int(tab_id)):
-                    return self._error_response(
-                        f"Acesso recusado: A aba {tab_id} pertence a outra sessão de agente."
-                    )
+                    return format_mcp_error(f"Acesso recusado: A aba {tab_id} pertence a outra sessão de agente.")
             except (ValueError, TypeError):
                 pass
 
-        if session_id:
-            try:
-                res = await self.ws_bridge.send_action(name, args, session_id=session_id)
-            except TypeError:
-                res = await self.ws_bridge.send_action(name, args)
-        else:
+        try:
+            res = await self.ws_bridge.send_action(name, args, session_id=session_id)
+        except TypeError:
             res = await self.ws_bridge.send_action(name, args)
+
         if isinstance(res, dict) and res.get("success") is False:
-            return self._error_response(str(res.get("error", "Falha na extensão")))
+            return format_mcp_error(str(res.get("error", "Falha na extensão")))
 
         if ((name == "browser_manage_tabs" and args.get("action") == "new") or name == "browser_new_tab") and session_id:
             tid = session_manager.extract_tab_id(res)
@@ -95,48 +104,34 @@ class MCPToolRouter:
                     pass
 
         if isinstance(res, dict) and res.get("success") is True and "data" in res:
-            return self._format_result(res["data"])
-        return self._format_result(res)
+            return format_mcp_result(res["data"])
+        return format_mcp_result(res)
 
     async def _dispatch_computer(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
         """Despacha ferramentas de computador respeitando a trava de segurança."""
         if name == "computer_get_status":
-            status = {"authorized": self.is_computer_authorized(),
-                      "killSwitchActive": bool(self.kill_switch_checker())}
-            return self._format_result(status)
+            return format_mcp_result({
+                "authorized": self.is_computer_authorized(),
+                "killSwitchActive": bool(self.kill_switch_checker())
+            })
 
         if not self.is_computer_authorized():
-            msg = "Ação recusada: Controle do Computador não autorizado pelo usuário no aplicativo desktop."
-            return self._error_response(msg)
+            return format_mcp_error("Ação recusada: Controle do Computador não autorizado.")
 
         if not self.computer_executor:
-            return self._error_response("Módulo de Computer Use não configurado ou indisponível.")
+            return format_mcp_error("Módulo de Computer Use não configurado ou indisponível.")
 
         res = await self.computer_executor(name, args)
         if isinstance(res, dict) and res.get("success") is False:
-            return self._error_response(str(res.get("error", "Falha no computador")))
+            return format_mcp_error(str(res.get("error", "Falha no computador")))
         if isinstance(res, dict) and res.get("success") is True and "data" in res:
-            return self._format_result(res["data"])
-        return self._format_result(res)
+            return format_mcp_result(res["data"])
+        return format_mcp_result(res)
 
     def _format_result(self, result_data: Any) -> Dict[str, Any]:
-        """Converte resultados arbitrários em conteúdo estruturado compatível com o MCP."""
-        content = []
-        if isinstance(result_data, dict) and any(
-            k in result_data for k in ("base64", "screenshot", "imageBase64")
-        ):
-            b64_img = result_data.get("base64") or result_data.get("screenshot") or result_data.get("imageBase64")
-            mime = result_data.get("mimeType") or ("image/jpeg" if result_data.get("format") in ("jpeg", "jpg") else "image/png")
-            content.append({"type": "image", "data": str(b64_img), "mimeType": mime})
-            info = {k: v for k, v in result_data.items() if k not in ("base64", "screenshot", "imageBase64")}
-            if info:
-                content.append({"type": "text", "text": json.dumps(info, ensure_ascii=False, indent=2)})
-        else:
-            text_repr = result_data if isinstance(result_data, str) else json.dumps(result_data, ensure_ascii=False, indent=2)
-            content.append({"type": "text", "text": text_repr})
-
-        return {"content": content, "isError": False}
+        """Compatibilidade retroativa: delega para format_mcp_result."""
+        return format_mcp_result(result_data)
 
     def _error_response(self, message: str) -> Dict[str, Any]:
-        """Gera envelope de erro padronizado para o protocolo MCP."""
-        return {"content": [{"type": "text", "text": message}], "isError": True}
+        """Compatibilidade retroativa: delega para format_mcp_error."""
+        return format_mcp_error(message)

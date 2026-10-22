@@ -54,7 +54,12 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
                     "killSwitchTriggered": safety_gate.is_kill_switch_triggered()
                 }
             }
-        sid = params.get("session_id") or params.get("sessionId")
+        try:
+            from ..mcp.session_context import get_current_session_id
+            ctx_sid = get_current_session_id()
+        except Exception:
+            ctx_sid = None
+        sid = ctx_sid or params.get("session_id") or params.get("sessionId")
         if act in ("get_cursor", "cursor"):
             x, y = get_cursor_position()
             return {"success": True, "data": {"x": x, "y": y, "monitors": get_monitors_info()}}

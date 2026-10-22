@@ -82,8 +82,8 @@ class WebSocketBridge:
     async def send_action(
         self, action: str, params: Dict[str, Any], timeout: float = 30.0, session_id: Optional[str] = None
     ) -> Any:
-        sock = self.registry.get_active_extension()
-        if not self.is_connected or not sock:
+        sock = self.registry.get_socket_for_session(session_id)
+        if not sock:
             raise ConnectionError(f"Extensão do navegador não conectada na porta {self.port}.")
         req_id, fut = f"cmd_{uuid.uuid4().hex[:12]}", asyncio.get_running_loop().create_future()
         self._pending_requests[req_id] = fut

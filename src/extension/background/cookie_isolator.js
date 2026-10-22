@@ -1,6 +1,8 @@
 /**
  * @file cookie_isolator.js
- * @description Isolamento estrito de cookies e storage por sessão de agente via chrome.cookies.
+ * @description Isolamento e manipulação de cookies/storage por sessão via APIs reais do chrome.cookies e storeId.
+ * Nota de Arquitetura: No Chromium, o isolamento estrito de cookies/storage de páginas reais entre múltiplos agentes
+ * é assegurado pelo uso de perfis independentes de navegador (User Data Dir / BrowserContext dedicado).
  */
 import { logger } from '../common/logger.js';
 import { getTabsForSession } from './session_registry.js';
@@ -33,16 +35,28 @@ export async function getSessionCookies(sessionId, filter = {}) {
   try {
     const q = { ...filter };
     if (storeId) q.storeId = storeId;
-    for (const c of (await globalThis.chrome?.cookies?.getAll?.(q) || [])) {
-      const mem = sessionCookies.get(sid)?.get(normDom(c.domain))?.get(c.name);
-      if (mem) res.push(mem); else if (storeId && storeId !== '0') res.push(c);
+    const realCookies = await globalThis.chrome?.cookies?.getAll?.(q) || [];
+    for (const c of realCookies) {
+      const cDom = normDom(c.domain);
+      if (dom && !cDom.includes(dom) && !dom.includes(cDom)) continue;
+      if (filter.name && filter.name !== c.name) continue;
+      const mem = sessionCookies.get(sid)?.get(cDom)?.get(c.name);
+      if (mem) {
+        res.push(storeId && storeId !== '0' ? { ...mem, value: c.value } : mem);
+      } else if (storeId && storeId !== '0') {
+        res.push(c);
+      }
     }
   } catch (err) { logger.warn('Erro ao consultar chrome.cookies:', err.message); }
   const domMap = sessionCookies.get(sid);
   if (domMap) {
     for (const [d, nMap] of domMap) {
       if (!dom || d.includes(dom) || dom.includes(d)) {
-        for (const [n, c] of nMap) if ((!filter.name || filter.name === n) && !res.some(r => r.name === n && r.domain === d)) res.push(c);
+        for (const [n, c] of nMap) {
+          if ((!filter.name || filter.name === n) && !res.some(r => r.name === n && normDom(r.domain) === d)) {
+            res.push(c);
+          }
+        }
       }
     }
   }

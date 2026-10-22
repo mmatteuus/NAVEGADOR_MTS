@@ -17,8 +17,7 @@ BROWSER_TAB_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "url": {"type": "string", "description": "URL completa para navegação (ex: https://github.com)"},
                 "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "active": {"type": "boolean", "default": False, "description": "Se True, traz a aba para o primeiro plano. Padrão: False para não atrapalhar o usuário."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "active": {"type": "boolean", "default": False, "description": "Se True, traz a aba para o primeiro plano. Padrão: False para não atrapalhar o usuário."}
             },
             "required": ["url"]
         }
@@ -29,8 +28,7 @@ BROWSER_TAB_TOOLS: List[Dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
@@ -42,8 +40,7 @@ BROWSER_TAB_TOOLS: List[Dict[str, Any]] = [
             "properties": {
                 "format": {"type": "string", "enum": ["png", "jpeg"], "default": "png"},
                 "quality": {"type": "integer", "minimum": 1, "maximum": 100, "default": 90},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
@@ -57,8 +54,7 @@ BROWSER_TAB_TOOLS: List[Dict[str, Any]] = [
                 "url": {"type": "string", "description": "URL para abrir em caso de ação 'new'"},
                 "currentWindowOnly": {"type": "boolean", "default": True, "description": "False lista abas de todas as janelas"},
                 "tabId": {"type": "integer", "description": "ID da aba alvo para ações 'switch' ou 'close'"},
-                "focusWindow": {"type": "boolean", "default": False, "description": "Para a ação 'switch', se True traz a janela principal do sistema para o primeiro plano."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "focusWindow": {"type": "boolean", "default": False, "description": "Para a ação 'switch', se True traz a janela principal do sistema para o primeiro plano."}
             },
             "required": ["action"]
         }

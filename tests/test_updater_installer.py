@@ -19,7 +19,7 @@ def test_asset_without_pe_signature_is_rejected(tmp_path):
     """Um arquivo que não é PE nunca deve ser iniciado."""
     source = tmp_path / "setup.exe"
     source.write_bytes(b"texto")
-    info = updater.UpdateInfo("2.1.4", "", str(source), source.name, True)
+    info = updater.UpdateInfo("2.4.0", "", str(source), source.name, True)
     with patch("subprocess.Popen") as launch:
         assert updater.download_and_launch_update(info) is False
     launch.assert_not_called()
@@ -42,7 +42,7 @@ def test_frozen_update_targets_executable_directory(tmp_path, monkeypatch):
     """O instalador recebe a pasta do EXE, não o diretório _MEIPASS."""
     source = tmp_path / "setup.exe"
     source.write_bytes(_pe_stub())
-    info = updater.UpdateInfo("2.3.0", "", str(source), source.name, True)
+    info = updater.UpdateInfo("2.4.0", "", str(source), source.name, True)
     exe = tmp_path / "NAVEGADOR_MTS.exe"
     monkeypatch.setattr(updater.sys, "frozen", True, raising=False)
     monkeypatch.setattr(updater.sys, "executable", str(exe))

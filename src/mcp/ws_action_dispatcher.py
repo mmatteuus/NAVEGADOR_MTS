@@ -79,13 +79,23 @@ async def dispatch_agent_action(
         return
 
     act = data.get("action", "")
-    session_id = data.get("sessionId") or params.get("sessionId")
+    transport_sid = data.get("sessionId")
+    forged_sid = params.get("sessionId") or params.get("session_id")
+    if forged_sid is not None:
+        if not transport_sid or str(forged_sid).strip() != str(transport_sid).strip():
+            err_msg = "FORGERY_DENIED: Tentativa de forja de sessão detectada em params."
+            logger.warning(err_msg)
+            await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": err_msg}))
+            return
+
+    clean_params = {k: v for k, v in params.items() if k not in ("sessionId", "session_id")}
+    session_id = transport_sid
     if session_id:
-        params.setdefault("sessionId", session_id)
+        clean_params["sessionId"] = session_id
 
     try:
         if act.startswith("browser_"):
-            tab_id = params.get("tabId")
+            tab_id = clean_params.get("tabId")
             if tab_id is not None:
                 try:
                     tid = int(tab_id)
@@ -99,15 +109,15 @@ async def dispatch_agent_action(
 
             sess = await session_manager.get_or_create_session(session_id)
             async with sess.lock:
-                res = await send_action_cb(act, params, session_id=session_id)
+                res = await send_action_cb(act, clean_params, session_id=session_id)
 
             if act == "browser_manage_tabs" and session_id:
-                if params.get("action") == "new":
+                if clean_params.get("action") == "new":
                     tid = session_manager.extract_tab_id(res)
                     if tid is not None:
                         session_manager.assign_tab_to_session(session_id, tid)
-                elif params.get("action") == "close":
-                    close_id = params.get("tabId")
+                elif clean_params.get("action") == "close":
+                    close_id = clean_params.get("tabId")
                     if close_id is not None:
                         try:
                             session_manager.release_tab(int(close_id))
@@ -120,10 +130,10 @@ async def dispatch_agent_action(
             if act in ("computer_mouse_move", "computer_mouse_click", "computer_mouse_drag",
                        "computer_mouse_scroll", "computer_keyboard_type", "computer_key_press"):
                 from ..computer import execute_computer_action
-                res = await asyncio.to_thread(execute_computer_action, act, params)
+                res = await asyncio.to_thread(execute_computer_action, act, clean_params)
             else:
                 from .computer_dispatch import execute_mcp_computer
-                res = await execute_mcp_computer(act, params)
+                res = await execute_mcp_computer(act, clean_params)
             success = res.get("success", False) if isinstance(res, dict) else False
             await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": success, "result": res}))
         else:

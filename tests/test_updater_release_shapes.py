@@ -26,7 +26,7 @@ def test_four_component_release_asset_is_detected():
 
 def test_malformed_assets_are_reported():
     """Assets que não são lista não podem travar a consulta."""
-    with patch("urllib.request.urlopen", return_value=_response({"tag_name": "v2.3.0", "assets": {}})):
+    with patch("urllib.request.urlopen", return_value=_response({"tag_name": "v2.4.0", "assets": {}})):
         info = updater.check_for_updates(allow_local_fallback=False)
     assert info.status == "unavailable"
     assert "assets" in info.error

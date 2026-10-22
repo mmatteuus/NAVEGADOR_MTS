@@ -68,11 +68,15 @@ def build_final_installer() -> None:
         with open(installer_exe, "rb") as f:
             while chunk := f.read(65536):
                 hasher.update(chunk)
+        digest = hasher.hexdigest()
+        sha_file = os.path.join("dist_installer", f"NAVEGADOR_MTS_Instalador_v{APP_VERSION}.sha256")
+        with open(sha_file, "w", encoding="ascii") as sf:
+            sf.write(f"{digest}  {os.path.basename(installer_exe)}\n")
         print("==================================================")
         print("SUCESSO: Instalador único gerado com perfeição!")
         print(f"Arquivo: {installer_exe}")
         print(f"Tamanho: {size_mb:.2f} MB")
-        print(f"SHA-256: {hasher.hexdigest()}")
+        print(f"SHA-256: {digest}")
         print("==================================================")
     else:
         print("Falha: Arquivo do instalador não foi encontrado.")

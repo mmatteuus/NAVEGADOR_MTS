@@ -54,6 +54,7 @@ export async function targetId(requested, sessionId = null) {
     const sTabs = getTabsForSession(sessionId);
     if (sTabs.length === 1) return sTabs[0];
     if (sTabs.length > 1) throw new Error('TAB_SELECTION_REQUIRED');
+    throw new Error('TAB_NOT_ALLOWED');
   }
   const ids = await grantedTabs();
   if (ids.length !== 1) throw new Error('TAB_SELECTION_REQUIRED');
@@ -71,10 +72,13 @@ export async function revoke(id) {
   return mutate(async () => write((await read()).filter(item => item !== Number(id))));
 }
 export async function clearGrants() { return mutate(() => write([])); }
-const toState = (tabs, ids) => tabs.map(t => ({
-  id: t.id, windowId: t.windowId, title: t.title || '', url: t.url || '',
-  active: !!t.active, allowedForAgent: ids.includes(t.id) || !!getSessionForTab(t.id), selectable: isGrantableUrl(t.url)
-}));
+const toState = (tabs, ids, sid = null) => tabs
+  .filter(t => !sid || getSessionForTab(t.id) === sid)
+  .map(t => ({
+    id: t.id, windowId: t.windowId, title: t.title || '', url: t.url || '',
+    active: !!t.active, allowedForAgent: sid ? getSessionForTab(t.id) === sid : (ids.includes(t.id) || !!getSessionForTab(t.id)),
+    selectable: isGrantableUrl(t.url)
+  }));
 
 export async function openGrantedTab(message, sender) {
   if (!sender || sender.url !== popupUrl()) throw new Error('GRANT_FORBIDDEN');
@@ -88,8 +92,8 @@ export async function openGrantedTab(message, sender) {
     return toState(await chrome.tabs.query({}), await write([...(await read()), tab.id]));
   });
 }
-export async function popupGrantState(currOnly = false) {
-  return toState(await chrome.tabs.query(currOnly ? { currentWindow: true } : {}), await grantedTabs());
+export async function popupGrantState(currOnly = false, sid = null) {
+  return toState(await chrome.tabs.query(currOnly ? { currentWindow: true } : {}), await grantedTabs(), sid);
 }
 if (typeof chrome !== 'undefined') {
   chrome.tabs?.onRemoved?.addListener((id) => revoke(id).catch(() => {}));

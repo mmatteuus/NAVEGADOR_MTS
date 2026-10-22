@@ -1,124 +1,112 @@
 /**
  * @file test_extension_adversarial_multisession.mjs
- * @description Suíte de testes adversariais para Extensão MV3 com foco em multissessão
- * e isolamento estrito de abas (TAB_ACCESS_DENIED) entre múltiplos agentes.
+ * @description Suíte de testes adversariais para Extensão MV3 com foco em multissessão,
+ * isolamento estrito de abas (TAB_ACCESS_DENIED) e filtragem de abas por sessão.
  */
-
 import assert from 'node:assert';
 
-const sessionTabRegistry = new Map();
 const openTabs = [
-  { id: 101, url: 'https://site-alpha.test', windowId: 10 },
-  { id: 102, url: 'https://doc-alpha.test', windowId: 10 },
-  { id: 201, url: 'https://site-beta.test', windowId: 20 },
-  { id: 202, url: 'https://doc-beta.test', windowId: 20 }
+  { id: 101, url: 'https://site-alpha.test', title: 'Alpha 1', windowId: 10, active: true },
+  { id: 102, url: 'https://doc-alpha.test', title: 'Alpha 2', windowId: 10, active: false },
+  { id: 201, url: 'https://site-beta.test', title: 'Beta 1', windowId: 20, active: true },
+  { id: 202, url: 'https://doc-beta.test', title: 'Beta 2', windowId: 20, active: false }
 ];
 
-sessionTabRegistry.set('agent_alpha', new Set([101, 102]));
-sessionTabRegistry.set('agent_beta', new Set([201, 202]));
+globalThis.WebSocket = class {
+  static OPEN = 1;
+  constructor() { this.readyState = 1; setTimeout(() => this.onopen?.(), 2); }
+  send() {} close() {}
+};
 
-function validateTabAccess(sessionId, tabId) {
-  if (!sessionId) {
-    throw new Error('TAB_ACCESS_DENIED: Sessão do agente não identificada.');
+globalThis.chrome = {
+  runtime: { getURL: p => `chrome-extension://test/${p}` },
+  storage: {
+    local: { get: async () => ({ browser_mts_automation_enabled: true }), set: async () => {} },
+    session: { get: async () => ({ browser_mts_session_tab_grants: [101, 102, 201, 202] }), set: async () => {} }
+  },
+  tabs: {
+    query: async () => openTabs,
+    get: async id => openTabs.find(t => t.id === Number(id)) || null,
+    sendMessage: async () => ({ success: true })
   }
-  const granted = sessionTabRegistry.get(sessionId);
-  if (!granted || !granted.has(Number(tabId))) {
-    throw new Error('TAB_ACCESS_DENIED: A aba solicitada não pertence à sessão do agente.');
-  }
-  const exists = openTabs.some(t => t.id === Number(tabId));
-  if (!exists) {
-    throw new Error('TAB_NOT_FOUND: Aba informada não existe.');
-  }
-  return true;
+};
+
+const { assignTabToSession, clearSessionRegistry, validateTabAccess } = await import('../src/extension/background/session_registry.js');
+const { popupGrantState, targetId } = await import('../src/extension/background/tab_access.js');
+
+async function testTabListingIsolation() {
+  console.log('[TEST 1] Filtragem estrita de abas em popupGrantState por sessão...');
+  clearSessionRegistry();
+  assignTabToSession('agent_alpha', 101);
+  assignTabToSession('agent_alpha', 102);
+  assignTabToSession('agent_beta', 201);
+  assignTabToSession('agent_beta', 202);
+
+  const tabsAlpha = await popupGrantState(false, 'agent_alpha');
+  assert.strictEqual(tabsAlpha.length, 2, 'Alpha deve ver exatamente 2 abas');
+  assert.deepStrictEqual(tabsAlpha.map(t => t.id).sort(), [101, 102]);
+  assert.ok(tabsAlpha.every(t => t.allowedForAgent === true));
+
+  const tabsBeta = await popupGrantState(false, 'agent_beta');
+  assert.strictEqual(tabsBeta.length, 2, 'Beta deve ver exatamente 2 abas');
+  assert.deepStrictEqual(tabsBeta.map(t => t.id).sort(), [201, 202]);
+
+  const tabsGamma = await popupGrantState(false, 'agent_gamma');
+  assert.strictEqual(tabsGamma.length, 0, 'Agente sem abas deve ver 0 abas');
+
+  const tabsLegacy = await popupGrantState(false, null);
+  assert.strictEqual(tabsLegacy.length, 4, 'Modo legado sem sessão visualiza todas as abas');
+  console.log('  -> PASS: Isolamento estrito de listagem de abas validado com sucesso.');
 }
 
-async function dispatchMultisessionCommand(message) {
-  const reqId = message.id || `cmd_${Date.now()}`;
-  const sessionId = message.sessionId || message.payload?.sessionId;
-  const action = message.action || message.type || '';
-  const params = message.payload || message.params || {};
-  const tabId = params.tabId;
+async function testTargetIdFallThroughPrevention() {
+  console.log('[TEST 2] Prevenção de fall-through de targetId entre sessões...');
+  clearSessionRegistry();
+  assignTabToSession('agent_alpha', 101);
+  assignTabToSession('agent_beta', 201);
 
-  try {
-    if (tabId !== undefined && tabId !== null) {
-      validateTabAccess(sessionId, tabId);
-    }
-    return {
-      id: reqId,
-      sessionId,
-      type: 'action_response',
-      success: true,
-      payload: { action, tabId, executed: true },
-      error: null
-    };
-  } catch (err) {
-    return {
-      id: reqId,
-      sessionId,
-      type: 'action_response',
-      success: false,
-      payload: null,
-      error: err.message
-    };
-  }
+  const targetAlpha = await targetId(null, 'agent_alpha');
+  assert.strictEqual(targetAlpha, 101);
+
+  await assert.rejects(async () => targetId(null, 'agent_gamma'), /TAB_NOT_ALLOWED/);
+  await assert.rejects(async () => targetId(201, 'agent_alpha'), /TAB_ACCESS_DENIED/);
+  await assert.rejects(async () => targetId(101, 'agent_beta'), /TAB_ACCESS_DENIED/);
+  console.log('  -> PASS: Fall-through e acesso cruzado bloqueados estritamente.');
 }
 
-async function runMultisessionAdversarialTests() {
-  console.log('[TEST 1] Operações legítimas e concorrentes em abas exclusivas...');
-  const resAlpha = await dispatchMultisessionCommand({
-    id: 'cmd_a_1', sessionId: 'agent_alpha', action: 'browser_get_text', payload: { tabId: 101 }
-  });
-  const resBeta = await dispatchMultisessionCommand({
-    id: 'cmd_b_1', sessionId: 'agent_beta', action: 'browser_get_text', payload: { tabId: 201 }
-  });
-  assert.strictEqual(resAlpha.success, true);
-  assert.strictEqual(resBeta.success, true);
-  console.log('  -> PASS: Ambas as sessões operaram em suas respectivas abas.');
+async function testCrossSessionActionRejection() {
+  console.log('[TEST 3] Rejeição de ações cruzadas no session_registry...');
+  assert.throws(() => validateTabAccess('agent_alpha', 201), /TAB_ACCESS_DENIED/);
+  assert.throws(() => validateTabAccess('agent_beta', 101), /TAB_ACCESS_DENIED/);
+  assert.throws(() => validateTabAccess(null, 101), /TAB_ACCESS_DENIED/);
+  assert.strictEqual(validateTabAccess('agent_alpha', 101), true);
+  console.log('  -> PASS: Validação fail-closed de posse de aba confirmada.');
+}
 
-  console.log('[TEST 2] Tentativa adversarial de leitura cruzada (Alpha -> Aba 201 de Beta)...');
-  const crossRead = await dispatchMultisessionCommand({
-    id: 'adv_read', sessionId: 'agent_alpha', action: 'browser_get_text', payload: { tabId: 201 }
-  });
-  assert.strictEqual(crossRead.success, false);
-  assert.match(crossRead.error, /TAB_ACCESS_DENIED/);
-  console.log('  -> PASS: Leitura cruzada rejeitada com TAB_ACCESS_DENIED.');
-
-  console.log('[TEST 3] Tentativa adversarial de fechamento cruzado (Beta -> Aba 101 de Alpha)...');
-  const crossClose = await dispatchMultisessionCommand({
-    id: 'adv_close', sessionId: 'agent_beta', action: 'browser_close_tab', payload: { tabId: 101 }
-  });
-  assert.strictEqual(crossClose.success, false);
-  assert.match(crossClose.error, /TAB_ACCESS_DENIED/);
-  console.log('  -> PASS: Fechamento cruzado rejeitado com TAB_ACCESS_DENIED.');
-
-  console.log('[TEST 4] Requisição sem sessionId operando em aba restrita...');
-  const unauth = await dispatchMultisessionCommand({
-    id: 'unauth_cmd', action: 'browser_click', payload: { tabId: 102 }
-  });
-  assert.strictEqual(unauth.success, false);
-  assert.match(unauth.error, /TAB_ACCESS_DENIED/);
-  console.log('  -> PASS: Comando sem identificador bloqueado.');
-
-  console.log('[TEST 5] Burst concorrente de 20 comandos paralelos com segregação...');
+async function testConcurrentBurstSegregation() {
+  console.log('[TEST 4] Rajada de 20 acessos concorrentes em abas segregadas...');
   const promises = [];
   for (let i = 0; i < 10; i++) {
-    promises.push(dispatchMultisessionCommand({
-      id: `burst_a_${i}`, sessionId: 'agent_alpha', action: 'browser_scroll', payload: { tabId: 101 }
-    }));
-    promises.push(dispatchMultisessionCommand({
-      id: `burst_b_${i}`, sessionId: 'agent_beta', action: 'browser_scroll', payload: { tabId: 202 }
-    }));
+    promises.push((async () => {
+      assert.strictEqual(await targetId(101, 'agent_alpha'), 101);
+      assert.strictEqual(await targetId(201, 'agent_beta'), 201);
+    })());
   }
-  const burstResults = await Promise.all(promises);
-  assert.strictEqual(burstResults.length, 20);
-  assert.ok(burstResults.every(r => r.success === true));
+  await Promise.all(promises);
   console.log('  -> PASS: 20 requisições simultâneas segregadas sem interferência.');
+}
 
+async function runAll() {
+  console.log('=== TESTES ADVERSARIAIS MULTISSESSÃO: ISOLAMENTO DE ABAS ===\n');
+  await testTabListingIsolation();
+  await testTargetIdFallThroughPrevention();
+  await testCrossSessionActionRejection();
+  await testConcurrentBurstSegregation();
   console.log('\n[SUCESSO] Suíte adversarial multissessão aprovada com louvor!');
   process.exit(0);
 }
 
-runMultisessionAdversarialTests().catch(err => {
-  console.error('[FALHA NO TESTE MULTISSESSÃO]', err);
+runAll().catch(err => {
+  console.error('\n[FALHA NO TESTE MULTISSESSÃO]', err);
   process.exit(1);
 });

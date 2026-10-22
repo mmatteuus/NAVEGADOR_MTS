@@ -83,17 +83,28 @@ class MCPHTTPServer:
             request.headers.get("Mcp-Session-Id") or request.headers.get("X-Session-ID")
             or request.headers.get("mcp-session-id") or request.headers.get("x-session-id")
         )
-        if session_id and isinstance(message.get("params"), dict):
-            args = message["params"].setdefault("arguments", {})
-            if isinstance(args, dict):
-                args.setdefault("sessionId", session_id)
-        result = await self.server.handle_jsonrpc(message)
-        if result is None:
-            return web.Response(status=202)
-        negotiated = result.get("result", {}).get("protocolVersion") if isinstance(result, dict) else None
-        version = negotiated or request.headers.get("MCP-Protocol-Version", "2025-06-18")
-        headers = {"MCP-Protocol-Version": version}
+        if session_id:
+            session_id = str(session_id).strip()
+
+        if message.get("method") == "initialize" and not session_id:
+            import uuid
+            from .session_manager import session_manager
+            session_id = f"sess_{uuid.uuid4().hex}"
+            await session_manager.get_or_create_session(session_id)
+
+        from .session_context import set_current_session_id, reset_current_session_id
+        token = set_current_session_id(session_id)
+        try:
+            result = await self.server.handle_jsonrpc(message, session_id=session_id)
+        finally:
+            reset_current_session_id(token)
+
+        headers = {"Access-Control-Expose-Headers": "Mcp-Session-Id, MCP-Protocol-Version"}
         if session_id:
             headers["Mcp-Session-Id"] = session_id
+        if result is None:
+            return web.Response(status=202, headers=headers)
+        negotiated = result.get("result", {}).get("protocolVersion") if isinstance(result, dict) else None
+        headers["MCP-Protocol-Version"] = negotiated or request.headers.get("MCP-Protocol-Version", "2025-06-18")
         return web.json_response(result, headers=headers)
 

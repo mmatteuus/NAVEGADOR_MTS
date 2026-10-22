@@ -1,7 +1,7 @@
-"""Testes Adversariais do Sistema de Atualização para v2.2.1 (M4 Challenger).
+"""Testes Adversariais do Sistema de Atualização para v2.3.0 (M4 Challenger).
 
-Valida os cenários de comparação de versões remotas frente à versão local 2.2.1:
-versões inferiores (< 2.2.1), idênticas (= 2.2.1) e superiores (> 2.2.1).
+Valida os cenários de comparação de versões remotas frente à versão local 2.3.0:
+versões inferiores (< 2.3.0), idênticas (= 2.3.0) e superiores (> 2.3.0).
 """
 from __future__ import annotations
 
@@ -38,11 +38,11 @@ def _mock_github_release(tag: str, assets: list[dict] | None = None, draft: bool
     return resp
 
 
-@pytest.mark.parametrize("old_version", ["1.0.0", "2.0.0", "2.1.0", "v2.1.9", "2.1.9.9", "2.2.0", "2.2.0.41"])
-def test_updater_rejects_older_versions_than_2_2_1(old_version: str) -> None:
-    """Garante que qualquer versão menor que 2.2.1 seja classificada como current."""
-    assert APP_VERSION == "2.2.1"
-    assert _version_key(parse_version_tuple(old_version)) < _version_key(parse_version_tuple("2.2.1"))
+@pytest.mark.parametrize("old_version", ["1.0.0", "2.0.0", "2.1.0", "v2.1.9", "2.1.9.9", "2.2.0", "2.2.0.41", "2.2.1"])
+def test_updater_rejects_older_versions_than_2_3_0(old_version: str) -> None:
+    """Garante que qualquer versão menor que 2.3.0 seja classificada como current."""
+    assert APP_VERSION == "2.3.0"
+    assert _version_key(parse_version_tuple(old_version)) < _version_key(parse_version_tuple("2.3.0"))
 
     mock_resp = _mock_github_release(old_version)
     with patch("urllib.request.urlopen", return_value=mock_resp):
@@ -52,10 +52,10 @@ def test_updater_rejects_older_versions_than_2_2_1(old_version: str) -> None:
     assert info.status == "current"
 
 
-@pytest.mark.parametrize("same_version", ["2.2.1", "v2.2.1", "2.2.1.0"])
-def test_updater_rejects_identical_version_2_2_1(same_version: str) -> None:
-    """Garante que a versão idêntica à instalada (2.2.1) não seja marcada para update."""
-    assert APP_VERSION == "2.2.1"
+@pytest.mark.parametrize("same_version", ["2.3.0", "v2.3.0", "2.3.0.0"])
+def test_updater_rejects_identical_version_2_3_0(same_version: str) -> None:
+    """Garante que a versão idêntica à instalada (2.3.0) não seja marcada para update."""
+    assert APP_VERSION == "2.3.0"
     mock_resp = _mock_github_release(same_version)
     with patch("urllib.request.urlopen", return_value=mock_resp):
         info = check_for_updates("https://mock.api/latest", allow_local_fallback=False)
@@ -64,11 +64,11 @@ def test_updater_rejects_identical_version_2_2_1(same_version: str) -> None:
     assert info.status == "current"
 
 
-@pytest.mark.parametrize("new_version", ["2.2.1.1", "2.2.2", "v2.3.0", "3.0.0"])
+@pytest.mark.parametrize("new_version", ["2.3.0.1", "2.3.1", "v2.4.0", "3.0.0"])
 def test_updater_accepts_newer_version_with_valid_asset(new_version: str) -> None:
-    """Garante que versões genuinamente superiores a 2.2.1 ativem o canal de update."""
-    assert APP_VERSION == "2.2.1"
-    assert _version_key(parse_version_tuple(new_version)) > _version_key(parse_version_tuple("2.2.1"))
+    """Garante que versões genuinamente superiores a 2.3.0 ativem o canal de update."""
+    assert APP_VERSION == "2.3.0"
+    assert _version_key(parse_version_tuple(new_version)) > _version_key(parse_version_tuple("2.3.0"))
 
     mock_resp = _mock_github_release(new_version)
     with patch("urllib.request.urlopen", return_value=mock_resp):
@@ -83,7 +83,7 @@ def test_updater_accepts_newer_version_with_valid_asset(new_version: str) -> Non
 def test_updater_rejects_newer_version_without_compatible_installer() -> None:
     """Garante recusa de update superior quando o asset for incompatível (ex: zip ou tar)."""
     bad_assets = [{"name": "source_code.zip", "browser_download_url": "https://mock.cdn/src.zip"}]
-    mock_resp = _mock_github_release("v2.3.0", assets=bad_assets)
+    mock_resp = _mock_github_release("v2.4.0", assets=bad_assets)
     with patch("urllib.request.urlopen", return_value=mock_resp):
         info = check_for_updates("https://mock.api/latest", allow_local_fallback=False)
 
@@ -94,12 +94,12 @@ def test_updater_rejects_newer_version_without_compatible_installer() -> None:
 
 def test_updater_downgrade_prevention_on_launch() -> None:
     """Valida bloqueio em download_and_launch_update se a versão for menor ou igual à atual."""
-    for version in ("2.1.0", "2.1.9", "2.2.0", "2.2.0.41", "v2.2.1"):
+    for version in ("2.1.0", "2.1.9", "2.2.0", "2.2.0.41", "2.2.1", "v2.3.0"):
         info = UpdateInfo(
             version=version,
             release_notes="Notas",
             download_url="https://mock.api/installer.exe",
-            asset_name="NAVEGADOR_MTS_Instalador_v2.2.1.exe",
+            asset_name="NAVEGADOR_MTS_Instalador_v2.3.0.exe",
             is_newer=True,  # Forçado para testar guarda interna
         )
         with patch("subprocess.Popen") as mock_launch:

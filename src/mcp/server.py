@@ -8,7 +8,9 @@ com a ponte WebSocket local para a extensão do navegador.
 import asyncio
 import json
 import logging
+import os
 import sys
+import uuid
 from typing import Any, Callable, Dict, Optional
 from .router import MCPToolRouter
 from .schemas_browser import get_browser_tools
@@ -38,6 +40,7 @@ class MCPServer:
             computer_executor=execute_mcp_computer)
         self._running = False
         self._use_active_hub = False
+        self.process_session_id = f"stdio_{os.getpid()}_{uuid.uuid4().hex[:8]}"
 
     async def start(self, start_ws: bool = True) -> None:
         """Inicia os subsistemas do servidor MCP conectando ao hub central ou subindo ponte."""
@@ -58,8 +61,11 @@ class MCPServer:
             await self.ws_bridge.stop()
         logger.info("Servidor MCP finalizado.")
 
-    async def handle_jsonrpc(self, req: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def handle_jsonrpc(
+        self, req: Dict[str, Any], session_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """Processa requisições JSON-RPC 2.0 da especificação Model Context Protocol."""
+        effective_sid = session_id or self.process_session_id
         req_id = req.get("id")
         method = req.get("method")
         params = req.get("params") or {}
@@ -91,9 +97,11 @@ class MCPServer:
                         "error": {"code": -32602, "message": "Argumentos inválidos"}}
             if self._use_active_hub:
                 from .hub_client import forward_tool_to_hub
-                call_res = await forward_tool_to_hub(name, args, host=self.host, port=self.ws_port)
+                call_res = await forward_tool_to_hub(
+                    name, args, host=self.host, port=self.ws_port, session_id=effective_sid
+                )
             else:
-                call_res = await self.router.dispatch(name, args)
+                call_res = await self.router.dispatch(name, args, session_id=effective_sid)
             return {"jsonrpc": "2.0", "id": req_id, "result": call_res}
         else:
             err = {"code": -32601, "message": f"Método não encontrado: '{method}'"}
@@ -101,6 +109,8 @@ class MCPServer:
 
     async def run_stdio(self) -> None:
         """Loop principal do transporte Stdio (lê de stdin e escreve em stdout)."""
+        from .session_context import set_current_session_id
+        set_current_session_id(self.process_session_id)
         loop = asyncio.get_running_loop()
         sys.stderr.write(f"[{self.name}] Transporte Stdio pronto para conexões.\n")
         sys.stderr.flush()
@@ -114,7 +124,7 @@ class MCPServer:
                 if not line:
                     continue
                 req = json.loads(line)
-                resp = await self.handle_jsonrpc(req)
+                resp = await self.handle_jsonrpc(req, session_id=self.process_session_id)
                 if resp is not None:
                     sys.stdout.write(json.dumps(resp) + "\n")
                     sys.stdout.flush()

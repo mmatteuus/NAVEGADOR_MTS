@@ -82,7 +82,7 @@ const focusTab = async (tid, win, sid) => {
 
 async function executeTabManagement(p, sid) {
   switch (p.action) {
-    case 'list': return popupGrantState(p.currentWindowOnly !== false);
+    case 'list': return popupGrantState(p.currentWindowOnly !== false, sid);
     case 'new': return createTab(p.url, p.active, sid, p.incognito === true);
     case 'switch': return focusTab(p.tabId, p.focusWindow, sid);
     case 'close': return removeTab(p.tabId, sid);
@@ -97,7 +97,7 @@ async function executeTabAction(act, p, sid) {
     case 'browser_new_tab': return createTab(p.url, p.active, sid, p.incognito === true);
     case 'browser_close_tab': return removeTab(p.tabId, sid);
     case 'browser_switch_tab': return focusTab(p.tabId, p.focusWindow, sid);
-    case 'browser_list_tabs': return popupGrantState(p.currentWindowOnly !== false);
+    case 'browser_list_tabs': return popupGrantState(p.currentWindowOnly !== false, sid);
     case 'browser_go_back': return goBack(await targetId(p.tabId, sid));
     case 'browser_go_forward': return goForward(await targetId(p.tabId, sid));
     default: throw new Error(`Ação de aba não reconhecida: ${act}`);

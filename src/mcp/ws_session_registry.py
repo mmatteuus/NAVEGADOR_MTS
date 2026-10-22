@@ -28,6 +28,7 @@ class WSSessionRegistry:
     def __init__(self) -> None:
         self._extension_sockets: List[Any] = []
         self._agent_sockets: Set[Any] = set()
+        self._session_sockets: Dict[str, Any] = {}
         self._client_info: Dict[Any, Dict[str, Any]] = {}
         self._active_socket: Any = None
 
@@ -46,22 +47,36 @@ class WSSessionRegistry:
                 return sock
         return None
 
-    def register_extension(self, websocket: Any, info: Dict[str, Any]) -> bool:
-        """Registra uma extensão conectada sem permitir sobrescrita indevida do socket ativo."""
+    def get_socket_for_session(self, session_id: Optional[str]) -> Optional[Any]:
+        """Retorna o socket exclusivo da sessão ou faz fallback para a extensão ativa."""
+        if session_id:
+            sock = self._session_sockets.get(str(session_id))
+            if is_socket_healthy(sock):
+                return sock
+        return self.get_active_extension()
+
+    def bind_session_socket(self, session_id: str, websocket: Any) -> None:
+        """Vincula dinamicamente um identificador de sessão a um socket de extensão."""
+        if session_id and websocket:
+            self._session_sockets[str(session_id)] = websocket
+
+    def register_extension(
+        self, websocket: Any, info: Dict[str, Any], session_id: Optional[str] = None
+    ) -> bool:
+        """Registra uma extensão conectada com suporte a múltiplos sockets indexados por sessão."""
         self._client_info[websocket] = info
         if websocket not in self._extension_sockets:
             self._extension_sockets.append(websocket)
 
-        active = self.get_active_extension()
-        if active is not None and active != websocket:
-            logger.warning(
-                "Tentativa de sobrescrita de extensão ativa rejeitada: "
-                "canal já ocupado por socket saudável."
-            )
-            return False
+        sid = session_id or info.get("session_id") or info.get("sessionId")
+        if sid:
+            self._session_sockets[str(sid)] = websocket
+            logger.info(f"Socket associado explicitamente à sessão '{sid}'.")
 
-        self._active_socket = websocket
-        logger.info(f"Extensão registrada como ativa. Total conectadas: {len(self._extension_sockets)}")
+        if self._active_socket is None or not is_socket_healthy(self._active_socket):
+            self._active_socket = websocket
+
+        logger.info(f"Extensão registrada. Total conectadas: {len(self._extension_sockets)}")
         return True
 
     def register_agent(self, websocket: Any) -> None:
@@ -70,11 +85,14 @@ class WSSessionRegistry:
         logger.info(f"Socket de agente registrado. Total agentes: {len(self._agent_sockets)}")
 
     def unregister(self, websocket: Any) -> None:
-        """Remove um socket encerrado e atualiza a referência ativa."""
+        """Remove um socket encerrado e atualiza a referência ativa e sessões vinculadas."""
         if websocket in self._extension_sockets:
             self._extension_sockets.remove(websocket)
         self._agent_sockets.discard(websocket)
         self._client_info.pop(websocket, None)
+        dead_sessions = [s for s, sock in self._session_sockets.items() if sock == websocket]
+        for s in dead_sessions:
+            self._session_sockets.pop(s, None)
         if self._active_socket == websocket:
             self._active_socket = None
             self._active_socket = self.get_active_extension()
@@ -89,5 +107,6 @@ class WSSessionRegistry:
         """Limpa todos os registros de conexões ativas."""
         self._extension_sockets.clear()
         self._agent_sockets.clear()
+        self._session_sockets.clear()
         self._client_info.clear()
         self._active_socket = None

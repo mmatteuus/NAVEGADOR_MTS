@@ -21,8 +21,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "x": {"type": "number", "description": "Coordenada horizontal opcional para clique"},
                 "y": {"type": "number", "description": "Coordenada vertical opcional para clique"},
                 "button": {"type": "string", "enum": ["left", "right", "middle"], "default": "left"},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
@@ -37,8 +36,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "ref": {"type": "string", "description": "Referência do elemento via browser_snapshot"},
                 "clearFirst": {"type": "boolean", "default": False, "description": "Se True, limpa o texto antes"},
                 "submit": {"type": "boolean", "default": False, "description": "Se True, pressiona Enter após digitar"},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             },
             "required": ["text"]
         }
@@ -50,8 +48,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "script": {"type": "string", "description": "Código JavaScript a ser executado"},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             },
             "required": ["script"]
         }
@@ -65,8 +62,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "direction": {"type": "string", "enum": ["up", "down", "left", "right"], "default": "down"},
                 "amount": {"type": "number", "default": 400, "description": "Distância em pixels"},
                 "selector": {"type": "string", "description": "Seletor CSS opcional do container rolável"},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
@@ -80,8 +76,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "ref": {"type": "string", "description": "Referência do elemento obtida via snapshot"},
                 "x": {"type": "number", "description": "Posição X relativa"},
                 "y": {"type": "number", "description": "Posição Y relativa"},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
@@ -95,8 +90,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "selector": {"type": "string", "description": "Seletor CSS opcional do campo do agente"},
                 "ref": {"type": "string", "description": "Referência opcional obtida via snapshot"},
                 "modifiers": {"type": "array", "items": {"type": "string"}, "description": "Modificadores (Control, Alt, Shift)"},
-                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."},
-                "sessionId": {"type": "string", "description": "Identificador opcional da sessão de trabalho do agente."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             },
             "required": ["key"]
         }
