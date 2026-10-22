@@ -3,6 +3,7 @@ import asyncio, json, logging, time, uuid
 from typing import Any, Dict, Optional
 from websockets.asyncio.server import Server, serve
 from ..core.updater import APP_VERSION
+from .extension_sync import ExtensionReloadPolicy
 
 logger = logging.getLogger("BrowserMTS.WSBridge")
 
@@ -17,6 +18,7 @@ class WebSocketBridge:
         self._pending_requests: Dict[str, asyncio.Future] = {}
         self.client_info: Dict[str, Any] = {}
         self.last_latency_ms: float = 0.0
+        self._reload_policy = ExtensionReloadPolicy(APP_VERSION)
 
     @property
     def is_connected(self) -> bool:
@@ -89,7 +91,7 @@ class WebSocketBridge:
             self.client_info = data.get("payload", {})
             reply = {
                 "type": "server_hello",
-                "payload": {"status": "connected", "desktopVersion": APP_VERSION, "heartbeatIntervalMs": 4000, "reloadRequired": False}
+                "payload": {"status": "connected", "desktopVersion": APP_VERSION, "heartbeatIntervalMs": 4000, "reloadRequired": self._reload_policy.should_reload(self.client_info)}
             }
             await websocket.send(json.dumps(reply))
         elif msg_type == "ping":
