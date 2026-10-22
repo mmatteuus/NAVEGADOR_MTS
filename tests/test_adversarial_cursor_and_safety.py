@@ -21,7 +21,7 @@ from src.computer import (
     post_keyboard_type, post_mouse_click, post_mouse_drag,
     post_mouse_move, post_mouse_scroll, safety_gate,
 )
-from tests.conftest import PROD_PIDS
+from tests.conftest import missing_initial_pids
 
 user32 = ctypes.windll.user32
 
@@ -120,11 +120,9 @@ def test_adversarial_safety_gate_rejection(reset_safety_gate: None) -> None:
         post_mouse_move(20, 20)
 
 
-def test_prod_pids_untouched() -> None:
-    """Verifica que nenhum processo de produção legado em PROD_PIDS foi morto."""
-    active_now = [pid for pid in PROD_PIDS if psutil.pid_exists(pid)]
-    if 17892 in PROD_PIDS:
-        assert 17892 in active_now, "PROD_PID 17892 foi encerrado indevidamente!"
+def test_prod_pids_untouched(initial_live_prod_pids: list[int]) -> None:
+    """Verifica que todo PID vivo no início da sessão continua vivo."""
+    assert missing_initial_pids(initial_live_prod_pids) == []
 
 
 def test_loc_compliance_strict() -> None:

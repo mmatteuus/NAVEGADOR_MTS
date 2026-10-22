@@ -8,7 +8,8 @@ import { logger } from '../common/logger.js';
 import { buildActionResponse } from '../common/protocol.js';
 import { TAB_ACTIONS } from '../common/constants.js';
 import { isAutomationEnabled, incrementCommandCount } from './state_storage.js';
-import { navigate, newTab, closeTab, switchTab, listTabs, goBack, goForward, getActiveTab } from './tab_manager.js';
+import { navigate, newTab, closeTab, switchTab, goBack, goForward } from './tab_manager.js';
+import { requireGranted, targetId, popupGrantState, isGrantableUrl } from './tab_access.js';
 import { captureTabScreenshot } from './screenshot_capture.js';
 import { sendMessage } from './ws_client.js';
 import { evaluatePageScript } from './page_script_executor.js';
@@ -49,28 +50,32 @@ async function routeAction(action, params) {
     return executeTabManagement(params);
   }
   if (action === 'browser_evaluate_js') {
-    return evaluatePageScript(params.tabId, params.script);
+    return evaluatePageScript(await targetId(params.tabId), params.script);
   }
   if (TAB_ACTIONS.includes(action)) {
     return executeTabAction(action, params);
   }
   if (action === 'browser_screenshot' || action === 'screenshot_page' || action === 'screenshot_tab') {
-    return captureTabScreenshot(params.format, params.quality, params.tabId);
+    return captureTabScreenshot(params.format, params.quality, await targetId(params.tabId));
   }
-  return sendToContentScript(action, params);
+  return sendToContentScript(action, { ...params, tabId: await targetId(params.tabId) });
 }
 
 /** Executa a operação composta de abas mantendo background por padrão. */
 async function executeTabManagement(params) {
   switch (params.action) {
     case 'list':
-      return listTabs(params.currentWindowOnly);
+      return popupGrantState(params.currentWindowOnly !== false);
     case 'new':
+      if (params.url && !isGrantableUrl(params.url)) throw new Error('URL_NOT_ALLOWED');
       return newTab(params.url, params.active === true);
     case 'switch':
-      return switchTab(params.tabId, params.focusWindow === true);
+      await requireGranted(params.tabId);
+      return switchTab(await targetId(params.tabId), params.focusWindow === true);
     case 'close':
-      return closeTab(params.tabId);
+      const tab = await requireGranted(params.tabId);
+      const result = await closeTab(tab.id);
+      return result;
     default:
       throw new Error(`Ação de abas não reconhecida: ${params.action || 'N/A'}`);
   }
@@ -80,19 +85,23 @@ async function executeTabManagement(params) {
 async function executeTabAction(action, params) {
   switch (action) {
     case 'browser_navigate':
-      return navigate(params.url, params.tabId, params.active === true);
+      if (!isGrantableUrl(params.url)) throw new Error('URL_NOT_ALLOWED');
+      return navigate(params.url, await targetId(params.tabId), params.active === true);
     case 'browser_new_tab':
+      if (params.url && !isGrantableUrl(params.url)) throw new Error('URL_NOT_ALLOWED');
       return newTab(params.url, params.active === true);
     case 'browser_close_tab':
-      return closeTab(params.tabId);
+      const tab = await requireGranted(params.tabId);
+      return closeTab(tab.id);
     case 'browser_switch_tab':
-      return switchTab(params.tabId, params.focusWindow === true);
+      await requireGranted(params.tabId);
+      return switchTab(await targetId(params.tabId), params.focusWindow === true);
     case 'browser_list_tabs':
-      return listTabs(params.currentWindowOnly);
+      return popupGrantState(params.currentWindowOnly !== false);
     case 'browser_go_back':
-      return goBack(params.tabId);
+      return goBack(await targetId(params.tabId));
     case 'browser_go_forward':
-      return goForward(params.tabId);
+      return goForward(await targetId(params.tabId));
     default:
       throw new Error(`Ação de aba não reconhecida: ${action}`);
   }
@@ -100,22 +109,22 @@ async function executeTabAction(action, params) {
 
 /** Encaminha comandos de inspeção e interação para o Content Script da aba. */
 async function sendToContentScript(action, params) {
-  const targetTab = params.tabId ? { id: params.tabId } : await getActiveTab();
-  if (!targetTab || !targetTab.id) {
-    throw new Error('Nenhuma aba ativa encontrada para despachar o comando na página.');
-  }
+  const targetTab = await requireGranted(params.tabId);
 
   let response;
   try {
     response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
   } catch (_err) {
     logger.warn(`Injetando content scripts dinamicamente na aba ID ${targetTab.id}...`);
+    await requireGranted(targetTab.id);
     await chrome.scripting.executeScript({
       target: { tabId: targetTab.id },
       files: [
         'content/content_bridge.js',
         'content/dom_extractor.js',
         'content/element_finder.js',
+        'content/interaction_extras.js',
+        'content/virtual_key_press.js',
         'content/interaction_simulator.js',
         'content/keyboard_scroll.js',
         'content/eval_runner.js',

@@ -13,6 +13,7 @@ import assert from 'node:assert';
 
 // Setup de Mocks Globais da API chrome.* e WebSocket ANTES dos imports
 const mockStorage = { browser_mts_automation_enabled: true };
+let sessionGrants = [];
 let openTabs = [{ id: 101, url: 'https://example.com', title: 'Example', active: true, windowId: 1 }];
 const sentWsMessages = [];
 
@@ -34,14 +35,21 @@ class MockWebSocket {
 
 globalThis.WebSocket = MockWebSocket;
 globalThis.chrome = {
+  runtime: { getURL: (path) => `chrome-extension://test/${path}` },
   storage: {
     local: {
       get: async (k) => (typeof k === 'string' ? { [k]: mockStorage[k] } : mockStorage),
       set: async (obj) => Object.assign(mockStorage, obj)
+    },
+    session: {
+      get: async () => ({ browser_mts_session_tab_grants: sessionGrants }),
+      set: async (data) => { sessionGrants = data.browser_mts_session_tab_grants || []; }
     }
   },
   tabs: {
     query: async (q) => openTabs.filter(t => (q.active ? t.active : true)),
+    get: async (id) => openTabs.find(t => t.id === id) || null,
+    onRemoved: { addListener: () => {} }, onReplaced: { addListener: () => {} },
     create: async (opts) => {
       const newT = { id: Math.floor(Math.random() * 1000) + 200, ...opts, windowId: 1 };
       openTabs.push(newT);
@@ -103,6 +111,7 @@ async function runAdversarialExtensionTests() {
 
   console.log('[TEST] 3. Testando burst de 30 comandos concorrentes no Command Dispatcher...');
   openTabs = [{ id: 1, url: 'https://app.test', active: true, windowId: 1 }];
+  sessionGrants = [1];
   sentWsMessages.length = 0;
   for (let i = 0; i < 30; i++) {
     dispatchIncomingCommand({ id: `burst_${i}`, action: 'browser_get_text', params: { selector: 'body' } });

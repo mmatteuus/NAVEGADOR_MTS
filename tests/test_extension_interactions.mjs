@@ -23,10 +23,12 @@ const editable = {
 };
 globalThis.document = { activeElement: editable };
 globalThis.__BrowserMTS__ = { elementFinder: {
-  findTargetElement: async () => button,
+  findTargetElement: async (params = {}) => params.selector === '#editable' ? editable : button,
   getElementBounds: () => ({ centerX: 10, centerY: 20 })
 } };
 
+await import('../src/extension/content/interaction_extras.js');
+await import('../src/extension/content/virtual_key_press.js');
 await import('../src/extension/content/interaction_simulator.js');
 const interaction = globalThis.__BrowserMTS__.interaction;
 events.length = 0;
@@ -40,9 +42,8 @@ assert.deepEqual(events.filter((event) => ['click', 'auxclick', 'contextmenu'].i
   .map((event) => [event.type, event.button]), [['auxclick', 1]]);
 
 events.length = 0;
-document.activeElement = editable;
-await interaction.typeText({ text: 'X' });
+await interaction.typeText({ selector: '#editable', text: 'X' });
 assert.equal(editable.textContent, 'oldX');
-await interaction.typeText({ text: 'Y', clearFirst: true });
+await interaction.typeText({ selector: '#editable', text: 'Y', clearFirst: true });
 assert.equal(editable.textContent, 'Y');
 console.log('[PASS] botões e contenteditable respeitam o contrato.');

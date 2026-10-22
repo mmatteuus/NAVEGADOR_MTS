@@ -21,13 +21,13 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "x": {"type": "number", "description": "Coordenada horizontal opcional para clique"},
                 "y": {"type": "number", "description": "Coordenada vertical opcional para clique"},
                 "button": {"type": "string", "enum": ["left", "right", "middle"], "default": "left"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
     {
         "name": "browser_type",
-        "description": "Digita texto na aba alvo com teclado virtual exclusivo do agente (sem roubar foco da janela/aba do usuário).",
+        "description": "Digita no campo virtual do agente em aba liberada no popup, sem mudar foco. Use selector/ref ou o último campo do agente; recusa o campo em uso pelo usuário e editores ricos incompatíveis.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -36,7 +36,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "ref": {"type": "string", "description": "Referência do elemento via browser_snapshot"},
                 "clearFirst": {"type": "boolean", "default": False, "description": "Se True, limpa o texto antes"},
                 "submit": {"type": "boolean", "default": False, "description": "Se True, pressiona Enter após digitar"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             },
             "required": ["text"]
         }
@@ -48,7 +48,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "script": {"type": "string", "description": "Código JavaScript a ser executado"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             },
             "required": ["script"]
         }
@@ -62,7 +62,7 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "direction": {"type": "string", "enum": ["up", "down", "left", "right"], "default": "down"},
                 "amount": {"type": "number", "default": 400, "description": "Distância em pixels"},
                 "selector": {"type": "string", "description": "Seletor CSS opcional do container rolável"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
@@ -76,19 +76,21 @@ BROWSER_ACTION_TOOLS: List[Dict[str, Any]] = [
                 "ref": {"type": "string", "description": "Referência do elemento obtida via snapshot"},
                 "x": {"type": "number", "description": "Posição X relativa"},
                 "y": {"type": "number", "description": "Posição Y relativa"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             }
         }
     },
     {
         "name": "browser_press_key",
-        "description": "Dispara tecla via teclado virtual do agente na aba alvo, sem roubar o foco do usuário.",
+        "description": "Opera o caret virtual no último campo do agente ou selector/ref, em aba liberada. Não usa foco/clipboard do usuário; atalhos incompatíveis retornam erro.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "key": {"type": "string", "description": "Nome da tecla (ex: Enter, Tab, Escape, Backspace)"},
+                "selector": {"type": "string", "description": "Seletor CSS opcional do campo do agente"},
+                "ref": {"type": "string", "description": "Referência opcional obtida via snapshot"},
                 "modifiers": {"type": "array", "items": {"type": "string"}, "description": "Modificadores (Control, Alt, Shift)"},
-                "tabId": {"type": "integer", "description": "ID opcional da aba. Se omitido, usa a aba ativa."}
+                "tabId": {"type": "integer", "description": "ID de uma aba liberada no popup. Omitir somente com uma única aba liberada."}
             },
             "required": ["key"]
         }

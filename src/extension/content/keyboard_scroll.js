@@ -15,29 +15,9 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    * @returns {object} Confirmação da tecla disparada.
    */
   function pressKey(params) {
-    const key = params.key || 'Enter';
-    const modifiers = Array.isArray(params.modifiers) ? params.modifiers : [];
-    const target = document.activeElement || document.body || window;
-
-    const eventInit = {
-      key,
-      code: key,
-      bubbles: true,
-      cancelable: true,
-      ctrlKey: modifiers.includes('Control'),
-      shiftKey: modifiers.includes('Shift'),
-      altKey: modifiers.includes('Alt'),
-      metaKey: modifiers.includes('Meta')
-    };
-
-    target.dispatchEvent(new KeyboardEvent('keydown', eventInit));
-    target.dispatchEvent(new KeyboardEvent('keyup', eventInit));
-
-    return {
-      success: true,
-      dispatchedKey: key,
-      targetElement: target.tagName ? target.tagName.toLowerCase() : 'window'
-    };
+    const interaction = window.__BrowserMTS__.interaction;
+    if (!interaction?.pressKey) throw new Error('Teclado virtual indisponível nesta página.');
+    return interaction.pressKey(params);
   }
 
   /**

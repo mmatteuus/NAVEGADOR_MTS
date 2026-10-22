@@ -52,6 +52,14 @@ mockDoc.activeElement = mockDoc.body;
 
 globalThis.window = { __BrowserMTS__: {} };
 globalThis.document = mockDoc;
+window.__BrowserMTS__.elementFinder = {
+  findTargetElement: async ({ selector } = {}) => {
+    if (selector === '#disabled') return mockDoc.disabledTarget;
+    if (selector === '#readonly') return mockDoc.readOnlyTarget;
+    throw new Error('Elemento não encontrado');
+  },
+  getElementBounds: () => ({ centerX: 0, centerY: 0 })
+};
 globalThis.PointerEvent = class { constructor(type, init) { Object.assign(this, { type, ...init }); } };
 globalThis.MouseEvent = class { constructor(type, init) { Object.assign(this, { type, ...init }); } };
 globalThis.KeyboardEvent = class { constructor(type, init) { Object.assign(this, { type, ...init }); } };
@@ -104,14 +112,14 @@ async function runTier5VirtualDomTests() {
   // Elemento desabilitado
   const disabledInput = new MockElement('input');
   disabledInput.disabled = true;
-  mockDoc.activeElement = disabledInput;
-  await assert.rejects(async () => interact.typeText({ text: 'Teste' }), /não aceita digitação/);
+  mockDoc.disabledTarget = disabledInput;
+  await assert.rejects(async () => interact.typeText({ selector: '#disabled', text: 'Teste' }), /Nenhum campo editável focado/);
 
   // Elemento somente leitura
   const readOnlyInput = new MockElement('input');
   readOnlyInput.readOnly = true;
-  mockDoc.activeElement = readOnlyInput;
-  await assert.rejects(async () => interact.typeText({ text: 'Teste' }), /não aceita digitação/);
+  mockDoc.readOnlyTarget = readOnlyInput;
+  await assert.rejects(async () => interact.typeText({ selector: '#readonly', text: 'Teste' }), /Nenhum campo editável focado/);
   console.log('  -> PASS: Digitação em elementos inválidos rejeitada com segurança.');
 
   console.log('[TIER 5 DOM] 4. Foco virtual isolado do agente (setVirtualFocus / removeVirtualFocus)...');

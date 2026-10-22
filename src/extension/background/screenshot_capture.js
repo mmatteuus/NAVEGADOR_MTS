@@ -28,7 +28,8 @@ function validateUrlAccess(url) {
 export async function captureTabScreenshot(format = 'png', quality = 90, tabId = null) {
   let targetTab = null;
 
-  if (tabId && typeof tabId === 'number') {
+  if (tabId !== null && tabId !== undefined) {
+    if (!Number.isInteger(tabId) || tabId <= 0) throw new Error('ID de aba inválido para captura.');
     try {
       if (chrome.tabs.get) targetTab = await chrome.tabs.get(tabId);
     } catch (_err) {
@@ -38,6 +39,7 @@ export async function captureTabScreenshot(format = 'png', quality = 90, tabId =
       const tabs = await chrome.tabs.query({});
       targetTab = tabs.find(t => t.id === tabId);
     }
+    if (!targetTab) throw new Error('A aba informada não está disponível para captura.');
   }
 
   if (!targetTab) {
@@ -67,6 +69,10 @@ export async function captureTabScreenshot(format = 'png', quality = 90, tabId =
   }
 
   // Fallback suave: captureVisibleTab caso seja a aba ativa
+  const activeTabs = await chrome.tabs.query({ active: true, windowId: targetTab.windowId });
+  if (!activeTabs.some(tab => tab.id === targetTab.id)) {
+    throw new Error('Captura fallback recusada: a aba alvo não está ativa.');
+  }
   const captureOptions = { format: format === 'jpeg' ? 'jpeg' : 'png' };
   if (captureOptions.format === 'jpeg') {
     captureOptions.quality = Math.max(1, Math.min(100, quality));

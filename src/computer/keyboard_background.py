@@ -7,12 +7,24 @@ sem roubar o foco ativo da janela em que o usuário está trabalhando.
 from __future__ import annotations
 
 import ctypes
+import functools
+import threading
 from ctypes import wintypes
 import time
 from typing import Any, Dict, List, Optional
 from .safety_gate import safety_gate
-from .window_finder import find_window_at
-from .mouse_background import get_agent_cursor_position
+from .keyboard_target import keyboard_target_identity, resolve_keyboard_target, revalidate_keyboard_target
+
+_keyboard_lock = threading.RLock()
+
+
+def _serialized(function):
+    """Evita interleaving de modificadores entre chamadas concorrentes."""
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        with _keyboard_lock:
+            return function(*args, **kwargs)
+    return wrapper
 
 user32 = ctypes.windll.user32
 user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
@@ -34,25 +46,25 @@ VK_MAP = {
 }
 
 
-def _resolve_target_hwnd(hwnd: Optional[int] = None) -> int:
-    """Resolve a janela alvo a partir do hwnd fornecido ou da posição virtual do agente."""
-    if hwnd and user32.IsWindow(wintypes.HWND(hwnd)):
-        return int(hwnd)
-    ax, ay = get_agent_cursor_position()
-    return find_window_at(ax, ay)
-
-
+@_serialized
 def post_keyboard_type(
     text: str, delay_ms: int = 5, hwnd: Optional[int] = None
 ) -> Dict[str, Any]:
     """Digita texto Unicode enviando mensagens WM_CHAR para a janela em background."""
     safety_gate.check_authorization("type_text")
-    target_hwnd = _resolve_target_hwnd(hwnd)
+    target_hwnd = resolve_keyboard_target(hwnd)
+    target_identity = keyboard_target_identity(target_hwnd)
     hw = wintypes.HWND(target_hwnd)
     delay_sec = max(delay_ms / 1000.0, 0.001)
 
     for char in text:
-        user32.PostMessageW(hw, WM_CHAR, ord(char), 1)
+        safety_gate.check_authorization("type_text")
+        revalidate_keyboard_target(target_hwnd, target_identity)
+        units = char.encode("utf-16-le", errors="surrogatepass")
+        for index in range(0, len(units), 2):
+            unit = int.from_bytes(units[index:index + 2], "little")
+            if not user32.PostMessageW(hw, WM_CHAR, unit, 1):
+                raise RuntimeError("KEYBOARD_POST_FAILED: WM_CHAR não entrou na fila")
         if delay_ms > 0:
             time.sleep(delay_sec)
 
@@ -64,32 +76,46 @@ def post_keyboard_type(
     }
 
 
+@_serialized
 def post_key_press(
     key: str, modifiers: Optional[List[str]] = None, hwnd: Optional[int] = None
 ) -> Dict[str, Any]:
     """Pressiona teclas e combinações via WM_KEYDOWN/WM_KEYUP sem alterar foco."""
     safety_gate.check_authorization("press_key")
-    target_hwnd = _resolve_target_hwnd(hwnd)
-    hw = wintypes.HWND(target_hwnd)
-    mod_vks = [VK_MAP[m.lower()] for m in (modifiers or []) if m.lower() in VK_MAP]
+    mod_vks = []
+    allowed_modifiers = {"shift", "control", "ctrl", "alt", "win", "meta"}
+    for modifier in modifiers or []:
+        if modifier.lower() not in allowed_modifiers:
+            raise ValueError(f"Tecla desconhecida: '{modifier}'")
+        mod_vks.append(VK_MAP["win"] if modifier.lower() == "meta" else VK_MAP[modifier.lower()])
 
     target_vk = VK_MAP.get(key.lower())
-    if not target_vk and len(key) == 1:
+    if not target_vk and len(key) == 1 and key.isascii():
         target_vk = ord(key.upper())
     if not target_vk:
         raise ValueError(f"Tecla desconhecida: '{key}'")
 
-    for m_vk in mod_vks:
-        user32.PostMessageW(hw, WM_KEYDOWN, m_vk, 1)
-        time.sleep(0.01)
+    target_hwnd = resolve_keyboard_target(hwnd)
+    target_identity = keyboard_target_identity(target_hwnd)
+    hw = wintypes.HWND(target_hwnd)
 
-    user32.PostMessageW(hw, WM_KEYDOWN, target_vk, 1)
-    time.sleep(0.02)
-    user32.PostMessageW(hw, WM_KEYUP, target_vk, 0xC0000001)
-
-    for m_vk in reversed(mod_vks):
-        user32.PostMessageW(hw, WM_KEYUP, m_vk, 0xC0000001)
+    pressed, release_failures, completed = [], [], False
+    try:
+        for m_vk in mod_vks + [target_vk]:
+            safety_gate.check_authorization("press_key")
+            revalidate_keyboard_target(target_hwnd, target_identity)
+            if not user32.PostMessageW(hw, WM_KEYDOWN, m_vk, 1):
+                raise RuntimeError("KEYBOARD_POST_FAILED: WM_KEYDOWN não entrou na fila")
+            pressed.append(m_vk)
+            time.sleep(0.01)
         time.sleep(0.01)
+        completed = True
+    finally:
+        for vk in reversed(pressed):
+            if not user32.PostMessageW(hw, WM_KEYUP, vk, 0xC0000001):
+                release_failures.append(vk)
+    if completed and release_failures:
+        raise RuntimeError("KEYBOARD_RELEASE_FAILED: não foi possível liberar todas as teclas")
 
     return {
         "executedKey": key,

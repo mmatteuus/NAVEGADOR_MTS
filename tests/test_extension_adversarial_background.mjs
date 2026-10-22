@@ -7,6 +7,7 @@ import assert from 'node:assert';
 const windowFocusCalls = [];
 const tabUpdateCalls = [];
 const sentWsMessages = [];
+let sessionGrants = [20];
 let cdpScreenshotCalled = false;
 let cdpShouldFail = false;
 
@@ -27,6 +28,7 @@ class MockWebSocket {
 
 globalThis.WebSocket = MockWebSocket;
 globalThis.chrome = {
+  runtime: { getURL: (path) => `chrome-extension://test/${path}` },
   debugger: {
     attach: async () => {},
     detach: async () => {},
@@ -48,6 +50,7 @@ globalThis.chrome = {
   },
   tabs: {
     get: async (id) => tabsList.find(t => t.id === id),
+    onRemoved: { addListener: () => {} }, onReplaced: { addListener: () => {} },
     query: async (q) => tabsList.filter(t => (q.active ? t.active : true)),
     create: async (opts) => {
       const tab = { id: 30 + tabsList.length, ...opts, windowId: 100 };
@@ -62,7 +65,13 @@ globalThis.chrome = {
     },
     captureVisibleTab: async () => 'data:image/png;base64,FALLBACK_SCREENSHOT'
   },
-  storage: { local: { get: async () => ({ browser_mts_automation_enabled: true }), set: async () => {} } }
+  storage: {
+    local: { get: async () => ({ browser_mts_automation_enabled: true }), set: async () => {} },
+    session: {
+      get: async () => ({ browser_mts_session_tab_grants: sessionGrants }),
+      set: async (data) => { sessionGrants = data.browser_mts_session_tab_grants || []; }
+    }
+  }
 };
 
 const { captureTabScreenshot } = await import('../src/extension/background/screenshot_capture.js');
@@ -84,6 +93,11 @@ async function testAdversarialBackground() {
   assert.strictEqual(cdpScreenshotCalled, true);
   assert.strictEqual(windowFocusCalls.length, 0, 'Janela nao pode ter sido focada!');
   assert.strictEqual(tabUpdateCalls.some(c => c.id === 20 && c.props.active === true), false);
+  await assert.rejects(
+    () => captureTabScreenshot('png', 90, 999),
+    /aba informada não está disponível/,
+    'ID explícito ausente não pode cair para a aba ativa.'
+  );
 
   console.log('[TEST BG] 2. Despacho browser_screenshot via Command Dispatcher...');
   sentWsMessages.length = 0;
@@ -96,10 +110,14 @@ async function testAdversarialBackground() {
 
   console.log('[TEST BG] 3. Fallback de captura quando CDP falha...');
   cdpShouldFail = true;
+  tabsList.find(tab => tab.id === 10).active = true;
+  tabsList.find(tab => tab.id === 20).active = false;
   const fallbackRes = await captureTabScreenshot('png', 90, 10);
   assert.strictEqual(fallbackRes.success, true);
   assert.strictEqual(fallbackRes.base64, 'FALLBACK_SCREENSHOT');
   cdpShouldFail = false;
+  tabsList.find(tab => tab.id === 20).active = true;
+  tabsList.find(tab => tab.id === 10).active = false;
 
   console.log('[TEST BG] 4. switch com focusWindow: false vs focusWindow: true...');
   windowFocusCalls.length = 0;

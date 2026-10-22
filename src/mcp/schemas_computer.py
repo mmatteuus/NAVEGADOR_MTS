@@ -58,7 +58,7 @@ COMPUTER_TOOLS: List[Dict[str, Any]] = [
     },
     {
         "name": "computer_keyboard_action",
-        "description": "Digitação e teclas no Windows sob SafetyGate. Suporta modo background (padrão, sem roubar foco) ou físico real (background=False via SendInput).",
+        "description": "Digitação e teclas no Windows sob SafetyGate. O modo background (padrão) usa um alvo virtual fixado sem foco físico; background=False usa SendInput físico.",
         "inputSchema": {
             "type": "object",
             "properties": {

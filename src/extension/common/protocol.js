@@ -16,7 +16,9 @@ export function buildClientHello(activeTabInfo = null) {
     type: 'client_hello',
     payload: {
       client: 'browser_mts_extension',
-      version: '2.1.1',
+      version: typeof chrome !== 'undefined' && chrome.runtime?.getManifest
+        ? chrome.runtime.getManifest().version
+        : 'unknown',
       browser: 'Chromium / Manifest V3',
       timestamp: Date.now(),
       activeTab: activeTabInfo

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NAVEGADOR MTS",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Ponte de automação web ultrarresistente para controle por agentes de IA e integração MCP local no Windows 11.",
   "permissions": [
     "tabs",
@@ -43,6 +43,8 @@
         "content/content_bridge.js",
         "content/dom_extractor.js",
         "content/element_finder.js",
+        "content/interaction_extras.js",
+        "content/virtual_key_press.js",
         "content/interaction_simulator.js",
         "content/keyboard_scroll.js",
         "content/eval_runner.js",

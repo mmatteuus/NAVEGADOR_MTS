@@ -24,17 +24,23 @@ from src.computer.safety_gate import safety_gate  # noqa: E402
 PROD_PIDS = [17892, 8928, 6548, 6052]
 
 
+@pytest.fixture(scope="session")
+def initial_live_prod_pids() -> List[int]:
+    """Captura uma vez os PIDs protegidos que realmente estão vivos."""
+    return [pid for pid in PROD_PIDS if psutil.pid_exists(pid)]
+
+
+def missing_initial_pids(initial: List[int], alive: callable = psutil.pid_exists) -> List[int]:
+    """Retorna somente PIDs inicialmente vivos que desapareceram depois."""
+    return [pid for pid in initial if not alive(pid)]
+
+
 @pytest.fixture(scope="session", autouse=True)
-def guard_production_instance() -> Generator[None, None, None]:
+def guard_production_instance(initial_live_prod_pids: List[int]) -> Generator[None, None, None]:
     """Sentinela que assegura que nenhum PID da produção seja alterado ou morto."""
-    active_before = [pid for pid in PROD_PIDS if psutil.pid_exists(pid)]
     yield
-    active_after = [pid for pid in PROD_PIDS if psutil.pid_exists(pid)]
-    # Se algum PID de produção estava vivo antes do teste, deve continuar vivo
-    for pid in active_before:
-        assert pid in active_after, (
-            f"VIOLAÇÃO CRÍTICA DE PRODUÇÃO: O PID {pid} da produção foi interrompido!"
-        )
+    missing = missing_initial_pids(initial_live_prod_pids)
+    assert not missing, f"VIOLAÇÃO CRÍTICA DE PRODUÇÃO: PIDs interrompidos: {missing}"
 
 
 @pytest.fixture

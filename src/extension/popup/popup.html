@@ -31,6 +31,23 @@
       </label>
     </section>
 
+    <section class="card tab-access-card">
+      <div class="status-header"><span class="status-title">Abas permitidas ao agente</span></div>
+      <div class="card-desc">A seleção vale para a aba inteira, mesmo após navegar, e é limpa ao reiniciar o navegador.</div>
+      <div id="tab-access-count" class="card-desc">0 abas selecionadas</div>
+      <div id="tab-access-list" class="tab-access-list">Carregando abas...</div>
+      <div class="tab-access-actions">
+        <button id="save-tab-grants" class="fluent-btn-secondary">Salvar seleção</button>
+        <button id="clear-tab-grants" class="fluent-btn-secondary">Limpar</button>
+      </div>
+      <div class="tab-access-open">
+        <label for="new-agent-tab-url">Abrir URL e liberar</label>
+        <input id="new-agent-tab-url" type="url" placeholder="https://exemplo.com">
+        <button id="open-agent-tab" class="fluent-btn-secondary">Abrir e liberar</button>
+      </div>
+      <small id="tab-access-message" class="card-desc"></small>
+    </section>
+
     <!-- Cartão de Status e Conexão Local -->
     <section class="card status-card">
       <div class="status-header">
@@ -79,6 +96,7 @@
   </div>
 
   <script src="popup_ui.js"></script>
+  <script src="popup_tabs.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
