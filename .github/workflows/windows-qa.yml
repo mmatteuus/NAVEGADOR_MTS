@@ -43,7 +43,16 @@ jobs:
       - name: Compilação de sintaxe
         run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
       - name: Testes MCP, segurança e atualização
-        run: python -m pytest -q
+        run: python -m pytest -q --junitxml=test-results.xml
+      - name: Diagnóstico público dos testes
+        if: ${{ always() }}
+        run: python report_test_failures.py test-results.xml
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-results
+          path: test-results.xml
+          retention-days: 3
       - name: Testes adversariais da extensão MV3
         run: node tests/test_extension_adversarial.mjs
   instalador:
