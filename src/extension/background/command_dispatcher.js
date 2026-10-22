@@ -1,9 +1,7 @@
 /**
  * @file command_dispatcher.js
- * @description Roteador central e fila sequencial de execução de comandos do agente.
- * Garante execução ordenada, roteando entre API de abas, CDP e Content Scripts.
+ * @description Roteador central e filas assíncronas concorrentes de execução por sessão.
  */
-
 import { logger } from '../common/logger.js';
 import { buildActionResponse } from '../common/protocol.js';
 import { TAB_ACTIONS } from '../common/constants.js';
@@ -14,125 +12,111 @@ import { captureTabScreenshot } from './screenshot_capture.js';
 import { sendMessage } from './ws_client.js';
 import { evaluatePageScript } from './page_script_executor.js';
 import { requireContentSuccess } from './content_response.js';
+import { enqueueSessionCommand } from './session_queues.js';
+import { assignTabToSession, assignWindowToSession, releaseTabFromSession, validateTabAccess } from './session_registry.js';
+import { getSessionCookies, setSessionCookie, clearSessionCookies, clearSessionStorage } from './cookie_isolator.js';
 
-let commandQueue = Promise.resolve();
-
-/**
- * Ponto de entrada para comandos recebidos pelo cliente WebSocket.
- * @param {object} message - Objeto da mensagem recebida.
- */
 export function dispatchIncomingCommand(message) {
-  const reqId = message.id || message.payload?.requestId || `cmd_${Date.now()}`;
-  const action = message.action || message.type || '';
-  const params = message.payload || message.params || {};
+  const reqId = message.id || message.payload?.requestId || message.params?.requestId || `cmd_${Date.now()}`;
+  const sessionId = message.sessionId || message.payload?.sessionId || message.params?.sessionId || null;
+  const action = message.action || message.type || '', params = message.payload || message.params || {};
 
-  commandQueue = commandQueue.then(async () => {
+  enqueueSessionCommand(sessionId, async () => {
     try {
-      const allowed = await isAutomationEnabled();
-      if (!allowed) {
-        throw new Error('Automação web desativada pelo usuário no painel do BROWSER MTS.');
-      }
-
-      logger.info(`Executando comando '${action}' (ID: ${reqId}).`);
-      const result = await routeAction(action, params);
+      if (!(await isAutomationEnabled())) throw new Error('Automação web desativada pelo usuário no painel do BROWSER MTS.');
+      logger.info(`Executando comando '${action}' (ID: ${reqId}, Sessão: ${sessionId || 'global'}).`);
+      const result = await routeAction(action, params, sessionId);
       await incrementCommandCount();
-      sendMessage(buildActionResponse(reqId, true, result, null));
+      const resp = buildActionResponse(reqId, true, result, null);
+      if (sessionId) resp.sessionId = sessionId;
+      sendMessage(resp);
     } catch (err) {
       logger.error(`Falha na execução de '${action}':`, err.message);
-      sendMessage(buildActionResponse(reqId, false, null, err.message));
+      const resp = buildActionResponse(reqId, false, null, err.message);
+      if (sessionId) resp.sessionId = sessionId;
+      sendMessage(resp);
     }
   });
 }
 
-/** Roteia a ação para o módulo especialista adequado. */
-async function routeAction(action, params) {
-  if (action === 'browser_manage_tabs') {
-    return executeTabManagement(params);
-  }
-  if (action === 'browser_evaluate_js') {
-    return evaluatePageScript(await targetId(params.tabId), params.script);
-  }
-  if (TAB_ACTIONS.includes(action)) {
-    return executeTabAction(action, params);
-  }
+async function routeAction(action, params, sid) {
+  if (params.tabId != null) validateTabAccess(sid, params.tabId);
+  if (action === 'browser_manage_tabs') return executeTabManagement(params, sid);
+  if (action === 'browser_evaluate_js') return evaluatePageScript(await targetId(params.tabId, sid), params.script);
+  if (action === 'browser_get_cookies') return getSessionCookies(sid, params);
+  if (action === 'browser_set_cookie') return setSessionCookie(sid, params);
+  if (action === 'browser_clear_cookies') return clearSessionCookies(sid, params?.url || params);
+  if (action === 'browser_clear_storage' || action === 'browser_clear_session') return clearSessionStorage(sid);
+  if (TAB_ACTIONS.includes(action)) return executeTabAction(action, params, sid);
   if (action === 'browser_screenshot' || action === 'screenshot_page' || action === 'screenshot_tab') {
-    return captureTabScreenshot(params.format, params.quality, await targetId(params.tabId));
+    return captureTabScreenshot(params.format, params.quality, await targetId(params.tabId, sid));
   }
-  return sendToContentScript(action, { ...params, tabId: await targetId(params.tabId) });
+  return sendToContentScript(action, { ...params, tabId: await targetId(params.tabId, sid) }, sid);
 }
 
-/** Executa a operação composta de abas mantendo background por padrão. */
-async function executeTabManagement(params) {
-  switch (params.action) {
-    case 'list':
-      return popupGrantState(params.currentWindowOnly !== false);
-    case 'new':
-      if (params.url && !isGrantableUrl(params.url)) throw new Error('URL_NOT_ALLOWED');
-      return newTab(params.url, params.active === true);
-    case 'switch':
-      await requireGranted(params.tabId);
-      return switchTab(await targetId(params.tabId), params.focusWindow === true);
-    case 'close':
-      const tab = await requireGranted(params.tabId);
-      const result = await closeTab(tab.id);
-      return result;
-    default:
-      throw new Error(`Ação de abas não reconhecida: ${params.action || 'N/A'}`);
+async function createTab(url, active, sid, incognito = false) {
+  if (url && !isGrantableUrl(url)) throw new Error('URL_NOT_ALLOWED');
+  if (incognito && typeof chrome !== 'undefined' && chrome.windows?.create) {
+    const win = await chrome.windows.create({ url: url || 'about:blank', incognito: true, focused: active === true });
+    const tab = win.tabs?.[0] || { id: win.id };
+    if (sid) {
+      if (win.id != null) assignWindowToSession(sid, win.id);
+      if (tab.id != null) assignTabToSession(sid, tab.id);
+    }
+    return { success: true, tabId: tab.id, windowId: win.id, incognito: true, url };
   }
+  const tab = await newTab(url, active === true);
+  if (sid && (tab?.tabId || tab?.id)) assignTabToSession(sid, tab.tabId || tab.id);
+  return tab;
 }
 
-/** Executa ações no nível do gerenciador de abas. */
-async function executeTabAction(action, params) {
-  switch (action) {
+const removeTab = async (tid, sid) => {
+  const tab = await requireGranted(tid, sid), res = await closeTab(tab.id);
+  releaseTabFromSession(tab.id);
+  return res;
+};
+const focusTab = async (tid, win, sid) => {
+  await requireGranted(tid, sid);
+  return switchTab(await targetId(tid, sid), win === true);
+};
+
+async function executeTabManagement(p, sid) {
+  switch (p.action) {
+    case 'list': return popupGrantState(p.currentWindowOnly !== false);
+    case 'new': return createTab(p.url, p.active, sid, p.incognito === true);
+    case 'switch': return focusTab(p.tabId, p.focusWindow, sid);
+    case 'close': return removeTab(p.tabId, sid);
+    default: throw new Error(`Ação de abas não reconhecida: ${p.action || 'N/A'}`);
+  }
+}
+async function executeTabAction(act, p, sid) {
+  switch (act) {
     case 'browser_navigate':
-      if (!isGrantableUrl(params.url)) throw new Error('URL_NOT_ALLOWED');
-      return navigate(params.url, await targetId(params.tabId), params.active === true);
-    case 'browser_new_tab':
-      if (params.url && !isGrantableUrl(params.url)) throw new Error('URL_NOT_ALLOWED');
-      return newTab(params.url, params.active === true);
-    case 'browser_close_tab':
-      const tab = await requireGranted(params.tabId);
-      return closeTab(tab.id);
-    case 'browser_switch_tab':
-      await requireGranted(params.tabId);
-      return switchTab(await targetId(params.tabId), params.focusWindow === true);
-    case 'browser_list_tabs':
-      return popupGrantState(params.currentWindowOnly !== false);
-    case 'browser_go_back':
-      return goBack(await targetId(params.tabId));
-    case 'browser_go_forward':
-      return goForward(await targetId(params.tabId));
-    default:
-      throw new Error(`Ação de aba não reconhecida: ${action}`);
+      if (!isGrantableUrl(p.url)) throw new Error('URL_NOT_ALLOWED');
+      return navigate(p.url, await targetId(p.tabId, sid), p.active === true);
+    case 'browser_new_tab': return createTab(p.url, p.active, sid, p.incognito === true);
+    case 'browser_close_tab': return removeTab(p.tabId, sid);
+    case 'browser_switch_tab': return focusTab(p.tabId, p.focusWindow, sid);
+    case 'browser_list_tabs': return popupGrantState(p.currentWindowOnly !== false);
+    case 'browser_go_back': return goBack(await targetId(p.tabId, sid));
+    case 'browser_go_forward': return goForward(await targetId(p.tabId, sid));
+    default: throw new Error(`Ação de aba não reconhecida: ${act}`);
   }
 }
 
-/** Encaminha comandos de inspeção e interação para o Content Script da aba. */
-async function sendToContentScript(action, params) {
-  const targetTab = await requireGranted(params.tabId);
+const CS_FILES = [
+  'content/content_bridge.js', 'content/dom_extractor.js', 'content/element_finder.js', 'content/interaction_extras.js',
+  'content/virtual_key_press.js', 'content/interaction_simulator.js', 'content/keyboard_scroll.js',
+  'content/eval_runner.js', 'content/virtual_cursor.js', 'content/drag_simulator.js'
+];
 
-  let response;
+async function sendToContentScript(action, params, sid) {
+  const targetTab = await requireGranted(params.tabId, sid);
   try {
-    response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
+    return requireContentSuccess(await chrome.tabs.sendMessage(targetTab.id, { action, params }));
   } catch (_err) {
     logger.warn(`Injetando content scripts dinamicamente na aba ID ${targetTab.id}...`);
-    await requireGranted(targetTab.id);
-    await chrome.scripting.executeScript({
-      target: { tabId: targetTab.id },
-      files: [
-        'content/content_bridge.js',
-        'content/dom_extractor.js',
-        'content/element_finder.js',
-        'content/interaction_extras.js',
-        'content/virtual_key_press.js',
-        'content/interaction_simulator.js',
-        'content/keyboard_scroll.js',
-        'content/eval_runner.js',
-        'content/virtual_cursor.js',
-        'content/drag_simulator.js'
-      ]
-    });
-    response = await chrome.tabs.sendMessage(targetTab.id, { action, params });
+    await chrome.scripting.executeScript({ target: { tabId: targetTab.id }, files: CS_FILES });
+    return requireContentSuccess(await chrome.tabs.sendMessage(targetTab.id, { action, params }));
   }
-  return requireContentSuccess(response);
 }

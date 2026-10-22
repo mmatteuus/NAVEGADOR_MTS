@@ -8,6 +8,7 @@ Padroniza as respostas de acordo com a especificação Model Context Protocol.
 import json
 import logging
 from typing import Any, Awaitable, Callable, Dict, Optional
+from .session_manager import session_manager
 
 logger = logging.getLogger("BrowserMTS.Router")
 
@@ -34,11 +35,14 @@ class MCPToolRouter:
         except Exception:
             return False
 
-    async def dispatch(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def dispatch(
+        self, tool_name: str, arguments: Dict[str, Any], session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Despacha a ferramenta solicitada para o executor correspondente."""
+        effective_sid = arguments.get("sessionId") or session_id
         try:
             if tool_name.startswith("browser_"):
-                return await self._dispatch_browser(tool_name, arguments)
+                return await self._dispatch_browser(tool_name, arguments, effective_sid)
             elif tool_name.startswith("computer_"):
                 return await self._dispatch_computer(tool_name, arguments)
             else:
@@ -47,7 +51,9 @@ class MCPToolRouter:
             logger.error(f"Erro ao executar {tool_name}: {exc}")
             return self._error_response(f"Falha na execução de {tool_name}: {exc}")
 
-    async def _dispatch_browser(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+    async def _dispatch_browser(
+        self, name: str, args: Dict[str, Any], session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Despacha ferramentas de navegador para a extensão via WebSocket Bridge."""
         if not self.ws_bridge or not self.ws_bridge.is_connected:
             msg = (
@@ -56,9 +62,38 @@ class MCPToolRouter:
             )
             return self._error_response(msg)
 
-        res = await self.ws_bridge.send_action(name, args)
+        tab_id = args.get("tabId")
+        if tab_id is not None:
+            try:
+                if not session_manager.validate_tab_access(session_id, int(tab_id)):
+                    return self._error_response(
+                        f"Acesso recusado: A aba {tab_id} pertence a outra sessão de agente."
+                    )
+            except (ValueError, TypeError):
+                pass
+
+        if session_id:
+            try:
+                res = await self.ws_bridge.send_action(name, args, session_id=session_id)
+            except TypeError:
+                res = await self.ws_bridge.send_action(name, args)
+        else:
+            res = await self.ws_bridge.send_action(name, args)
         if isinstance(res, dict) and res.get("success") is False:
             return self._error_response(str(res.get("error", "Falha na extensão")))
+
+        if ((name == "browser_manage_tabs" and args.get("action") == "new") or name == "browser_new_tab") and session_id:
+            tid = session_manager.extract_tab_id(res)
+            if tid is not None:
+                session_manager.assign_tab_to_session(session_id, tid)
+        elif name == "browser_manage_tabs" and args.get("action") == "close":
+            close_tid = args.get("tabId")
+            if close_tid is not None:
+                try:
+                    session_manager.release_tab(int(close_tid))
+                except (ValueError, TypeError):
+                    pass
+
         if isinstance(res, dict) and res.get("success") is True and "data" in res:
             return self._format_result(res["data"])
         return self._format_result(res)

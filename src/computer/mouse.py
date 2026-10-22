@@ -8,6 +8,7 @@ múltiplos monitores (SM_XVIRTUALSCREEN) e detecção de intervenção física.
 
 import ctypes
 from ctypes import wintypes
+import threading
 import time
 from typing import Tuple, Dict, Any
 from .win32_types import (
@@ -22,6 +23,7 @@ from .kill_switch import kill_switch
 from .mouse_bezier import generate_bezier_trajectory
 
 user32 = ctypes.windll.user32
+_physical_device_lock = threading.Lock()
 
 def _get_virtual_screen_bounds() -> Tuple[int, int, int, int]:
     """Obtém as dimensões e offset da área de trabalho virtual multi-monitor."""
@@ -56,11 +58,8 @@ def release_mouse_buttons() -> None:
 
 kill_switch.register_cleanup_callback(release_mouse_buttons)
 
-def move_mouse(x: int, y: int, smooth: bool = True, duration_ms: int = 200) -> Dict[str, Any]:
-    """Move o ponteiro do mouse até (x, y) de forma suave ou instantânea."""
-    safety_gate.check_authorization("move_mouse")
+def _move_mouse_raw(x: int, y: int, smooth: bool = True, duration_ms: int = 200) -> Dict[str, Any]:
     cur_x, cur_y = get_cursor_position()
-
     if not smooth:
         user32.SetCursorPos(int(x), int(y))
         return {"currentX": x, "currentY": y}
@@ -81,6 +80,12 @@ def move_mouse(x: int, y: int, smooth: bool = True, duration_ms: int = 200) -> D
     user32.SetCursorPos(int(x), int(y))
     return {"currentX": x, "currentY": y}
 
+def move_mouse(x: int, y: int, smooth: bool = True, duration_ms: int = 200) -> Dict[str, Any]:
+    """Move o ponteiro do mouse até (x, y) de forma suave ou instantânea."""
+    safety_gate.check_authorization("move_mouse")
+    with _physical_device_lock:
+        return _move_mouse_raw(x, y, smooth=smooth, duration_ms=duration_ms)
+
 def click_mouse(button: str = "left", double: bool = False, hold_ms: int = 50) -> Dict[str, Any]:
     """Executa um clique simples ou duplo na posição atual do mouse."""
     safety_gate.check_authorization("click_mouse")
@@ -91,34 +96,36 @@ def click_mouse(button: str = "left", double: bool = False, hold_ms: int = 50) -
     }.get(button.lower(), (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP))
 
     vezes = 2 if double else 1
-    for i in range(vezes):
-        _send_mouse_event(down_flag)
-        time.sleep(max(hold_ms / 1000.0, 0.02))
-        _send_mouse_event(up_flag)
-        if double and i == 0:
-            time.sleep(0.08)
-
-    pos_x, pos_y = get_cursor_position()
+    with _physical_device_lock:
+        for i in range(vezes):
+            _send_mouse_event(down_flag)
+            time.sleep(max(hold_ms / 1000.0, 0.02))
+            _send_mouse_event(up_flag)
+            if double and i == 0:
+                time.sleep(0.08)
+        pos_x, pos_y = get_cursor_position()
     return {"clicked": True, "button": button, "double": double, "position": {"x": pos_x, "y": pos_y}}
 
 def drag_mouse(start_x: int, start_y: int, end_x: int, end_y: int, steps: int = 25) -> Dict[str, Any]:
     """Clica e arrasta suavemente de (start_x, start_y) até (end_x, end_y)."""
     safety_gate.check_authorization("drag_mouse")
-    move_mouse(start_x, start_y, smooth=False)
-    time.sleep(0.05)
-    _send_mouse_event(MOUSEEVENTF_LEFTDOWN)
-    time.sleep(0.05)
-    try:
-        move_mouse(end_x, end_y, smooth=True, duration_ms=steps * 12)
-    finally:
-        _send_mouse_event(MOUSEEVENTF_LEFTUP)
+    with _physical_device_lock:
+        _move_mouse_raw(start_x, start_y, smooth=False)
+        time.sleep(0.05)
+        _send_mouse_event(MOUSEEVENTF_LEFTDOWN)
+        time.sleep(0.05)
+        try:
+            _move_mouse_raw(end_x, end_y, smooth=True, duration_ms=steps * 12)
+        finally:
+            _send_mouse_event(MOUSEEVENTF_LEFTUP)
     return {"dragged": True, "from": {"x": start_x, "y": start_y}, "to": {"x": end_x, "y": end_y}}
 
 def scroll_mouse(delta_y: int = 0, delta_x: int = 0) -> Dict[str, Any]:
     """Emite rotação na roda do mouse (vertical e/ou horizontal)."""
     safety_gate.check_authorization("scroll_mouse")
-    if delta_y != 0:
-        _send_mouse_event(MOUSEEVENTF_WHEEL, data=int(delta_y))
-    if delta_x != 0:
-        _send_mouse_event(MOUSEEVENTF_HWHEEL, data=int(delta_x))
+    with _physical_device_lock:
+        if delta_y != 0:
+            _send_mouse_event(MOUSEEVENTF_WHEEL, data=int(delta_y))
+        if delta_x != 0:
+            _send_mouse_event(MOUSEEVENTF_HWHEEL, data=int(delta_x))
     return {"scrolled": True, "deltaY": delta_y, "deltaX": delta_x}

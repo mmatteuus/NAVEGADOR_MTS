@@ -79,9 +79,21 @@ class MCPHTTPServer:
         if not isinstance(message, dict) or message.get("jsonrpc") != "2.0":
             return web.json_response({"jsonrpc": "2.0", "id": None,
                 "error": {"code": -32600, "message": "Requisição inválida"}}, status=400)
+        session_id = (
+            request.headers.get("Mcp-Session-Id") or request.headers.get("X-Session-ID")
+            or request.headers.get("mcp-session-id") or request.headers.get("x-session-id")
+        )
+        if session_id and isinstance(message.get("params"), dict):
+            args = message["params"].setdefault("arguments", {})
+            if isinstance(args, dict):
+                args.setdefault("sessionId", session_id)
         result = await self.server.handle_jsonrpc(message)
         if result is None:
             return web.Response(status=202)
         negotiated = result.get("result", {}).get("protocolVersion") if isinstance(result, dict) else None
         version = negotiated or request.headers.get("MCP-Protocol-Version", "2025-06-18")
-        return web.json_response(result, headers={"MCP-Protocol-Version": version})
+        headers = {"MCP-Protocol-Version": version}
+        if session_id:
+            headers["Mcp-Session-Id"] = session_id
+        return web.json_response(result, headers=headers)
+

@@ -33,20 +33,25 @@ async def forward_tool_to_hub(
     host: str = "127.0.0.1",
     port: int = 3456,
     timeout: float = 30.0,
+    session_id: Any = None,
 ) -> Dict[str, Any]:
     """Encaminha uma ferramenta (tools/call) para o hub ativo e devolve o formato MCP."""
+    import uuid
     from websockets.asyncio.client import connect
 
     uri = f"ws://{host}:{port}"
     try:
         async with connect(uri) as ws:
-            req_id = f"mcp_{tool_name}"
+            req_id = f"mcp_{uuid.uuid4().hex[:12]}"
+            effective_sid = arguments.get("sessionId") or session_id
             msg = {
                 "type": "agent_action",
                 "id": req_id,
                 "action": tool_name,
                 "params": arguments,
             }
+            if effective_sid:
+                msg["sessionId"] = str(effective_sid)
             await ws.send(json.dumps(msg))
             raw_resp = await asyncio.wait_for(ws.recv(), timeout=timeout)
             data = json.loads(raw_resp)

@@ -12,6 +12,7 @@ from .kill_switch import EmergencyKillSwitch, kill_switch
 from .mouse import (
     click_mouse, drag_mouse, get_cursor_position,
     move_mouse, release_mouse_buttons, scroll_mouse,
+    _physical_device_lock,
 )
 from .keyboard import press_key, release_all_keys, type_text
 from .screen import capture_screen, get_monitors_info
@@ -20,7 +21,7 @@ from .window_finder import (
 )
 from .mouse_background import (
     get_agent_cursor_position, post_mouse_click, post_mouse_drag,
-    post_mouse_move, post_mouse_scroll,
+    post_mouse_move, post_mouse_scroll, reset_agent_cursors,
 )
 from .keyboard_background import post_key_press, post_keyboard_type
 
@@ -30,12 +31,12 @@ __all__ = [
     "safety_gate", "SafetyGate", "SecurityGateError",
     "kill_switch", "EmergencyKillSwitch",
     "move_mouse", "click_mouse", "drag_mouse", "scroll_mouse",
-    "get_cursor_position", "release_mouse_buttons",
+    "_physical_device_lock", "get_cursor_position", "release_mouse_buttons",
     "type_text", "press_key", "release_all_keys",
     "capture_screen", "get_monitors_info",
     "ensure_thread_desktop", "find_window_at", "screen_to_client", "resolve_target_window",
     "post_mouse_move", "post_mouse_click", "post_mouse_drag",
-    "post_mouse_scroll", "get_agent_cursor_position",
+    "post_mouse_scroll", "get_agent_cursor_position", "reset_agent_cursors",
     "post_keyboard_type", "post_key_press",
     "execute_computer_action"
 ]
@@ -53,9 +54,13 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
                     "killSwitchTriggered": safety_gate.is_kill_switch_triggered()
                 }
             }
+        sid = params.get("session_id") or params.get("sessionId")
         if act in ("get_cursor", "cursor"):
             x, y = get_cursor_position()
             return {"success": True, "data": {"x": x, "y": y, "monitors": get_monitors_info()}}
+        if act in ("get_agent_cursor", "agent_cursor"):
+            ax, ay = get_agent_cursor_position(session_id=sid)
+            return {"success": True, "data": {"x": ax, "y": ay, "sessionId": sid or "default"}}
 
         # Validação mandatória Fail-Closed antes de qualquer extração de parâmetros
         safety_gate.check_authorization(f"computer_{act}")
@@ -71,7 +76,7 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
             }
         if act in ("mouse_move", "move"):
             if bg:
-                res = post_mouse_move(int(params["x"]), int(params["y"]), hwnd=hwnd)
+                res = post_mouse_move(int(params["x"]), int(params["y"]), hwnd=hwnd, session_id=sid)
             else:
                 res = move_mouse(
                     int(params["x"]), int(params["y"]),
@@ -81,14 +86,18 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
         if act in ("mouse_click", "click"):
             btn, dbl = params.get("button", "left"), bool(params.get("double", False))
             if bg:
-                res = post_mouse_click(button=btn, double=dbl, x=params.get("x"), y=params.get("y"), hwnd=hwnd)
+                res = post_mouse_click(
+                    button=btn, double=dbl, x=params.get("x"), y=params.get("y"), hwnd=hwnd, session_id=sid
+                )
             else:
                 res = click_mouse(button=btn, double=dbl, hold_ms=int(params.get("holdMs", 50)))
             return {"success": True, "data": res}
         if act in ("mouse_drag", "drag"):
             sx, sy, ex, ey = int(params["startX"]), int(params["startY"]), int(params["endX"]), int(params["endY"])
             if bg:
-                res = post_mouse_drag(sx, sy, ex, ey, steps=int(params.get("steps", 10)), hwnd=hwnd)
+                res = post_mouse_drag(
+                    sx, sy, ex, ey, steps=int(params.get("steps", 10)), hwnd=hwnd, session_id=sid
+                )
             else:
                 res = drag_mouse(sx, sy, ex, ey, steps=int(params.get("steps", 25)))
             return {"success": True, "data": res}
@@ -96,7 +105,9 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
             dy = int(params.get("deltaY", params.get("delta", 0)))
             dx = int(params.get("deltaX", 0))
             if bg:
-                res = post_mouse_scroll(dy, dx, x=params.get("x"), y=params.get("y"), hwnd=hwnd)
+                res = post_mouse_scroll(
+                    dy, dx, x=params.get("x"), y=params.get("y"), hwnd=hwnd, session_id=sid
+                )
             else:
                 res = scroll_mouse(delta_y=dy, delta_x=dx)
             return {"success": True, "data": res}
