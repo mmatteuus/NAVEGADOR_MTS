@@ -8,8 +8,10 @@ import { cp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
+const fs = require('node:fs');
+const globalPlaywright = process.env.APPDATA ? path.join(process.env.APPDATA, 'npm/node_modules/playwright') : null;
 const playwrightPath = process.env.PLAYWRIGHT_MODULE ||
-  (process.env.APPDATA ? path.join(process.env.APPDATA, 'npm/node_modules/playwright') : 'playwright');
+  (globalPlaywright && fs.existsSync(globalPlaywright) ? globalPlaywright : 'playwright');
 const { chromium } = require(playwrightPath);
 
 export async function launchAgentContext({ sessionId, wsPort = null, loadExtension = false }) {

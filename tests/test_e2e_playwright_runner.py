@@ -7,6 +7,21 @@ import subprocess
 import pytest
 
 
+def _is_playwright_available() -> bool:
+    """Verifica se o módulo Playwright está disponível no ambiente Node.js."""
+    script = (
+        "try {"
+        "  const p = process.env.PLAYWRIGHT_MODULE || "
+        "    (process.env.APPDATA && require('fs').existsSync(require('path').join(process.env.APPDATA, 'npm/node_modules/playwright')) "
+        "      ? require('path').join(process.env.APPDATA, 'npm/node_modules/playwright') : 'playwright');"
+        "  require(p);"
+        "  process.exit(0);"
+        "} catch (e) { process.exit(42); }"
+    )
+    res = subprocess.run(["node", "-e", script], capture_output=True)
+    return res.returncode == 0
+
+
 def test_e2e_real_multisession_playwright() -> None:
     """Executa a suíte de testes E2E com Chromium real e validação de 5 cenários.
 
@@ -17,6 +32,9 @@ def test_e2e_real_multisession_playwright() -> None:
     4. Bloqueio adversarial de acesso à aba de A por B (TAB_ACCESS_DENIED).
     5. Disparos concorrentes simultâneos sem interferência de sessões.
     """
+    if not _is_playwright_available():
+        pytest.skip("Playwright Node.js não disponível neste ambiente.")
+
     root_dir = Path(__file__).resolve().parents[1]
     script_path = root_dir / "tests" / "e2e_real" / "test_e2e_real_multisession.mjs"
 
