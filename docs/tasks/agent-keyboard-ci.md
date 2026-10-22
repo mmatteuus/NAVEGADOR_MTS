@@ -64,3 +64,25 @@ teste focado e valida YAML/sintaxe. Parar se o parser exigir dependência nova,
 se a annotation puder vazar segredo, se o step mascarar exit code ou se o
 artifact alterar gates. Depois, abrir nova execução CI; não declarar release
 até o job Windows passar.
+
+## Diagnóstico run 42: túnel
+
+O único erro anotado publicamente foi
+`tests.test_tunnel_service::test_tunnel_process_environment_and_command`, na
+chamada `TunnelService.start()`. O teste simula binário, chave, healthcheck e
+supervisor, mas não simula `get_tunnel_id()`. O serviço exige um ID válido
+(`tunnel_` + 32 hexadecimais) antes de criar o supervisor; logo o resultado
+depende de `BROWSER_MTS_TUNNEL_ID` ou de `APPDATA`/`tunnel.json` do runner.
+Isso explica o passe local com configuração persistida e a falha em runner
+sem estado do usuário.
+
+Correção mínima: patchar no teste `get_tunnel_id` com um identificador
+sintético válido e afirmar que ele aparece somente em
+`env["CONTROL_PLANE_TUNNEL_ID"]`; manter a chave fora do comando. Não alterar
+a política de produção, criar arquivo em APPDATA ou depender de ambiente,
+credenciais, binário real ou porta local. O teste deve substituir
+`tunnel_service.current_config` por fake com `app_data_dir=tmp_path`,
+`mcp_port` definido e `ensure_directories` inócuo, pois `start()` cria diretório
+e remove o health file. Uma regressão com ID ausente/inválido deve preservar o
+fail-closed e confirmar que o supervisor não é chamado. QA roda o teste isolado
+e a suíte Windows; release fica bloqueado até os jobs necessários passarem.
