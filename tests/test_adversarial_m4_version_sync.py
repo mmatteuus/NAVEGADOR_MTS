@@ -1,7 +1,7 @@
-"""Testes Adversariais de Consistência e Sincronização de Versão v2.3.0.
+"""Testes Adversariais de Consistência e Sincronização de Versão.
 
-Valida a paridade estrita da versão canônica 2.3.0 entre src/version.py,
-o manifesto da extensão MV3, script Inno Setup e o instalador gerado.
+Valida a paridade estrita da versão canônica entre src/version.py, o manifesto
+da extensão MV3, script Inno Setup e o instalador gerado.
 """
 from __future__ import annotations
 
@@ -14,9 +14,8 @@ import pytest
 from src.version import APP_VERSION
 
 
-def test_version_canonical_format_and_exact_match() -> None:
-    """Garante que a versão canônica seja exatamente 2.3.0 no formato semver."""
-    assert APP_VERSION == "2.3.0", f"Versão canônica esperada '2.3.0', obtido '{APP_VERSION}'"
+def test_version_canonical_format() -> None:
+    """Garante que a versão canônica permaneça no formato semver."""
     assert re.fullmatch(r"^\d+\.\d+\.\d+$", APP_VERSION) is not None
 
 

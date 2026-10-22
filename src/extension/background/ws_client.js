@@ -1,30 +1,25 @@
 /**
  * @file ws_client.js
  * @description Cliente WebSocket resiliente para conexão com o Desktop App (porta 3456).
- * 
- * Auto-cura contínua, pulso ativo a cada 4s, backoff exponencial e persistência de porta.
  */
 
 import { WS_BASE_URL, RECONNECT_BACKOFF_STEPS_MS, CONNECTION_STATE, STORAGE_KEYS } from '../common/constants.js';
 import { logger } from '../common/logger.js';
-import { buildClientHello } from '../common/protocol.js';
+import { createClientHello, installGrantSync } from './extension_identity.js';
 import { updateConnectionStatus, setComputerUseAllowed, isAutomationEnabled } from './state_storage.js';
 import { getActiveTab } from './tab_manager.js';
 import { createHeartbeatManager } from './ws_heartbeat.js';
 import { createPortRecovery } from './port_recovery.js';
-
 let socket = null, reconnectAttempt = 0, reconnectTimer = null, messageDispatcherFn = null;
 let connectionInProgress = false, connectionTimer = null, connectionId = 0;
 const CONNECT_TIMEOUT_MS = 2000;
 const portRecovery = createPortRecovery();
-
 const heartbeat = createHeartbeatManager(
   () => { cleanupSocket(); scheduleReconnect(); },
   (pingMsg) => sendMessage(pingMsg)
 );
 
 export function setCommandDispatcher(dispatcher) { messageDispatcherFn = dispatcher; }
-
 export async function connectWebSocket() {
   if (connectionInProgress || (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING))) return;
   connectionInProgress = true;
@@ -65,10 +60,9 @@ export async function connectWebSocket() {
       if (!isCurrent()) return;
       const active = await getActiveTab();
       if (!isCurrent()) return;
-      sendMessage(buildClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
+      sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
       heartbeat.start();
     };
-
     candidate.onmessage = (event) => handleIncomingMessage(event.data);
     candidate.onclose = () => {
       if (connectionId !== attemptId) return;
@@ -86,7 +80,6 @@ export async function connectWebSocket() {
     scheduleReconnect(250);
   }
 }
-
 function handleIncomingMessage(rawData) {
   try {
     const msg = JSON.parse(rawData);
@@ -104,6 +97,9 @@ function handleIncomingMessage(rawData) {
     if (msg.type === 'server_hello') {
       logger.info('Handshake confirmado pelo Desktop App:', msg.payload?.desktopVersion);
       if (typeof msg.payload?.computerUseAuthorized === 'boolean') setComputerUseAllowed(msg.payload.computerUseAuthorized);
+      if (msg.payload?.extensionUpdateRequired && !msg.payload?.reloadRequired) {
+        logger.warn(msg.payload.extensionUpdateMessage || 'A extensão está desatualizada; carregue a pasta instalada pelo aplicativo.');
+      }
       if (msg.payload?.reloadRequired) chrome.runtime.reload();
       return;
     }
@@ -117,7 +113,6 @@ function handleIncomingMessage(rawData) {
     logger.error('Erro ao processar mensagem recebida:', err);
   }
 }
-
 export function sendMessage(payload) {
   if (socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify(payload));
@@ -147,3 +142,8 @@ function cleanupSocket() {
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
+installGrantSync(async () => {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  const active = await getActiveTab();
+  sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
+});

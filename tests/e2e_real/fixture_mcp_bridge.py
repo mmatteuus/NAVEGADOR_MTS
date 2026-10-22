@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from pathlib import Path
 import sys
 from typing import Any, Dict, Optional
@@ -33,10 +34,29 @@ class QAMCPServer(MCPServer):
         return await super().handle_jsonrpc(req)
 
 
+class QABridge(WebSocketBridge):
+    """Bridge de QA com barreira opcional antes do primeiro client_hello."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.hello_gate = asyncio.Event()
+        if not os.environ.get("QA_PAUSE_EXTENSION_HELLO"):
+            self.hello_gate.set()
+
+    async def _process_incoming_message(self, raw_msg: str, websocket: Any) -> None:
+        try:
+            data = json.loads(raw_msg)
+        except json.JSONDecodeError:
+            data = None
+        if isinstance(data, dict) and data.get("type") == "client_hello":
+            await self.hello_gate.wait()
+        await super()._process_incoming_message(raw_msg, websocket)
+
+
 class QAHTTPServer(MCPHTTPServer):
     """Extensão de MCPHTTPServer com controle de parada e rotas em porta efêmera."""
 
-    def __init__(self, server: MCPServer, stop_event: asyncio.Event, bridge: WebSocketBridge) -> None:
+    def __init__(self, server: MCPServer, stop_event: asyncio.Event, bridge: QABridge) -> None:
         super().__init__(server, port=0, host="127.0.0.1")
         self.stop_event = stop_event
         self.bridge = bridge
@@ -60,7 +80,12 @@ class QAHTTPServer(MCPHTTPServer):
                 "mcpPort": self.port,
             })
 
+        async def release_hello(_req: web.Request) -> web.Response:
+            self.bridge.hello_gate.set()
+            return web.json_response({"released": True})
+
         app.router.add_post("/stop", stop_handler)
+        app.router.add_post("/release-hello", release_hello)
         app.router.add_get("/bridge-status", status_handler)
 
         runner = web.AppRunner(app, access_log=None)
@@ -73,7 +98,7 @@ class QAHTTPServer(MCPHTTPServer):
 
 async def main() -> None:
     """Inicia os subsistemas MCP e aguarda encerramento por timeout ou requisição."""
-    bridge = WebSocketBridge(host="127.0.0.1", port=0)
+    bridge = QABridge(host="127.0.0.1", port=0)
     await bridge.start(max_ports=0)
     ws_port = bridge.server.sockets[0].getsockname()[1]
 

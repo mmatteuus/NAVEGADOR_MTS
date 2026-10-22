@@ -1,8 +1,6 @@
 /**
  * @file test_extension_adversarial.mjs
  * @description Suíte de testes adversariais para a Extensão MV3 do BROWSER MTS.
- * 
- * Validações de cenários de borda:
  * 1. Bloqueio preventivo de screenshot em URLs restritas (chrome://, edge://).
  * 2. Prevenção de fechamento da janela ao fechar a última aba restante.
  * 3. Enfileiramento e serialização sob burst de 30 comandos concorrentes.
@@ -10,6 +8,7 @@
  */
 
 import assert from 'node:assert';
+import { spawnSync } from 'node:child_process';
 
 // Setup de Mocks Globais da API chrome.* e WebSocket ANTES dos imports
 const mockStorage = { browser_mts_automation_enabled: true };
@@ -135,6 +134,11 @@ async function runAdversarialExtensionTests() {
   assert.match(sentWsMessages[0].error, /Automação web desativada pelo usuário/);
   console.log('  -> PASS: Comandos rejeitados corretamente quando desativado.');
   await setAutomationEnabled(true);
+
+  const claimTest = spawnSync(process.execPath, ['tests/test_extension_popup_session_claim.mjs'], { stdio: 'inherit' });
+  assert.strictEqual(claimTest.status, 0, 'Regressão de claims por sessão falhou.');
+  const identityTest = spawnSync(process.execPath, ['tests/test_extension_identity.mjs'], { stdio: 'inherit' });
+  assert.strictEqual(identityTest.status, 0, 'Regressão de identidade da extensão falhou.');
 
   console.log('\n[SUCESSO] Todos os 4 testes de cenários de borda da Extensão MV3 passaram com louvor!');
   process.exit(0);

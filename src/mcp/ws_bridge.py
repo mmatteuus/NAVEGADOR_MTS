@@ -82,13 +82,17 @@ class WebSocketBridge:
     async def send_action(
         self, action: str, params: Dict[str, Any], timeout: float = 30.0, session_id: Optional[str] = None
     ) -> Any:
-        sock = self.registry.get_socket_for_session(session_id)
+        tab_id = params.get("tabId") if isinstance(params, dict) else None
+        sock = self.registry.select_socket(session_id, tab_id)
         if not sock:
-            raise ConnectionError(f"Extensão do navegador não conectada na porta {self.port}.")
+            if self.registry.is_connected:
+                raise ConnectionError("BROWSER_SELECTION_REQUIRED: selecione uma aba no popup do navegador.")
+            raise ConnectionError(f"EXTENSION_NOT_CONNECTED: Extensão do navegador não conectada na porta {self.port}.")
         req_id, fut = f"cmd_{uuid.uuid4().hex[:12]}", asyncio.get_running_loop().create_future()
         self._pending_requests[req_id] = fut
         msg = {"id": req_id, "type": "execute_action", "action": action, "payload": params, "timestamp": int(time.time() * 1000)}
         if session_id: msg["sessionId"] = session_id
-        await sock.send(json.dumps(msg))
-        try: return await asyncio.wait_for(fut, timeout=timeout)
+        try:
+            await sock.send(json.dumps(msg))
+            return await asyncio.wait_for(fut, timeout=timeout)
         finally: self._pending_requests.pop(req_id, None)

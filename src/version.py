@@ -1,3 +1,3 @@
 """Versão única do aplicativo e da extensão."""
 
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.3.1"

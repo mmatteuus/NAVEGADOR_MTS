@@ -19,6 +19,30 @@ def test_same_or_newer_extension_never_reloads():
     assert policy.should_reload({"version": "2.3.0"}) is False
 
 
+def test_old_extensions_have_independent_reload_budget():
+    """Dois navegadores antigos recebem uma recarga independente por instância."""
+    policy = ExtensionReloadPolicy("2.3.0")
+    assert policy.should_reload({"version": "2.2.0", "instanceId": "chrome"}) is True
+    assert policy.should_reload({"version": "2.2.0", "instanceId": "chrome"}) is False
+    assert policy.should_reload({"version": "2.2.0", "instanceId": "edge"}) is True
+
+
+def test_legacy_extension_budget_survives_reconnect():
+    """Extensão antiga sem identidade não entra em laço após reconectar."""
+    policy = ExtensionReloadPolicy("2.3.0")
+    assert policy.should_reload({"version": "2.2.0"}, object()) is True
+    assert policy.should_reload({"version": "2.2.0"}, object()) is False
+
+
+def test_outdated_status_is_diagnostic_without_consuming_budget():
+    """O diagnóstico de pasta externa não dispara nem repete a recarga."""
+    policy = ExtensionReloadPolicy("2.3.0")
+    payload = {"version": "2.2.0", "instanceId": "external-copy"}
+    assert policy.is_outdated(payload) is True
+    assert policy.should_reload(payload) is True
+    assert policy.is_outdated(payload) is True
+
+
 def test_unknown_or_malformed_version_is_ignored():
     """Versão ausente, desconhecida ou inválida é ignorada (fail-safe, sem recarga)."""
     policy = ExtensionReloadPolicy("2.2.1")

@@ -13,7 +13,7 @@ import { sendMessage } from './ws_client.js';
 import { evaluatePageScript } from './page_script_executor.js';
 import { requireContentSuccess } from './content_response.js';
 import { enqueueSessionCommand } from './session_queues.js';
-import { assignTabToSession, assignWindowToSession, releaseTabFromSession, validateTabAccess } from './session_registry.js';
+import { assignTabToSession, assignWindowToSession, releaseTabFromSession } from './session_registry.js';
 import { getSessionCookies, setSessionCookie, clearSessionCookies, clearSessionStorage } from './cookie_isolator.js';
 
 export function dispatchIncomingCommand(message) {
@@ -40,7 +40,6 @@ export function dispatchIncomingCommand(message) {
 }
 
 async function routeAction(action, params, sid) {
-  if (params.tabId != null) validateTabAccess(sid, params.tabId);
   if (action === 'browser_manage_tabs') return executeTabManagement(params, sid);
   if (action === 'browser_evaluate_js') return evaluatePageScript(await targetId(params.tabId, sid), params.script);
   if (action === 'browser_get_cookies') return getSessionCookies(sid, params);

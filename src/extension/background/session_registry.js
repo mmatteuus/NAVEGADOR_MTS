@@ -7,6 +7,7 @@ const tabToSession = new Map();
 const sessionToTabs = new Map();
 const winToSession = new Map();
 const sessionToWins = new Map();
+const tabSources = new Map();
 
 export function assignTabToSession(sessionId, tabId) {
   if (!sessionId || tabId == null) return;
@@ -15,12 +16,40 @@ export function assignTabToSession(sessionId, tabId) {
   tabToSession.set(tid, sid);
   if (!sessionToTabs.has(sid)) sessionToTabs.set(sid, new Set());
   sessionToTabs.get(sid).add(tid);
+  tabSources.set(tid, 'agent');
+}
+
+export function claimGrantedTab(sessionId, tabId) {
+  if (!sessionId || tabId == null) return false;
+  const tid = Number(tabId), owner = getSessionForTab(tid);
+  if (owner && owner !== String(sessionId)) throw new Error('TAB_ACCESS_DENIED: A aba solicitada pertence a outra sessão de agente.');
+  if (!owner) {
+    const sid = String(sessionId);
+    tabToSession.set(tid, sid);
+    if (!sessionToTabs.has(sid)) sessionToTabs.set(sid, new Set());
+    sessionToTabs.get(sid).add(tid);
+  }
+  tabSources.set(tid, 'popup');
+  return true;
+}
+
+export function restoreGrantedTab(sessionId, tabId) {
+  if (!getSessionForTab(tabId)) claimGrantedTab(sessionId, tabId);
+}
+
+export function releaseGrantedTab(tabId) {
+  if (tabSources.get(Number(tabId)) === 'popup') releaseTabFromSession(tabId);
+}
+
+export function isGrantedClaim(tabId) {
+  return tabSources.get(Number(tabId)) === 'popup';
 }
 
 export function releaseTabFromSession(tabId) {
   const tid = Number(tabId), sid = tabToSession.get(tid);
   if (!sid) return;
   tabToSession.delete(tid);
+  tabSources.delete(tid);
   const tabs = sessionToTabs.get(sid);
   if (tabs) {
     tabs.delete(tid);
@@ -87,6 +116,7 @@ export function validateTabAccess(sessionId, tabId) {
 
 export function clearSessionRegistry() {
   tabToSession.clear(); sessionToTabs.clear(); winToSession.clear(); sessionToWins.clear();
+  tabSources.clear();
 }
 
 if (typeof chrome !== 'undefined') {

@@ -8,14 +8,18 @@ let tabs = [
   { id: 12, windowId: 1, title: 'Segunda', url: 'https://b.test', active: false }
 ];
 let grants = [];
+const sessionStorage = { browser_mts_session_tab_grants: grants };
 const removed = { addListener: () => {} };
 const replaced = { addListener: () => {} };
 
 globalThis.chrome = {
   runtime: { getURL: (path) => `chrome-extension://test/${path}` },
   storage: { session: {
-    get: async () => ({ browser_mts_session_tab_grants: grants }),
-    set: async (value) => { grants = value.browser_mts_session_tab_grants; }
+    get: async (key) => key ? { [key]: sessionStorage[key] } : sessionStorage,
+    set: async (value) => {
+      Object.assign(sessionStorage, value);
+      grants = sessionStorage.browser_mts_session_tab_grants || [];
+    }
   } },
   tabs: {
     query: async () => tabs,

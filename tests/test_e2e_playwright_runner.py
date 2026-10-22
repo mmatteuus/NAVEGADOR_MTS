@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 import subprocess
 import pytest
@@ -43,6 +44,8 @@ def test_e2e_real_multisession_playwright() -> None:
         global_npm = Path(env["APPDATA"]) / "npm" / "node_modules"
         if global_npm.exists():
             env["NODE_PATH"] = str(global_npm)
+            env["PLAYWRIGHT_MODULE"] = str(global_npm / "playwright")
+    env["QA_PYTHON"] = sys.executable
 
     result = subprocess.run(
         ["node", str(script_path)],

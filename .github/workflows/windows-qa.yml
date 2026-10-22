@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - run: python -m compileall -q src entrypoint.py stdio_entrypoint.py
-      - run: node tests/test_extension_adversarial.mjs
+      - run: node tests/run_extension_suite.mjs
   contratos:
     name: Testes de contrato MCP (Windows)
     runs-on: windows-latest
@@ -54,7 +54,51 @@ jobs:
           path: test-results.xml
           retention-days: 3
       - name: Testes adversariais da extensão MV3
-        run: node tests/test_extension_adversarial.mjs
+        run: node tests/run_extension_suite.mjs
+  e2e_conector:
+    name: Diagnóstico manual de recarga (Chromium descartável)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependências Python da bridge de QA
+        run: python -m pip install -r requirements.txt
+      - name: Playwright Chromium fixado
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          npm install --prefix temp/qa-node playwright@1.63.0 --no-save --package-lock=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx --prefix temp/qa-node playwright install chromium
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $module = (Resolve-Path 'temp/qa-node/node_modules/playwright').Path
+          "PLAYWRIGHT_MODULE=$module" >> $env:GITHUB_ENV
+          "QA_PYTHON=$((Get-Command python).Source)" >> $env:GITHUB_ENV
+          "QA_RUN_REAL_E2E=1" >> $env:GITHUB_ENV
+      - name: Executar E2E real do conector
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          New-Item -ItemType Directory -Force temp | Out-Null
+          node tests/e2e_real/test_connector_popup_update.mjs 2>&1 | Tee-Object -FilePath temp/connector-e2e.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Artefatos E2E
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-connector-e2e
+          path: temp/connector-e2e.log
+          if-no-files-found: error
+          retention-days: 3
   instalador:
     name: Compilar instalador Windows para teste
     needs: contratos

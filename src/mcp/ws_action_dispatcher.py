@@ -44,7 +44,13 @@ async def handle_incoming_envelope(data: Dict[str, Any], websocket: Any, bridge:
         bridge.registry.register_extension(websocket, info)
         reply = {"type": "server_hello", "payload": {
             "status": "connected", "desktopVersion": APP_VERSION, "heartbeatIntervalMs": 4000,
-            "reloadRequired": bridge._reload_policy.should_reload(bridge.client_info)
+            "reloadRequired": bridge._reload_policy.should_reload(info, websocket),
+            "extensionUpdateRequired": bridge._reload_policy.is_outdated(info),
+            "extensionUpdateMessage": (
+                "A extensão antiga foi recarregada. Se continuar desatualizada, remova a extensão carregada de outra pasta "
+                "e carregue a pasta extension instalada junto ao NAVEGADOR MTS."
+                if bridge._reload_policy.is_outdated(info) else ""
+            )
         }}
         await websocket.send(json.dumps(reply))
     elif mtype == "ping":

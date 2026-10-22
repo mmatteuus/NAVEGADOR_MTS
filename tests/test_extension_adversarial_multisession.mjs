@@ -68,7 +68,7 @@ async function testTargetIdFallThroughPrevention() {
   const targetAlpha = await targetId(null, 'agent_alpha');
   assert.strictEqual(targetAlpha, 101);
 
-  await assert.rejects(async () => targetId(null, 'agent_gamma'), /TAB_NOT_ALLOWED/);
+  await assert.rejects(async () => targetId(null, 'agent_gamma'), /TAB_SELECTION_REQUIRED/);
   await assert.rejects(async () => targetId(201, 'agent_alpha'), /TAB_ACCESS_DENIED/);
   await assert.rejects(async () => targetId(101, 'agent_beta'), /TAB_ACCESS_DENIED/);
   console.log('  -> PASS: Fall-through e acesso cruzado bloqueados estritamente.');
