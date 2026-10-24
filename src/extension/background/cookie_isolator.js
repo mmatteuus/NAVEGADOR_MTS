@@ -10,8 +10,12 @@ import { getTabsForSession } from './session_registry.js';
 const sessionCookies = new Map(), sessionLocalStorage = new Map(), sessionStores = new Map();
 const normDom = u => {
   if (!u) return '';
-  try { if (u.includes('://')) return new URL(u).hostname; } catch (_) {}
-  return u.replace(/^\./, '').split('/')[0];
+  if (u.includes('://')) {
+    try { return new URL(u).hostname; } catch (_) {}
+  }
+  let d = u.startsWith('.') ? u.slice(1) : u;
+  const slashIdx = d.indexOf('/');
+  return slashIdx !== -1 ? d.slice(0, slashIdx) : d;
 };
 
 export const bindSessionStore = (sid, stId) => sid && stId && sessionStores.set(String(sid), String(stId));
