@@ -59,6 +59,21 @@ def _is_pe(path: Path) -> bool:
         return False
 
 
+def _download_file(url: str, output_path: Path, progress: Optional[Callable[[float], None]] = None) -> None:
+    """Baixa um arquivo em pedaços e reporta progresso."""
+    request = urllib.request.Request(url, headers={"User-Agent": f"NAVEGADOR-MTS/{APP_VERSION}"})
+    with urllib.request.urlopen(request, timeout=60) as response, output_path.open("wb") as output:
+        total = int(response.headers.get("Content-Length", 0) or 0)
+        done = 0
+        while chunk := response.read(65536):
+            output.write(chunk)
+            done += len(chunk)
+            if progress and total and done < total:
+                progress(min(1.0, done / total))
+        if total and done != total:
+            raise IOError("Download incompleto.")
+
+
 def download_installer(info: UpdateInfo, progress: Optional[Callable[[float], None]] = None) -> Path:
     """Baixa/copia em arquivo temporário exclusivo e valida PE/digest."""
     temp_dir = Path(tempfile.gettempdir())
@@ -68,19 +83,8 @@ def download_installer(info: UpdateInfo, progress: Optional[Callable[[float], No
     staged = Path(staged_name)
     final = staged.with_suffix("")
     try:
-        total = done = 0
         if info.download_url.startswith(("http://", "https://")):
-            request = urllib.request.Request(info.download_url, headers={"User-Agent": f"NAVEGADOR-MTS/{APP_VERSION}"})
-            with urllib.request.urlopen(request, timeout=60) as response, staged.open("wb") as output:
-                total = int(response.headers.get("Content-Length", 0) or 0)
-                done = 0
-                while chunk := response.read(65536):
-                    output.write(chunk)
-                    done += len(chunk)
-                    if progress and total and done < total:
-                        progress(min(1.0, done / total))
-                if total and done != total:
-                    raise IOError("Download incompleto.")
+            _download_file(info.download_url, staged, progress)
         else:
             shutil.copyfile(Path(info.download_url), staged)
         if not _is_pe(staged):
