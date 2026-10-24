@@ -5,8 +5,6 @@ timeout de 2 segundos. Detecta quedas de rede semi-abertas (Half-Open)
 e aciona a rotina de auto-cura do motor de resiliência.
 """
 
-from __future__ import annotations
-
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
@@ -71,7 +69,10 @@ class HeartbeatManager:
         now = current_time if current_time is not None else time.time()
 
         # Se estamos aguardando um pong e excedeu o tempo limite configurado (2s)
-        if self._waiting_pong and (now - self._last_ping_sent) > self.config.timeout_seconds:
+        if (
+            self._waiting_pong
+            and (now - self._last_ping_sent) > self.config.timeout_seconds
+        ):
             self._missed_pings += 1
             self._waiting_pong = False  # Encerra a espera deste ciclo
 
