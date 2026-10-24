@@ -28,7 +28,10 @@ class KBDLLHOOKSTRUCT(ctypes.Structure):
         ("dwExtraInfo", ULONG_PTR),
     ]
 
-HOOKPROC = ctypes.WINFUNCTYPE(ctypes.c_longlong, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM)
+try:
+    HOOKPROC = ctypes.WINFUNCTYPE(ctypes.c_longlong, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM)
+except AttributeError:
+    HOOKPROC = ctypes.CFUNCTYPE(ctypes.c_longlong, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM)
 
 class EmergencyKillSwitch:
     """Gerencia a detecção de pânico global e cancelamento imediato no Windows."""

@@ -1,5 +1,4 @@
 """Supervisão isolada do Secure MCP Tunnel para o MCP HTTP local."""
-from __future__ import annotations
 
 import os
 from pathlib import Path
