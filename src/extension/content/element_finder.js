@@ -10,18 +10,28 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
 (function () {
   /**
+   * Helper function to check visibility and return the bounding rect in one pass.
+   * This prevents layout thrashing by avoiding multiple calls to getBoundingClientRect.
+   * @param {Element} el - HTML node to verify.
+   * @returns {DOMRect|null} Bounding rect if visible, or null otherwise.
+   */
+  function _getVisibleRect(el) {
+    if (!el || !(el instanceof Element)) return null;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return null;
+    }
+    const rect = el.getBoundingClientRect();
+    return (rect.width > 0 && rect.height > 0) ? rect : null;
+  }
+
+  /**
    * Determina se um nó do DOM está visível na viewport do usuário.
    * @param {Element} el - Nó HTML a verificar.
    * @returns {boolean} Verdadeiro se o elemento tiver área e visibilidade ativa.
    */
   function isElementVisible(el) {
-    if (!el || !(el instanceof Element)) return false;
-    const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-      return false;
-    }
-    const rect = el.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
+    return _getVisibleRect(el) !== null;
   }
 
   /**
@@ -70,8 +80,14 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
     let index = 0;
     for (const node of nodeList) {
-      if (visibleOnly && !isElementVisible(node)) continue;
-      const rect = node.getBoundingClientRect();
+      // PERF: Combined visibility check and rect measurement to reduce redundant DOM layout queries.
+      let rect;
+      if (visibleOnly) {
+        rect = _getVisibleRect(node);
+        if (!rect) continue;
+      } else {
+        rect = node.getBoundingClientRect();
+      }
 
       results.push({
         index: index++,

@@ -19,6 +19,29 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Mock Windows-specific ctypes for non-Windows environments
+import ctypes
+if not hasattr(ctypes, "WINFUNCTYPE"):
+    ctypes.WINFUNCTYPE = ctypes.CFUNCTYPE
+
+if not hasattr(ctypes, "windll"):
+    class MockFunc:
+        def __init__(self, name):
+            self.name = name
+            self.argtypes = []
+            self.restype = None
+        def __call__(self, *args, **kwargs):
+            return 0
+
+    class MockLib:
+        def __getattr__(self, name):
+            return MockFunc(name)
+
+    class MockWinDLL:
+        def __getattr__(self, name):
+            return MockLib()
+    ctypes.windll = MockWinDLL()
+
 from src.computer.safety_gate import safety_gate  # noqa: E402
 
 PROD_PIDS = [17892, 8928, 6548, 6052]
