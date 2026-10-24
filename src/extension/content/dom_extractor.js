@@ -20,16 +20,22 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    */
   function extractCleanDOM(clean = true, maxDepth = 10) {
     let nodeCount = 0;
+    const outputArray = [];
 
+    // [Performance Optimization] Using array push + join instead of recursive string concatenation
+    // This improves performance significantly on deeply nested or large DOM trees
     function traverse(node, depth) {
-      if (!node || depth > maxDepth) return '';
+      if (!node || depth > maxDepth) return;
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent.trim();
-        return text ? `${'  '.repeat(depth)}"${text}"\n` : '';
+        if (text) {
+          outputArray.push(`${'  '.repeat(depth)}"${text}"\n`);
+        }
+        return;
       }
 
-      if (node.nodeType !== Node.ELEMENT_NODE) return '';
-      if (clean && IGNORED_TAGS.has(node.tagName)) return '';
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (clean && IGNORED_TAGS.has(node.tagName)) return;
 
       nodeCount++;
       const tag = node.tagName.toLowerCase();
@@ -43,14 +49,14 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
       if (node.getAttribute('role')) meta += ` [role="${node.getAttribute('role')}"]`;
       if (node.getAttribute('aria-label')) meta += ` [label="${node.getAttribute('aria-label')}"]`;
 
-      let output = `${'  '.repeat(depth)}<${meta}>\n`;
+      outputArray.push(`${'  '.repeat(depth)}<${meta}>\n`);
       for (const child of node.childNodes) {
-        output += traverse(child, depth + 1);
+        traverse(child, depth + 1);
       }
-      return output;
     }
 
-    const tree = traverse(document.body || document.documentElement, 0);
+    traverse(document.body || document.documentElement, 0);
+    const tree = outputArray.join('');
     return {
       success: true,
       dom: tree,
