@@ -5,11 +5,6 @@ Módulos fundamentais:
 - config: Centralização de portas de rede (porta 3456), diretórios e configurações.
 """
 
-from src.core.config import (
-    AppConfig,
-    current_config,
-    load_config,
-)
 from src.core.security import (
     SecurityError,
     decrypt_dpapi,
@@ -25,9 +20,6 @@ from src.core.updater import (
 )
 
 __all__ = [
-    "AppConfig",
-    "load_config",
-    "current_config",
     "encrypt_dpapi",
     "decrypt_dpapi",
     "mask_credential",
