@@ -78,7 +78,7 @@ def test_adversarial_sanitize_log_evasion_attempts():
         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     ]
     log_composto = f"""
-    [CRITICAL] Request payload: {{"key": "{tokens[0]}", "t": "{tokens[3]}"}}
+    [DEBUG] Request payload: {{"key": "{tokens[0]}", "t": "{tokens[3]}"}}
     [DEBUG] Header: Authorization: {tokens[4]}
     [TRACE] Hash validation error for {tokens[5]} and sha256 {tokens[6]}
     [WARN] Backup key: {tokens[1]} and secondary: {tokens[2]}
