@@ -1,5 +1,4 @@
 """Validações mínimas para credenciais do Secure MCP Tunnel."""
-from __future__ import annotations
 
 
 def is_runtime_credential(value: object) -> bool:
