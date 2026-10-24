@@ -69,9 +69,43 @@ class ProcessSupervisor:
         if self._psutil_proc is None:
             return False
         try:
-            return self._psutil_proc.is_running() and self._psutil_proc.status() != psutil.STATUS_ZOMBIE
+            return (
+                self._psutil_proc.is_running()
+                and self._psutil_proc.status() != psutil.STATUS_ZOMBIE
+            )
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             return False
+
+    def _terminate_processes(self, procs: List[psutil.Process], timeout: float) -> None:
+        """Helper para encerrar uma lista de processos, aguardar e forçar kill se necessário."""
+        # 1. Envia sinal de término gracioso para todos os processos
+        for proc in procs:
+            try:
+                proc.terminate()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+        # 2. Aguarda a liberação dos processos pelo kernel do Windows
+        _, alive = psutil.wait_procs(procs, timeout=timeout)
+
+        # 3. Se algum processo filho resistir, força a finalização imediata
+        for proc in alive:
+            try:
+                proc.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+    def _close_streams(self) -> None:
+        """Helper para fechar as streams stdout/stderr/stdin e garantir que o popen morra."""
+        if self._popen is not None:
+            for stream in (self._popen.stdin, self._popen.stdout, self._popen.stderr):
+                if stream is not None and not stream.closed:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
+            if self._popen.poll() is None:
+                self._popen.kill()
 
     def terminate_tree(self, timeout: float = 2.0) -> None:
         """Encerra graciosamente toda a árvore de processos (pai e filhos)."""
@@ -82,29 +116,11 @@ class ProcessSupervisor:
             parent = self._psutil_proc
             children = parent.children(recursive=True)
             all_procs = children + [parent]
-
-            # 1. Envia sinal de término gracioso para todos os processos
-            for proc in all_procs:
-                try: proc.terminate()
-                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
-
-            # 2. Aguarda a liberação dos processos pelo kernel do Windows
-            _, alive = psutil.wait_procs(all_procs, timeout=timeout)
-
-            # 3. Se algum processo filho resistir, força a finalização imediata
-            for proc in alive:
-                try: proc.kill()
-                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
+            self._terminate_processes(all_procs, timeout)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         finally:
-            if self._popen is not None:
-                for stream in (self._popen.stdin, self._popen.stdout, self._popen.stderr):
-                    if stream is not None and not stream.closed:
-                        try: stream.close()
-                        except Exception: pass
-                if self._popen.poll() is None:
-                    self._popen.kill()
+            self._close_streams()
             self._popen = None
             self._psutil_proc = None
 
@@ -117,7 +133,13 @@ class ProcessSupervisor:
 
     def get_metrics(self) -> Dict[str, Any]:
         """Coleta métricas de consumo de memória, uso de CPU e integridade."""
-        empty_res = {"name": self.name, "alive": False, "pid": None, "cpu_percent": 0.0, "memory_mb": 0.0}
+        empty_res = {
+            "name": self.name,
+            "alive": False,
+            "pid": None,
+            "cpu_percent": 0.0,
+            "memory_mb": 0.0,
+        }
         if not self.is_alive() or self._psutil_proc is None:
             return empty_res
 
