@@ -50,14 +50,14 @@ class MCPHTTPServer:
         origin = request.headers.get("Origin")
         if origin:
             # Se a requisição contiver um cabeçalho Origin, aceita se for local ou das plataformas suportadas
-            allowed_origin_prefixes = (
+            allowed_origins = {
                 f"http://127.0.0.1:{self.port}",
                 f"http://localhost:{self.port}",
                 "https://chatgpt.com",
                 "https://chat.openai.com",
                 "https://claude.ai",
-            )
-            if not any(origin.startswith(prefix) for prefix in allowed_origin_prefixes):
+            }
+            if origin not in allowed_origins:
                 return web.Response(status=403, text="Origin não autorizado.")
 
         return await handler(request)
