@@ -1,18 +1,13 @@
 """Registro e segregação de conexões WebSocket para extensões e agentes."""
 from __future__ import annotations
-
 import logging
 from typing import Any, Dict, List, Optional, Set
-
 logger = logging.getLogger("BrowserMTS.WSSessionRegistry")
-
-
 try:
     from websockets.protocol import State
     _WS_STATE_OPEN = State.OPEN
 except ImportError:
     _WS_STATE_OPEN = None
-
 def is_socket_healthy(sock: Any) -> bool:
     """Verifica se o socket está conectado e em estado operacional aberto."""
     if sock is None:

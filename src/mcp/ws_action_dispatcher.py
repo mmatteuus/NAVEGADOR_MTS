@@ -14,18 +14,17 @@ logger = logging.getLogger("BrowserMTS.WSDispatcher")
 
 def resolve_pending_request(data: Dict[str, Any], pending_requests: Dict[str, asyncio.Future]) -> None:
     """Resolve a Future pendente correspondente à resposta enviada pela extensão."""
-    if type(data) is not dict:
+    if not isinstance(data, dict):
         return
-    p = data.get("payload")
-    if type(p) is not dict:
-        p = data
-        if type(p) is not dict:
-            return
+    payload = data.get("payload")
+    p = payload if isinstance(payload, dict) else data
+    if not isinstance(p, dict):
+        return
     req_id = p.get("requestId") or data.get("id")
     if req_id and req_id in pending_requests:
         fut = pending_requests.pop(req_id)
         if not fut.done():
-            if "error" in p and p["error"]:
+            if p.get("error"):
                 fut.set_exception(RuntimeError(str(p["error"])))
             else:
                 fut.set_result(p.get("result", p.get("data", {})))
