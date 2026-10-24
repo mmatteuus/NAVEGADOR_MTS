@@ -7,16 +7,20 @@ from typing import Any, Dict, List, Optional, Set
 logger = logging.getLogger("BrowserMTS.WSSessionRegistry")
 
 
+try:
+    from websockets.protocol import State
+    _WS_STATE_OPEN = State.OPEN
+except ImportError:
+    _WS_STATE_OPEN = None
+
 def is_socket_healthy(sock: Any) -> bool:
     """Verifica se o socket está conectado e em estado operacional aberto."""
     if sock is None:
         return False
     if hasattr(sock, "state"):
-        try:
-            from websockets.protocol import State
-            return sock.state == State.OPEN
-        except Exception:
-            return getattr(sock.state, "name", "") == "OPEN"
+        if _WS_STATE_OPEN is not None:
+            return sock.state == _WS_STATE_OPEN
+        return getattr(sock.state, "name", "") == "OPEN"
     if getattr(sock, "closed", False):
         return False
     return True
