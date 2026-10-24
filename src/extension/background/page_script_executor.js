@@ -2,24 +2,58 @@
 import { getActiveTab } from './tab_manager.js';
 
 async function runInPage(source) {
-  function serialize(value) {
-    if (typeof value === 'function') return value.toString();
-    if (typeof Element !== 'undefined' && value instanceof Element) {
-      return {
-        tagName: value.tagName.toLowerCase(), id: value.id || null,
-        className: value.className || null, text: value.textContent?.trim().slice(0, 100) || ''
-      };
-    }
-    if (typeof value === 'bigint') return `${value}n`;
-    return value;
-  }
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    const eventId = Math.random().toString(36).substring(2);
+    const eventName = `mcp-eval-${eventId}`;
 
-  try {
-    const result = await (0, eval)(`(async () => { ${source} })()`);
-    return { success: true, result: serialize(result), type: typeof result };
-  } catch (error) {
-    return { success: false, error: error.message || String(error), stack: error.stack || null };
-  }
+    const cleanup = () => {
+      document.removeEventListener(eventName, listener);
+      if (script.parentNode) script.remove();
+    };
+
+    const listener = (event) => {
+      cleanup();
+      const detail = event.detail;
+      if (detail && detail.success) {
+        resolve({ success: true, result: detail.result, type: detail.type });
+      } else {
+        resolve({ success: false, error: detail?.error || 'Unknown error', stack: detail?.stack || null });
+      }
+    };
+
+    document.addEventListener(eventName, listener);
+
+    script.textContent = `
+      (async () => {
+        function serialize(value) {
+          if (typeof value === 'function') return value.toString();
+          if (typeof Element !== 'undefined' && value instanceof Element) {
+            return {
+              tagName: value.tagName.toLowerCase(), id: value.id || null,
+              className: value.className || null, text: value.textContent?.trim().slice(0, 100) || ''
+            };
+          }
+          if (typeof value === 'bigint') return \`\${value}n\`;
+          return value;
+        }
+        try {
+          const result = await (async () => {
+            ${source}
+          })();
+          document.dispatchEvent(new CustomEvent('${eventName}', {
+            detail: { success: true, result: serialize(result), type: typeof result }
+          }));
+        } catch (error) {
+          document.dispatchEvent(new CustomEvent('${eventName}', {
+            detail: { success: false, error: error.message || String(error), stack: error.stack || null }
+          }));
+        }
+      })();
+    `;
+
+    (document.head || document.documentElement || document).appendChild(script);
+  });
 }
 
 export async function evaluatePageScript(tabId, source) {
