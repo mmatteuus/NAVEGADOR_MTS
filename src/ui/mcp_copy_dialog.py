@@ -4,11 +4,7 @@ Permite ao usuário copiar a URL do Servidor (universal), o ID do Túnel OpenAI 
 a configuração JSON para Claude Desktop/Cursor e testar a movimentação do mouse.
 """
 
-import json
-import math
-import sys
-import threading
-import time
+import json, math, sys, threading, time
 import customtkinter as ctk
 from .theme import PALETTE
 from ..computer.safety_gate import safety_gate

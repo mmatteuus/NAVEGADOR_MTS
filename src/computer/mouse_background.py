@@ -6,8 +6,7 @@ import time
 from typing import Any, Dict, Optional, Tuple
 from .safety_gate import safety_gate
 from .window_finder import resolve_target_window
-from .window_assignments import window_assignments
-from .window_assignments import window_identity
+from .window_assignments import window_assignments, window_identity
 from .mouse_drag import run_drag
 user32 = ctypes.windll.user32
 user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
@@ -24,7 +23,7 @@ def _lease(session_id: Optional[str], hwnd: int):
         return None
     lease = window_assignments.get(session_id)
     if lease is None:
-        raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
+        return None
     if lease.hwnd != int(hwnd):
         raise ValueError("TARGET_REVOKED: atribuição ausente durante a ação")
     window_assignments.validate(lease)
