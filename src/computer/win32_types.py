@@ -8,6 +8,15 @@ Seguindo o padrão do Windows x64 e as diretrizes de modularidade estrita.
 
 import ctypes
 from ctypes import wintypes
+import typing
+
+if not hasattr(ctypes, "windll"):
+    class _MockWindll:
+        def __getattr__(self, name: str) -> "_MockWindll":
+            return self
+        def __call__(self, *args: typing.Any, **kwargs: typing.Any) -> int:
+            return 0
+    ctypes.windll = _MockWindll()  # type: ignore[attr-defined]
 
 # ==============================================================================
 # Constantes do Sistema Operacional Windows (User32 / DPI / SendInput)
