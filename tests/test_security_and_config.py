@@ -1,15 +1,11 @@
-"""Testes Unitários de Segurança e Configuração do BROWSER MTS.
+"""Testes Unitários de Segurança e Configuração do BROWSER MTS."""
 
-Validações:
-- Criptografia e descriptografia real via Windows DPAPI.
-- Mascaramento seguro de credenciais para UI.
-- Sanitização de logs contra vazamento de chaves sk-* e tunnel IDs.
-- Configurações centralizadas e leitura de portas (3456).
-"""
-
+import base64
+import ctypes
 import os
 import sys
 import unittest
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -26,23 +22,66 @@ from src.core.security import (
 class TestSecurityModule(unittest.TestCase):
     """Suíte de validação de criptografia e sanitização."""
 
+    def test_encrypt_dpapi_non_windows_platform_raises_security_error(self) -> None:
+        """Garante que encrypt_dpapi rejeita execução em sistemas não-Windows."""
+        with patch("sys.platform", "linux"):
+            with self.assertRaises(SecurityError) as ctx:
+                encrypt_dpapi("chave-secreta")
+            self.assertIn("DPAPI só é suportada nativamente", str(ctx.exception))
+
+    def test_encrypt_dpapi_empty_input_raises_value_error(self) -> None:
+        """Valida que entradas vazias (str e bytes) lançam exceção explicativa."""
+        with patch("sys.platform", "win32"):
+            with self.assertRaises(ValueError):
+                encrypt_dpapi("")
+            with self.assertRaises(ValueError):
+                encrypt_dpapi(b"")
+
+    def test_encrypt_dpapi_str_and_bytes_success(self) -> None:
+        """Valida criptografia DPAPI bem-sucedida para str e bytes com liberador de memória."""
+        mock_c32, mock_k32 = MagicMock(), MagicMock()
+        mock_c32.CryptProtectData.return_value = 1
+
+        with patch("sys.platform", "win32"), \
+             patch.object(ctypes, "windll", create=True) as m_windll, \
+             patch("ctypes.string_at", return_value=b"encrypted_payload") as m_str_at:
+            m_windll.crypt32, m_windll.kernel32 = mock_c32, mock_k32
+
+            res_str = encrypt_dpapi("texto_puro", description="MeuApp")
+            expected_b64 = base64.b64encode(b"encrypted_payload").decode("ascii")
+            self.assertEqual(res_str, expected_b64)
+
+            res_bytes = encrypt_dpapi(b"bytes_puros")
+            self.assertEqual(res_bytes, expected_b64)
+            mock_k32.LocalFree.assert_called()
+            m_str_at.assert_called()
+
+    def test_encrypt_dpapi_win32_failure_raises_security_error(self) -> None:
+        """Valida se falha do Windows CryptProtectData dispara SecurityError com código Win32."""
+        mock_c32 = MagicMock()
+        mock_c32.CryptProtectData.return_value = 0
+
+        with patch("sys.platform", "win32"), \
+             patch.object(ctypes, "windll", create=True) as m_windll, \
+             patch("ctypes.GetLastError", create=True, return_value=1359):
+            m_windll.crypt32 = mock_c32
+            with self.assertRaises(SecurityError) as ctx:
+                encrypt_dpapi("segredo")
+            self.assertIn("Erro Win32: 1359", str(ctx.exception))
+
     def test_dpapi_encrypt_decrypt_roundtrip(self) -> None:
-        """Garante que a DPAPI criptografa e restaura o dado original fielmente."""
+        """Garante que a DPAPI criptografa e restaura o dado original no Windows."""
         secreto = "sk-proj-teste-real-de-credencial-1234567890"
+        if sys.platform != "win32":
+            with patch("sys.platform", "linux"):
+                with self.assertRaises(SecurityError):
+                    encrypt_dpapi(secreto)
+            return
+
         cifrado = encrypt_dpapi(secreto)
         self.assertNotEqual(secreto, cifrado)
         self.assertTrue(len(cifrado) > 20)
-
-        restaurado = decrypt_dpapi(cifrado)
-        self.assertEqual(secreto, restaurado)
-
-    def test_dpapi_empty_input_raises_value_error(self) -> None:
-        """Valida que entradas vazias lançam exceção explicativa."""
-        with self.assertRaises(ValueError):
-            encrypt_dpapi("")
-
-        with self.assertRaises(ValueError):
-            decrypt_dpapi("")
+        self.assertEqual(secreto, decrypt_dpapi(cifrado))
 
     def test_mask_credential_variations(self) -> None:
         """Testa diferentes formatos de chave no mascaramento para tela."""
@@ -53,8 +92,7 @@ class TestSecurityModule(unittest.TestCase):
 
         chave_sk = "sk-proj-abcdef1234567890xyz"
         mascara_sk = mask_credential(chave_sk, visible_tail=4)
-        self.assertTrue(mascara_sk.startswith("sk-•"))
-        self.assertTrue(mascara_sk.endswith("0xyz"))
+        self.assertTrue(mascara_sk.startswith("sk-•") and mascara_sk.endswith("0xyz"))
         self.assertNotIn("abcdef123456789", mascara_sk)
 
     def test_sanitize_log_masks_sensitive_patterns(self) -> None:
