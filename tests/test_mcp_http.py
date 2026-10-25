@@ -31,6 +31,38 @@ def test_http_mcp_initialize_and_methods():
                 async with client.post(url, json={"jsonrpc": "2.0",
                     "method": "notifications/initialized"}) as r:
                     assert r.status == 202
+
+                # Testes de validação de Origin (origens permitidas vs tentativas de bypass)
+                allowed_origins = [
+                    f"http://127.0.0.1:{port}",
+                    f"http://localhost:{port}",
+                    "https://chatgpt.com",
+                    "https://chat.openai.com",
+                    "https://claude.ai",
+                ]
+                for origin in allowed_origins:
+                    async with client.post(
+                        url,
+                        headers={"Origin": origin},
+                        json={"jsonrpc": "2.0", "id": 3, "method": "initialize", "params": {}},
+                    ) as r:
+                        assert r.status == 200, f"Origin legítima deve ser aceita: {origin}"
+
+                disallowed_origins = [
+                    f"http://127.0.0.1:{port}.evil.com",
+                    f"http://localhost:{port}.attacker.org",
+                    "https://chatgpt.com.evil.com",
+                    "https://chat.openai.com.attacker.org",
+                    "https://claude.ai.phishing.net",
+                    "https://evil-chatgpt.com",
+                ]
+                for origin in disallowed_origins:
+                    async with client.post(
+                        url,
+                        headers={"Origin": origin},
+                        json={"jsonrpc": "2.0", "id": 4, "method": "initialize", "params": {}},
+                    ) as r:
+                        assert r.status == 403, f"Origin maliciosa deve ser rejeitada: {origin}"
         finally:
             await endpoint.stop()
     asyncio.run(scenario())
