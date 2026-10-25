@@ -24,12 +24,12 @@ class FluentPalette:
     """Paleta de cores alinhada às diretrizes do Windows 11 Fluent Design."""
 
     # Cores de fundo e cartões
-    bg_dark: str = "#202020"
-    bg_light: str = "#F3F3F3"
+    bg_dark: str = "#1E1E1E"
+    bg_light: str = "#F8F9FA"
     card_dark: str = "#2B2B2B"
     card_light: str = "#FFFFFF"
-    card_border_dark: str = "#3A3A3A"
-    card_border_light: str = "#E5E5E5"
+    card_border_dark: str = "#333333"
+    card_border_light: str = "#E0E0E0"
 
     # Cores de destaque e estados
     accent: str = "#0078D4"
