@@ -140,11 +140,7 @@ export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
 installGrantSync(async () => {
-  try {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    const active = await getActiveTab();
-    sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
-  } catch (err) {
-    console.error('Erro na sincronização de concessões no WebSocket:', err);
-  }
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  const active = await getActiveTab();
+  sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
 });
