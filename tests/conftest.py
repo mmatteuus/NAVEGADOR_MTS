@@ -43,6 +43,15 @@ def guard_production_instance(initial_live_prod_pids: List[int]) -> Generator[No
     assert not missing, f"VIOLAÇÃO CRÍTICA DE PRODUÇÃO: PIDs interrompidos: {missing}"
 
 
+@pytest.fixture(autouse=True)
+def reset_session_manager() -> Generator[None, None, None]:
+    """Limpa sessões registradas no SessionManager para isolamento estrito."""
+    from src.mcp.session_manager import session_manager
+    session_manager.clear()
+    yield
+    session_manager.clear()
+
+
 @pytest.fixture
 def reset_safety_gate() -> Generator[None, None, None]:
     """Restaura o estado do SafetyGate para desautorizado antes e após cada teste."""

@@ -20,7 +20,10 @@ from src.computer import (
 def clean_cursors() -> Generator[None, None, None]:
     """Assegura isolamento limpo de cursores entre execuções de teste."""
     reset_agent_cursors()
-    yield
+    with patch("src.computer.mouse_background._lease", return_value=None), \
+         patch("src.computer.mouse_background.window_identity", return_value=(100, 200)), \
+         patch("src.computer.mouse_background.user32.PostMessageW", return_value=1):
+        yield
     reset_agent_cursors()
 
 

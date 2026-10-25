@@ -20,7 +20,10 @@ from src.computer import (
 def clean_agent_cursors() -> Generator[None, None, None]:
     """Garante ambiente limpo para cursores de agentes antes e pós teste."""
     reset_agent_cursors()
-    yield
+    with patch("src.computer.mouse_background._lease", return_value=None), \
+         patch("src.computer.mouse_background.window_identity", return_value=(100, 200)), \
+         patch("src.computer.mouse_background.user32.PostMessageW", return_value=1):
+        yield
     reset_agent_cursors()
 
 
