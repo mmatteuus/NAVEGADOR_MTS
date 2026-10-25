@@ -11,6 +11,8 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 (function () {
   const IGNORED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'PATH', 'TEMPLATE', 'IFRAME']);
   const MAX_VISIBLE_TEXT = 20000;
+  // Pre-computa indentações até profundidade 15 para evitar alocações de repeat() a cada nó.
+  const INDENTS = Array.from({ length: 16 }, (_, i) => '  '.repeat(i));
 
   /**
    * Extrai e formata a árvore do DOM de forma simplificada e indentada.
@@ -23,9 +25,12 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
     function traverse(node, depth) {
       if (!node || depth > maxDepth) return '';
+      // Otimização de performance: usa lookup da tabela pré-computada de indentação
+      const indent = INDENTS[depth] !== undefined ? INDENTS[depth] : '  '.repeat(depth);
+
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent.trim();
-        return text ? `${'  '.repeat(depth)}"${text}"\n` : '';
+        return text ? `${indent}"${text}"\n` : '';
       }
 
       if (node.nodeType !== Node.ELEMENT_NODE) return '';
@@ -40,12 +45,17 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
         const firstClass = node.className.split(' ')[0];
         if (firstClass) meta += `.${firstClass}`;
       }
-      if (node.getAttribute('role')) meta += ` [role="${node.getAttribute('role')}"]`;
-      if (node.getAttribute('aria-label')) meta += ` [label="${node.getAttribute('aria-label')}"]`;
+      // Otimização: armazena chamadas de getAttribute em variáveis para evitar chamadas duplicadas ao DOM
+      const role = node.getAttribute('role');
+      if (role) meta += ` [role="${role}"]`;
+      const ariaLabel = node.getAttribute('aria-label');
+      if (ariaLabel) meta += ` [label="${ariaLabel}"]`;
 
-      let output = `${'  '.repeat(depth)}<${meta}>\n`;
-      for (const child of node.childNodes) {
-        output += traverse(child, depth + 1);
+      let output = `${indent}<${meta}>\n`;
+      // Otimização: iteração indexada direta em childNodes sem alocar iterador do for-of
+      const children = node.childNodes;
+      for (let i = 0; i < children.length; i++) {
+        output += traverse(children[i], depth + 1);
       }
       return output;
     }
