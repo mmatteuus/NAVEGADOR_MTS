@@ -8,6 +8,7 @@ import { createPortRecovery } from './port_recovery.js';
 import { handleExtensionUpdate, setUpdateIdleCheck, notifyUpdateQueueIdle } from './ws_update.js';
 import { getActiveQueueCount, setQueueIdleCallback } from './session_queues.js';
 import { setAgentDirectory, clearAgentDirectory } from './agent_directory.js';
+
 let socket = null, reconnectAttempt = 0, reconnectTimer = null, messageDispatcherFn = null;
 let connectionInProgress = false, connectionTimer = null, connectionId = 0;
 const CONNECT_TIMEOUT_MS = 2000;
@@ -18,8 +19,10 @@ const heartbeat = createHeartbeatManager(
   () => { cleanupSocket(); scheduleReconnect(); },
   (pingMsg) => sendMessage(pingMsg)
 );
+
 export function setCommandDispatcher(dispatcher) { messageDispatcherFn = dispatcher; }
 export function getConnectionToken() { return socket; }
+
 export async function connectWebSocket() {
   if (connectionInProgress || (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING))) return;
   connectionInProgress = true;
@@ -46,8 +49,7 @@ export async function connectWebSocket() {
       const isCurrent = () => connectionId === attemptId && socket === candidate;
       if (!isCurrent()) return;
       try {
-        clearTimeout(connectionTimer); connectionTimer = null;
-        connectionInProgress = false;
+        clearTimeout(connectionTimer); connectionTimer = null; connectionInProgress = false;
         reconnectAttempt = 0; portRecovery.markSuccess();
         await updateConnectionStatus(CONNECTION_STATE.CONNECTED, 0);
         if (!isCurrent()) return;
@@ -68,8 +70,7 @@ export async function connectWebSocket() {
     };
     candidate.onclose = () => {
       if (connectionId !== attemptId) return;
-      clearTimeout(connectionTimer); connectionTimer = null;
-      connectionInProgress = false;
+      clearTimeout(connectionTimer); connectionTimer = null; connectionInProgress = false;
       portRecovery.advance(); cleanupSocket(); scheduleReconnect();
     };
   } catch (err) {
@@ -77,6 +78,7 @@ export async function connectWebSocket() {
     portRecovery.advance(); scheduleReconnect(250);
   }
 }
+
 function handleIncomingMessage(rawData) {
   try {
     const msg = JSON.parse(rawData);
@@ -98,36 +100,30 @@ function handleIncomingMessage(rawData) {
       }
       return;
     }
-    if (msg.type === 'agents_changed') {
-      setAgentDirectory(msg.payload?.agents || msg.agents);
-      return;
-    }
+    if (msg.type === 'agents_changed') { setAgentDirectory(msg.payload?.agents || msg.agents); return; }
     if (msg.type === 'reload_extension' || msg.action === 'reload_extension') {
       logger.info('Auto-atualização da extensão solicitada pelo Desktop App.');
-      handleExtensionUpdate({ ...(msg.payload || {}), desktopVersion: msg.payload?.desktopVersion || msg.desktopVersion,
-        reloadRequired: true }).catch(err => logger.error('Falha ao processar recarga da extensão:', err)); return;
+      handleExtensionUpdate({ ...(msg.payload || {}), desktopVersion: msg.payload?.desktopVersion || msg.desktopVersion, reloadRequired: true }).catch(err => logger.error('Falha ao processar recarga da extensão:', err)); return;
     }
     if (typeof messageDispatcherFn === 'function') messageDispatcherFn(msg);
-  } catch (err) {
-    logger.error('Erro ao processar mensagem recebida:', err);
-  }
+  } catch (err) { logger.error('Erro ao processar mensagem recebida:', err); }
 }
+
 export function sendMessage(payload, expectedSocket = undefined) {
   if ((expectedSocket === undefined || expectedSocket === socket) && socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify(payload));
-  } else {
-    logger.warn('Tentativa de envio com socket fechado ou em reconexão.');
-  }
+  } else { logger.warn('Tentativa de envio com socket fechado ou em reconexão.'); }
 }
+
 function scheduleReconnect(delayOverride = null) {
   clearTimeout(reconnectTimer);
   const delayMs = delayOverride ?? RECONNECT_BACKOFF_STEPS_MS[Math.min(reconnectAttempt++, RECONNECT_BACKOFF_STEPS_MS.length - 1)];
   updateConnectionStatus(CONNECTION_STATE.RECONNECTING, 0);
   reconnectTimer = setTimeout(() => { reconnectTimer = null; connectWebSocket(); }, delayMs);
 }
+
 function cleanupSocket() {
-  heartbeat.stop(); connectionInProgress = false;
-  clearAgentDirectory();
+  heartbeat.stop(); connectionInProgress = false; clearAgentDirectory();
   clearTimeout(connectionTimer); connectionTimer = null;
   if (socket) {
     socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null;
@@ -139,12 +135,11 @@ function cleanupSocket() {
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
+
 installGrantSync(async () => {
   try {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     const active = await getActiveTab();
     sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
-  } catch (err) {
-    console.error('Erro na sincronização de concessões no WebSocket:', err);
-  }
+  } catch (err) { console.error('Erro na sincronização de concessões no WebSocket:', err); }
 });
