@@ -14,10 +14,7 @@ const CONNECT_TIMEOUT_MS = 2000;
 const portRecovery = createPortRecovery();
 setUpdateIdleCheck(() => getActiveQueueCount() === 0);
 setQueueIdleCallback(notifyUpdateQueueIdle);
-const heartbeat = createHeartbeatManager(
-  () => { cleanupSocket(); scheduleReconnect(); },
-  (pingMsg) => sendMessage(pingMsg)
-);
+const heartbeat = createHeartbeatManager(() => { cleanupSocket(); scheduleReconnect(); }, (pingMsg) => sendMessage(pingMsg));
 export function setCommandDispatcher(dispatcher) { messageDispatcherFn = dispatcher; }
 export function getConnectionToken() { return socket; }
 export async function connectWebSocket() {
