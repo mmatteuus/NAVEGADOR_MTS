@@ -24,12 +24,36 @@ async function runInPage(source) {
   return new Promise((resolve) => {
     const eventName = '__mcp_eval_' + Math.random().toString(36).slice(2);
     const script = doc.createElement('script');
-    const handler = (evt) => {
-      if (win.removeEventListener) win.removeEventListener(eventName, handler);
+    let timer = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      if (win.removeEventListener) {
+        win.removeEventListener(eventName, handler);
+        win.removeEventListener('error', errorHandler);
+      }
       script.remove();
+    };
+
+    const handler = (evt) => {
+      cleanup();
       resolve(evt.detail);
     };
-    if (win.addEventListener) win.addEventListener(eventName, handler, { once: true });
+
+    const errorHandler = (evt) => {
+      cleanup();
+      resolve({ success: false, error: evt?.error?.message || evt?.message || 'Falha ao executar JavaScript na página.' });
+    };
+
+    timer = setTimeout(() => {
+      cleanup();
+      resolve({ success: false, error: 'Tempo limite esgotado para execução de script na página.' });
+    }, 3000);
+
+    if (win.addEventListener) {
+      win.addEventListener(eventName, handler, { once: true });
+      win.addEventListener('error', errorHandler);
+    }
 
     const evtNameStr = JSON.stringify(eventName);
     const serializeStr = serializeFn.toString();
@@ -51,8 +75,7 @@ async function runInPage(source) {
       target.appendChild(script);
       return;
     }
-    if (win.removeEventListener) win.removeEventListener(eventName, handler);
-    script.remove();
+    cleanup();
     resolve({ success: false, error: 'Documento da página indisponível para avaliação de script.' });
   });
 }

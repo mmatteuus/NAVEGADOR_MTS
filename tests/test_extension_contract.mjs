@@ -22,7 +22,6 @@ globalThis.document = {
     const el = {
       remove: () => {},
       set textContent(code) {
-        // Simula execução síncrona de tag <script> ao anexar
         try {
           const fn = Function(`return (async () => { ${code} })()`);
           fn();
