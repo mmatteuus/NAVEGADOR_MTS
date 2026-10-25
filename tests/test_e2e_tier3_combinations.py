@@ -17,7 +17,7 @@ class ComprehensiveBridgeMock:
         self.is_connected = True
         self.log: list[tuple[str, dict]] = []
 
-    async def send_action(self, name: str, params: dict, timeout: float = 30.0) -> dict:
+    async def send_action(self, name: str, params: dict, timeout: float = 30.0, **kwargs) -> dict:
         self.log.append((name, dict(params)))
         if name == "browser_manage_tabs":
             return {"tabId": 999, "action": params.get("action")}
@@ -122,4 +122,3 @@ def test_tier3_hover_and_scroll_chain() -> None:
     s_res = asyncio.run(router.dispatch("browser_scroll", {"tabId": 15, "direction": "down", "amount": 300}))
     assert not s_res["isError"]
     assert len(bridge.log) == 2
-
