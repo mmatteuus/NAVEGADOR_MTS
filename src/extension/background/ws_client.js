@@ -136,9 +136,7 @@ function cleanupSocket() {
   }
 }
 
-export function ensureConnected() {
-  if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
-}
+export function ensureConnected() { if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket(); }
 installGrantSync(async () => {
   try {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;

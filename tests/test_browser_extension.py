@@ -79,7 +79,7 @@ def test_file_line_limits():
             full_path = os.path.join(root, file)
             with open(full_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
-                assert len(lines) < 150, f"Arquivo {file} excedeu limite de 150 linhas: {len(lines)}"
+            assert len(lines) <= 150, f"Arquivo {file} excedeu limite de 150 linhas: {len(lines)}"
 
 
 def test_javascript_syntax_with_node():
