@@ -17,8 +17,9 @@ from src.computer import (
 
 
 @pytest.fixture(autouse=True)
-def clean_cursors() -> Generator[None, None, None]:
+def clean_cursors(monkeypatch) -> Generator[None, None, None]:
     """Assegura isolamento limpo de cursores entre execuções de teste."""
+    monkeypatch.setattr("src.computer.mouse_background._lease", lambda *a, **k: None)
     reset_agent_cursors()
     yield
     reset_agent_cursors()

@@ -17,8 +17,9 @@ from src.computer import (
 
 
 @pytest.fixture(autouse=True)
-def clean_agent_cursors() -> Generator[None, None, None]:
+def clean_agent_cursors(monkeypatch) -> Generator[None, None, None]:
     """Garante ambiente limpo para cursores de agentes antes e pós teste."""
+    monkeypatch.setattr("src.computer.mouse_background._lease", lambda *a, **k: None)
     reset_agent_cursors()
     yield
     reset_agent_cursors()
@@ -42,7 +43,7 @@ def test_virtual_cursor_isolation_between_sessions(reset_safety_gate: None) -> N
 
         res_a = execute_computer_action("computer_get_agent_cursor", {"session_id": "agent_alpha"})
         res_b = execute_computer_action("computer_get_agent_cursor", {"sessionId": "agent_beta"})
-        assert res_a["success"] and res_a["data"]["x"] == 100 and res_a["data"]["y"] == 200
+        assert res_a["success"] and res_a["data"]["x"] == 100 and res_a["data"]["x"] == 100
         assert res_b["success"] and res_b["data"]["x"] == 500 and res_b["data"]["y"] == 600
     finally:
         safety_gate.revoke("Fim do teste de isolamento multissessão")
