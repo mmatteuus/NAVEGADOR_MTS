@@ -11,6 +11,14 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 (function () {
   const IGNORED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'PATH', 'TEMPLATE', 'IFRAME']);
   const MAX_VISIBLE_TEXT = 20000;
+  const INDENT_CACHE = [];
+
+  function getIndent(depth) {
+    if (!INDENT_CACHE[depth]) {
+      INDENT_CACHE[depth] = '  '.repeat(depth);
+    }
+    return INDENT_CACHE[depth];
+  }
 
   /**
    * Extrai e formata a árvore do DOM de forma simplificada e indentada.
@@ -20,16 +28,20 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    */
   function extractCleanDOM(clean = true, maxDepth = 10) {
     let nodeCount = 0;
+    // Otimização: acumula linhas em array para evitar realocações O(N^2) da concatenação de strings
+    const lines = [];
 
     function traverse(node, depth) {
-      if (!node || depth > maxDepth) return '';
+      if (!node || depth > maxDepth) return;
+      const indent = getIndent(depth);
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent.trim();
-        return text ? `${'  '.repeat(depth)}"${text}"\n` : '';
+        if (text) lines.push(`${indent}"${text}"\n`);
+        return;
       }
 
-      if (node.nodeType !== Node.ELEMENT_NODE) return '';
-      if (clean && IGNORED_TAGS.has(node.tagName)) return '';
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (clean && IGNORED_TAGS.has(node.tagName)) return;
 
       nodeCount++;
       const tag = node.tagName.toLowerCase();
@@ -40,17 +52,19 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
         const firstClass = node.className.split(' ')[0];
         if (firstClass) meta += `.${firstClass}`;
       }
-      if (node.getAttribute('role')) meta += ` [role="${node.getAttribute('role')}"]`;
-      if (node.getAttribute('aria-label')) meta += ` [label="${node.getAttribute('aria-label')}"]`;
+      const role = node.getAttribute('role');
+      if (role) meta += ` [role="${role}"]`;
+      const ariaLabel = node.getAttribute('aria-label');
+      if (ariaLabel) meta += ` [label="${ariaLabel}"]`;
 
-      let output = `${'  '.repeat(depth)}<${meta}>\n`;
+      lines.push(`${indent}<${meta}>\n`);
       for (const child of node.childNodes) {
-        output += traverse(child, depth + 1);
+        traverse(child, depth + 1);
       }
-      return output;
     }
 
-    const tree = traverse(document.body || document.documentElement, 0);
+    traverse(document.body || document.documentElement, 0);
+    const tree = lines.join('');
     return {
       success: true,
       dom: tree,
