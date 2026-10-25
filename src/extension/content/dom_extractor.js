@@ -20,16 +20,19 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    */
   function extractCleanDOM(clean = true, maxDepth = 10) {
     let nodeCount = 0;
+    const chunks = [];
 
+    // Otimização de performance: acúmulo em array previne reallocations sucessivas de string.
     function traverse(node, depth) {
-      if (!node || depth > maxDepth) return '';
+      if (!node || depth > maxDepth) return;
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent.trim();
-        return text ? `${'  '.repeat(depth)}"${text}"\n` : '';
+        if (text) chunks.push(`${'  '.repeat(depth)}"${text}"\n`);
+        return;
       }
 
-      if (node.nodeType !== Node.ELEMENT_NODE) return '';
-      if (clean && IGNORED_TAGS.has(node.tagName)) return '';
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (clean && IGNORED_TAGS.has(node.tagName)) return;
 
       nodeCount++;
       const tag = node.tagName.toLowerCase();
@@ -43,17 +46,16 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
       if (node.getAttribute('role')) meta += ` [role="${node.getAttribute('role')}"]`;
       if (node.getAttribute('aria-label')) meta += ` [label="${node.getAttribute('aria-label')}"]`;
 
-      let output = `${'  '.repeat(depth)}<${meta}>\n`;
+      chunks.push(`${'  '.repeat(depth)}<${meta}>\n`);
       for (const child of node.childNodes) {
-        output += traverse(child, depth + 1);
+        traverse(child, depth + 1);
       }
-      return output;
     }
 
-    const tree = traverse(document.body || document.documentElement, 0);
+    traverse(document.body || document.documentElement, 0);
     return {
       success: true,
-      dom: tree,
+      dom: chunks.join(''),
       totalNodes: nodeCount,
       url: window.location.href,
       title: document.title
