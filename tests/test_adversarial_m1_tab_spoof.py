@@ -1,7 +1,7 @@
 """Testes adversariais de violação de posse de abas e spoofing de sessão no router.
 
 Valida que requisições concorrentes de agentes rivais não conseguem acessar
-abas alheias e que a criação concorrente de abas garante posse estrita.
+    abas alheias e que a criação não concede posse implicitamente.
 """
 from __future__ import annotations
 import asyncio
@@ -60,6 +60,10 @@ def test_adversarial_concurrent_tab_creation_ownership() -> None:
             tab_id = 2000 + idx
             res = await router.dispatch("browser_manage_tabs", {"action": "new", "url": f"https://site.com/{tab_id}"}, session_id=sid)
             assert res.get("isError") is not True
+            # A posse exige atribuição humana explícita no popup.
+            sess = session_manager.get_session(sid)
+            assert sess is None or not sess.has_tab(tab_id)
+            session_manager.assign_tab_to_session(sid, tab_id)
             assert session_manager.validate_tab_access(sid, tab_id) is True
             assert session_manager.validate_tab_access(f"other_{sid}", tab_id) is False
 

@@ -21,7 +21,9 @@ def test_schemas_formal_integrity_and_uniqueness() -> None:
 
     names = [t["name"] for t in all_tools]
     assert len(names) == len(set(names)), "Existem nomes de ferramentas duplicados"
-    assert len(all_tools) == 15, f"Esperado exatamente 15 ferramentas MCP, obtido {len(all_tools)}"
+    assert len(all_tools) == 17, f"Esperado exatamente 17 ferramentas MCP, obtido {len(all_tools)}"
+    assert "computer_folder_action" in [tool["name"] for tool in all_tools]
+    assert "computer_window_action" in names
 
     for tool in all_tools:
         assert tool["name"].startswith(("computer_", "browser_"))

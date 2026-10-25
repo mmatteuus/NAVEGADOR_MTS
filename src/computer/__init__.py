@@ -24,6 +24,7 @@ from .mouse_background import (
     post_mouse_move, post_mouse_scroll, reset_agent_cursors,
 )
 from .keyboard_background import post_key_press, post_keyboard_type
+from .window_assignments import window_assignments
 
 ensure_thread_desktop()
 
@@ -67,11 +68,23 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
             ax, ay = get_agent_cursor_position(session_id=sid)
             return {"success": True, "data": {"x": ax, "y": ay, "sessionId": sid or "default"}}
 
+        if act in ("window_action", "uia"):
+            from .window_action import execute
+            return {"success": True, "data": execute(sid, params)}
+
         # Validação mandatória Fail-Closed antes de qualquer extração de parâmetros
         safety_gate.check_authorization(f"computer_{act}")
         bg, hwnd = bool(params.get("background", True)), params.get("hwnd")
+        if sid and not bg:
+            raise ValueError("PHYSICAL_INPUT_FORBIDDEN: sessão remota exige modo background")
+        if bg and sid:
+            # Sessões remotas só operam em janela concedida pela UI humana.
+            hwnd = window_assignments.resolve(sid, hwnd)
 
         if act in ("screenshot", "screen"):
+            if sid and bg:
+                from .window_capture import capture
+                return {"success": True, "data": capture(sid, hwnd, params.get("format", "png"))}
             return {
                 "success": True,
                 "data": capture_screen(
@@ -118,11 +131,11 @@ def execute_computer_action(action: str, params: Dict[str, Any] = None) -> Dict[
             return {"success": True, "data": res}
         if act in ("keyboard_type", "type"):
             txt, dly = str(params["text"]), int(params.get("delayMs", 5))
-            res = post_keyboard_type(txt, delay_ms=dly, hwnd=hwnd) if bg else type_text(txt, delay_ms=dly)
+            res = post_keyboard_type(txt, delay_ms=dly, hwnd=hwnd, session_id=sid) if bg else type_text(txt, delay_ms=dly)
             return {"success": True, "data": res}
         if act in ("key_press", "press_key", "key"):
             k, mods = str(params["key"]), params.get("modifiers")
-            res = post_key_press(k, modifiers=mods, hwnd=hwnd) if bg else press_key(k, modifiers=mods)
+            res = post_key_press(k, modifiers=mods, hwnd=hwnd, session_id=sid) if bg else press_key(k, modifiers=mods)
             return {"success": True, "data": res}
         if act in ("launch_app", "open_app", "launch"):
             target = str(params.get("app", params.get("path", "excel")))

@@ -9,33 +9,48 @@ import { isAutomationEnabled, incrementCommandCount } from './state_storage.js';
 import { navigate, newTab, closeTab, switchTab, goBack, goForward } from './tab_manager.js';
 import { requireGranted, targetId, popupGrantState, isGrantableUrl } from './tab_access.js';
 import { captureTabScreenshot } from './screenshot_capture.js';
-import { sendMessage } from './ws_client.js';
+import { sendMessage, getConnectionToken } from './ws_client.js';
 import { evaluatePageScript } from './page_script_executor.js';
 import { requireContentSuccess } from './content_response.js';
 import { enqueueSessionCommand } from './session_queues.js';
-import { assignTabToSession, assignWindowToSession, releaseTabFromSession } from './session_registry.js';
+import { releaseTabFromSession } from './session_registry.js';
 import { getSessionCookies, setSessionCookie, clearSessionCookies, clearSessionStorage } from './cookie_isolator.js';
+import { isUpdateAdmissionBlocked } from './ws_update.js';
 
 export function dispatchIncomingCommand(message) {
   const reqId = message.id || message.payload?.requestId || message.params?.requestId || `cmd_${Date.now()}`;
   const sessionId = message.sessionId || message.payload?.sessionId || message.params?.sessionId || null;
   const action = message.action || message.type || '', params = message.payload || message.params || {};
+  const connectionToken = getConnectionToken();
+  if (isUpdateAdmissionBlocked()) {
+    const response = buildActionResponse(reqId, false, null, 'EXTENSION_UPDATE_PENDING: aguardando recarga segura.');
+    if (sessionId) response.sessionId = sessionId;
+    sendMessage(response, connectionToken);
+    return;
+  }
 
-  enqueueSessionCommand(sessionId, async () => {
+  const queued = enqueueSessionCommand(sessionId, async () => {
     try {
       if (!(await isAutomationEnabled())) throw new Error('Automação web desativada pelo usuário no painel do BROWSER MTS.');
       logger.info(`Executando comando '${action}' (ID: ${reqId}, Sessão: ${sessionId || 'global'}).`);
+      if (getConnectionToken() !== connectionToken) throw new Error('CONNECTION_CHANGED: comando pendente descartado.');
       const result = await routeAction(action, params, sessionId);
       await incrementCommandCount();
       const resp = buildActionResponse(reqId, true, result, null);
       if (sessionId) resp.sessionId = sessionId;
-      sendMessage(resp);
+      sendMessage(resp, connectionToken);
     } catch (err) {
       logger.error(`Falha na execução de '${action}':`, err.message);
       const resp = buildActionResponse(reqId, false, null, err.message);
       if (sessionId) resp.sessionId = sessionId;
-      sendMessage(resp);
+    sendMessage(resp, connectionToken);
     }
+  });
+  queued.catch((err) => {
+    logger.error(`Falha inesperada na fila de '${action}':`, err?.message || err);
+    const resp = buildActionResponse(reqId, false, null, err?.message || 'Falha interna na fila.');
+    if (sessionId) resp.sessionId = sessionId;
+    sendMessage(resp, connectionToken);
   });
 }
 
@@ -58,15 +73,11 @@ async function createTab(url, active, sid, incognito = false) {
   if (incognito && typeof chrome !== 'undefined' && chrome.windows?.create) {
     const win = await chrome.windows.create({ url: url || 'about:blank', incognito: true, focused: active === true });
     const tab = win.tabs?.[0] || { id: win.id };
-    if (sid) {
-      if (win.id != null) assignWindowToSession(sid, win.id);
-      if (tab.id != null) assignTabToSession(sid, tab.id);
-    }
-    return { success: true, tabId: tab.id, windowId: win.id, incognito: true, url };
+    return { success: true, tabId: tab.id, windowId: win.id, incognito: true, url,
+      requiresAssignment: true };
   }
   const tab = await newTab(url, active === true);
-  if (sid && (tab?.tabId || tab?.id)) assignTabToSession(sid, tab.tabId || tab.id);
-  return tab;
+  return { ...tab, requiresAssignment: true };
 }
 
 const removeTab = async (tid, sid) => {
@@ -113,9 +124,12 @@ async function sendToContentScript(action, params, sid) {
   const targetTab = await requireGranted(params.tabId, sid);
   try {
     return requireContentSuccess(await chrome.tabs.sendMessage(targetTab.id, { action, params }));
-  } catch (_err) {
+  } catch (err) {
+    const missingReceiver = /receiving end|Could not establish connection|Receiving end does not exist/i.test(String(err?.message || err));
+    if (!missingReceiver) throw err;
     logger.warn(`Injetando content scripts dinamicamente na aba ID ${targetTab.id}...`);
     await chrome.scripting.executeScript({ target: { tabId: targetTab.id }, files: CS_FILES });
+    await requireGranted(params.tabId, sid);
     return requireContentSuccess(await chrome.tabs.sendMessage(targetTab.id, { action, params }));
   }
 }

@@ -19,6 +19,8 @@ class WebSocketBridge:
         self.server: Optional[Server] = None
         self.registry = WSSessionRegistry()
         self._pending_requests: Dict[str, asyncio.Future] = {}
+        self._request_sockets: Dict[str, Any] = {}
+        self._agent_sessions: Dict[Any, str] = {}
         self.last_latency_ms: float = 0.0
         self._reload_policy = ExtensionReloadPolicy(APP_VERSION)
 
@@ -35,7 +37,7 @@ class WebSocketBridge:
         sock = self.registry.get_active_extension()
         if sock:
             try:
-                await sock.send(json.dumps({"type": "reload_extension"}))
+                await sock.send(json.dumps({"type": "reload_extension", "payload": {"desktopVersion": APP_VERSION}}))
                 return True
             except Exception: pass
         return False
@@ -60,6 +62,8 @@ class WebSocketBridge:
         for fut in self._pending_requests.values():
             if not fut.done(): fut.cancel()
         self._pending_requests.clear()
+        self._request_sockets.clear()
+        self._agent_sessions.clear()
         sock = self.registry.get_active_extension()
         if sock: await sock.close()
         self.registry.clear()
@@ -72,7 +76,13 @@ class WebSocketBridge:
         try:
             async for raw in websocket: await self._process_incoming_message(raw, websocket)
         except Exception as exc: logger.warning(f"Conexão encerrada: {exc}")
-        finally: self.registry.unregister(websocket)
+        finally:
+            self.registry.unregister(websocket)
+            self._agent_sessions.pop(websocket, None)
+            for request, owner in list(self._request_sockets.items()):
+                future = self._pending_requests.get(request)
+                if owner is websocket and future and not future.done():
+                    future.set_exception(ConnectionError("EXTENSION_DISCONNECTED: conexão encerrada durante a ação."))
 
     async def _process_incoming_message(self, raw_msg: str, websocket: Any) -> None:
         try: data = json.loads(raw_msg)
@@ -90,9 +100,12 @@ class WebSocketBridge:
             raise ConnectionError(f"EXTENSION_NOT_CONNECTED: Extensão do navegador não conectada na porta {self.port}.")
         req_id, fut = f"cmd_{uuid.uuid4().hex[:12]}", asyncio.get_running_loop().create_future()
         self._pending_requests[req_id] = fut
+        self._request_sockets[req_id] = sock
         msg = {"id": req_id, "type": "execute_action", "action": action, "payload": params, "timestamp": int(time.time() * 1000)}
         if session_id: msg["sessionId"] = session_id
         try:
             await sock.send(json.dumps(msg))
             return await asyncio.wait_for(fut, timeout=timeout)
-        finally: self._pending_requests.pop(req_id, None)
+        finally:
+            self._pending_requests.pop(req_id, None)
+            self._request_sockets.pop(req_id, None)

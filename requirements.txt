@@ -3,8 +3,9 @@ customtkinter>=5.2.0
 pywinstyles>=1.8.0
 pystray>=0.19.5
 winotify>=1.1.0
-pillow>=10.0.0
+pillow>=11.2.1
 psutil>=5.9.0
+pywinauto>=0.6.9; sys_platform == "win32"
 websockets>=13.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0

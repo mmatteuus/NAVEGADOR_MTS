@@ -41,18 +41,14 @@ class MCPToolRouter:
     ) -> Dict[str, Any]:
         """Despacha a ferramenta solicitada para o executor correspondente com defesa anti-forja."""
         trusted_sid = session_id or get_current_session_id()
-
-        forged_sid = arguments.get("sessionId")
-        if forged_sid is None:
-            forged_sid = arguments.get("session_id")
-
-        if forged_sid is not None:
-            if trusted_sid:
-                if str(forged_sid).strip() != str(trusted_sid).strip():
-                    logger.warning(f"FORGERY BLOCKED: Tentativa de forja {forged_sid} sob transporte {trusted_sid}")
-                    return format_mcp_error("Acesso recusado: Tentativa de forja de sessão detectada (sessionId nos argumentos).")
-            else:
-                trusted_sid = str(forged_sid).strip()
+        arg_sids = [arguments[key] for key in ("sessionId", "session_id") if key in arguments]
+        if len(arg_sids) > 1 and str(arg_sids[0]).strip() != str(arg_sids[1]).strip():
+            return format_mcp_error("Acesso recusado: aliases de sessão divergentes.")
+        if arg_sids:
+            if not trusted_sid or str(arg_sids[0]).strip() != str(trusted_sid).strip():
+                logger.warning("FORGERY BLOCKED: identidade de sessão nos argumentos não é confiável")
+                return format_mcp_error("Acesso recusado: Tentativa de forja de sessão detectada (identidade não confiável).")
+            trusted_sid = str(trusted_sid).strip()
 
         clean_args = {k: v for k, v in arguments.items() if k not in ("sessionId", "session_id")}
         if trusted_sid:
@@ -83,19 +79,14 @@ class MCPToolRouter:
             except (ValueError, TypeError):
                 pass
 
-        try:
-            res = await self.ws_bridge.send_action(name, args, session_id=session_id)
-        except TypeError:
-            res = await self.ws_bridge.send_action(name, args)
+        res = await self.ws_bridge.send_action(name, args, session_id=session_id)
 
         if isinstance(res, dict) and res.get("success") is False:
             return format_mcp_error(str(res.get("error", "Falha na extensão")))
 
-        if ((name == "browser_manage_tabs" and args.get("action") == "new") or name == "browser_new_tab") and session_id:
-            tid = session_manager.extract_tab_id(res)
-            if tid is not None:
-                session_manager.assign_tab_to_session(session_id, tid)
-        elif name == "browser_manage_tabs" and args.get("action") == "close":
+        # Criação não concede posse: somente a atribuição humana no popup pode
+        # vincular a aba a uma sessão. Fechamento ainda limpa posse existente.
+        if name == "browser_manage_tabs" and args.get("action") == "close":
             close_tid = args.get("tabId")
             if close_tid is not None:
                 try:

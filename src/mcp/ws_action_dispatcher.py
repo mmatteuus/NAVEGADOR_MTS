@@ -4,10 +4,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import time
 from typing import Any, Callable, Dict, Optional
-from ..core.updater import APP_VERSION
 from .session_manager import session_manager
+from .ws_protocol import handle_incoming_envelope
 
 logger = logging.getLogger("BrowserMTS.WSDispatcher")
 
@@ -28,44 +27,6 @@ def resolve_pending_request(data: Dict[str, Any], pending_requests: Dict[str, as
                 fut.set_exception(RuntimeError(str(p["error"])))
             else:
                 fut.set_result(p.get("result", p.get("data", {})))
-
-
-async def handle_incoming_envelope(data: Dict[str, Any], websocket: Any, bridge: Any) -> None:
-    """Interpreta envelopes JSON da extensão ou de agentes externos de IA."""
-    if not isinstance(data, dict):
-        logger.warning(f"Envelope JSON inválido recebido (esperado dict, recebido {type(data).__name__})")
-        return
-    mtype = data.get("type")
-    if not isinstance(mtype, str):
-        return
-    if mtype == "client_hello":
-        raw_info = data.get("payload")
-        info = raw_info if isinstance(raw_info, dict) else {}
-        bridge.registry.register_extension(websocket, info)
-        outdated = bridge._reload_policy.is_outdated(info)
-        reply = {"type": "server_hello", "payload": {
-            "status": "connected", "desktopVersion": APP_VERSION, "heartbeatIntervalMs": 4000,
-            "reloadRequired": bridge._reload_policy.should_reload(info),
-            "extensionUpdateRequired": outdated,
-            "extensionUpdateMessage": (
-                "A extensão antiga foi recarregada. Se continuar desatualizada, remova a extensão carregada de outra pasta "
-                "e carregue a pasta extension instalada junto ao NAVEGADOR MTS."
-                if outdated else ""
-            )
-        }}
-        await websocket.send(json.dumps(reply))
-    elif mtype == "ping":
-        ts = data.get("ts", int(time.time() * 1000))
-        await websocket.send(json.dumps({"type": "pong", "ts": ts, "serverTs": int(time.time() * 1000)}))
-    elif mtype == "pong":
-        cts = data.get("clientTs", 0)
-        if cts > 0:
-            bridge.last_latency_ms = max(0.0, (time.time() * 1000) - cts)
-    elif mtype in ("messageResponse", "browser_response"):
-        resolve_pending_request(data, bridge._pending_requests)
-    elif mtype == "agent_action":
-        bridge.registry.register_agent(websocket)
-        await dispatch_agent_action(data, websocket, bridge.send_action)
 
 
 async def dispatch_agent_action(
@@ -119,11 +80,7 @@ async def dispatch_agent_action(
                 res = await send_action_cb(act, clean_params, session_id=session_id)
 
             if act == "browser_manage_tabs" and session_id:
-                if clean_params.get("action") == "new":
-                    tid = session_manager.extract_tab_id(res)
-                    if tid is not None:
-                        session_manager.assign_tab_to_session(session_id, tid)
-                elif clean_params.get("action") == "close":
+                if clean_params.get("action") == "close":
                     close_id = clean_params.get("tabId")
                     if close_id is not None:
                         try:

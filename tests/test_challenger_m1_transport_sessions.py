@@ -26,8 +26,6 @@ def _get_free_port() -> int:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
-
-
 def test_adversarial_http_streamable_automatic_session_emission():
     """Dois clientes HTTP no handshake initialize recebem sessões distintas e operam isolados."""
     async def _run():
@@ -53,7 +51,10 @@ def test_adversarial_http_streamable_automatic_session_emission():
                              "params": {"name": "browser_manage_tabs", "arguments": {"action": "new", "url": "https://a.com"}}}
                 async with cli.post(url, json=new_tab_p, headers={"Mcp-Session-Id": sid1}) as r:
                     assert (await r.json())["result"]["isError"] is False
-                assert session_manager.get_session(sid1).has_tab(501) is True
+                assert not session_manager.get_session(sid1).has_tab(501)
+                # Simula a atribuição explícita feita pelo popup.
+                session_manager.assign_tab_to_session(sid1, 501)
+                assert session_manager.validate_tab_access(sid1, 501) is True
                 nav_p = {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                          "params": {"name": "browser_navigate", "arguments": {"tabId": 501, "url": "https://evil.com"}}}
                 async with cli.post(url, json=nav_p, headers={"Mcp-Session-Id": sid2}) as r:
@@ -63,8 +64,6 @@ def test_adversarial_http_streamable_automatic_session_emission():
             await http_srv.stop()
             session_manager.clear()
     asyncio.run(_run())
-
-
 def test_adversarial_active_session_forgery_denial():
     """Agente B tenta injetar sessionId de Agente A nos argumentos e é sumariamente negado."""
     async def _run():
@@ -76,6 +75,7 @@ def test_adversarial_active_session_forgery_denial():
         await http_srv.start()
         try:
             session_manager.assign_tab_to_session("sess_A", 101)
+            await session_manager.get_or_create_session("sess_B")
             async with ClientSession() as cli:
                 url = f"http://127.0.0.1:{port}/mcp"
                 forge_p = {"jsonrpc": "2.0", "id": 10, "method": "tools/call",
@@ -95,8 +95,6 @@ def test_adversarial_active_session_forgery_denial():
             await http_srv.stop()
             session_manager.clear()
     asyncio.run(_run())
-
-
 def test_adversarial_multiple_stdio_processes_concurrency():
     """Múltiplos processos stdio geram identificadores distintos e operam sem colisão."""
     async def _run():
@@ -112,6 +110,7 @@ def test_adversarial_multiple_stdio_processes_concurrency():
                     "params": {"name": "browser_manage_tabs", "arguments": {"action": "new", "url": "https://p2.org"}}}
             res1, res2 = await asyncio.gather(srv1.handle_jsonrpc(req1), srv2.handle_jsonrpc(req2))
             assert res1["result"]["isError"] is False and res2["result"]["isError"] is False
+            session_manager.assign_tab_to_session(srv1.process_session_id, 501)
             nav_req2 = {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                         "params": {"name": "browser_navigate", "arguments": {"tabId": 501, "url": "https://hack.org"}}}
             res_denied = await srv2.handle_jsonrpc(nav_req2)
@@ -119,10 +118,8 @@ def test_adversarial_multiple_stdio_processes_concurrency():
         finally:
             session_manager.clear()
     asyncio.run(_run())
-
-
 def test_adversarial_legacy_request_without_session_fallback():
-    """Requisição legada sem cabeçalho nem sessionId opera sobre abas gerais com sucesso."""
+    """Requisição sem sessão não assume a identidade de outro chat no processo."""
     async def _run():
         session_manager.clear()
         port = _get_free_port()
@@ -135,14 +132,14 @@ def test_adversarial_legacy_request_without_session_fallback():
                 req = {"jsonrpc": "2.0", "id": 50, "method": "tools/call",
                        "params": {"name": "browser_navigate", "arguments": {"tabId": 9999, "url": "https://legacy.org"}}}
                 async with cli.post(url, json=req) as r:
-                    assert r.status == 200 and "Mcp-Session-Id" not in r.headers
-                    assert (await r.json())["result"]["isError"] is False
+                    assert r.status == 400 and "Mcp-Session-Id" not in r.headers
+                    assert "SESSION_REQUIRED" in (await r.json())["error"]["message"]
                 session_manager.assign_tab_to_session("sess_privada", 8888)
                 req_priv = {"jsonrpc": "2.0", "id": 51, "method": "tools/call",
                             "params": {"name": "browser_navigate", "arguments": {"tabId": 8888, "url": "https://bypass.org"}}}
                 async with cli.post(url, json=req_priv) as r:
-                    res_priv = (await r.json())["result"]
-                    assert res_priv["isError"] is True and "Acesso recusado" in res_priv["content"][0]["text"]
+                    assert r.status == 400
+                    assert "SESSION_REQUIRED" in (await r.json())["error"]["message"]
         finally:
             await http_srv.stop()
             session_manager.clear()

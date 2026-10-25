@@ -11,6 +11,7 @@ window.popupUI = (function () {
     toggle: document.getElementById('automation-toggle'),
     toggleDesc: document.getElementById('toggle-desc'),
     version: document.getElementById('extension-version'),
+    updateState: document.getElementById('extension-update-state'),
     led: document.getElementById('status-led'),
     statusText: document.getElementById('status-text'),
     latencyText: document.getElementById('latency-text'),
@@ -116,6 +117,12 @@ window.popupUI = (function () {
       elements.portText.textContent = `ws://127.0.0.1:${port}`;
     }
   }
+  function updateExtensionUpdateState(state = {}) {
+    if (!elements.updateState) return;
+    const labels = { pending: 'Atualização aguardando comandos', reloading: 'Recarregando extensão...',
+      confirmed: 'Extensão atualizada', error: `Atualização: ${state.error || 'verificação necessária'}` };
+    elements.updateState.textContent = labels[state.status] || '';
+  }
 
   return {
     elements,
@@ -123,6 +130,7 @@ window.popupUI = (function () {
     updateToggleDisplay,
     updateSafetyDisplay,
     updateCommandsCount,
-    updatePortDisplay
+    updatePortDisplay,
+    updateExtensionUpdateState
   };
 })();

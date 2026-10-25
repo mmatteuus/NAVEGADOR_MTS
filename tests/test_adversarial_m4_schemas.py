@@ -16,7 +16,8 @@ def test_mcp_tools_counts_and_naming_integrity() -> None:
     computer_tools = get_computer_tools()
 
     assert len(browser_tools) == 10, f"Esperava 10 browser tools, obteve {len(browser_tools)}"
-    assert len(computer_tools) == 5, f"Esperava 5 computer tools, obteve {len(computer_tools)}"
+    assert len(computer_tools) == 7, f"Esperava 7 computer tools, obteve {len(computer_tools)}"
+    assert {"computer_window_action", "computer_folder_action"} <= {tool["name"] for tool in computer_tools}
 
     for tool in browser_tools:
         assert tool["name"].startswith("browser_"), f"Nome inválido: {tool['name']}"

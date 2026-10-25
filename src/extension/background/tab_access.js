@@ -1,20 +1,14 @@
-/**
- * @file tab_access.js
- * @description Controle de permissões e concessões de abas com isolamento por sessão.
- */
 import { validateTabAccess, getSessionForTab, getTabsForSession,
-  claimGrantedTab, restoreGrantedTab, releaseGrantedTab } from './session_registry.js';
-import { isGrantedClaim } from './session_registry.js';
-
+  claimGrantedTab, releaseGrantedTab } from './session_registry.js';
+import { reassignGrantedTab } from './session_registry.js';
+import { getAgentDirectory } from './agent_directory.js';
+import { openGrantedTab as openTab } from './tab_open.js';
+import { createOwnerPersistence } from './tab_assignment_persistence.js';
 const KEY = 'browser_mts_session_tab_grants';
 const OWNERS_KEY = 'browser_mts_popup_tab_owners';
 let mutationQueue = Promise.resolve();
-let ownersLoaded = false;
-let ownersLoading = null;
-
 export const isGrantableUrl = (url) => /^https?:\/\//i.test(String(url || ''));
 const popupUrl = () => chrome.runtime.getURL('popup/popup.html');
-
 function mutate(task) {
   const r = mutationQueue.then(task, task);
   mutationQueue = r.catch(() => {});
@@ -28,28 +22,8 @@ const write = async (ids) => {
   await chrome.storage.session.set({ [KEY]: [...new Set(ids.map(Number))] });
   return read();
 };
-async function loadOwners() {
-  if (ownersLoaded) return;
-  if (!ownersLoading) ownersLoading = (async () => {
-    const [data, ids, live] = await Promise.all([
-      chrome.storage.session.get(OWNERS_KEY), read(), chrome.tabs.query({})
-    ]);
-    const allowed = new Set(ids), liveIds = new Set(live.filter(t => isGrantableUrl(t.url)).map(t => t.id));
-    const owners = data[OWNERS_KEY] && typeof data[OWNERS_KEY] === 'object' ? data[OWNERS_KEY] : {};
-    Object.entries(owners).forEach(([id, sid]) => {
-      const tid = Number(id);
-      if (sid && allowed.has(tid) && liveIds.has(tid)) restoreGrantedTab(String(sid), tid);
-    });
-    ownersLoaded = true;
-  })();
-  await ownersLoading;
-}
-async function saveOwners() {
-  const owners = {};
-  for (const id of await read()) { const sid = getSessionForTab(id); if (sid && isGrantedClaim(id)) owners[id] = sid; }
-  await chrome.storage.session.set({ [OWNERS_KEY]: owners });
-}
-
+const ownerStore = createOwnerPersistence({ key: OWNERS_KEY, grantKey: KEY, read, isGrantableUrl });
+const { loadOwners, saveOwners } = ownerStore;
 async function pruneGrants() {
   await loadOwners();
   const ids = await read(), live = await chrome.tabs.query({});
@@ -61,7 +35,6 @@ async function pruneGrants() {
   return valid;
 }
 export async function grantedTabs() { return mutate(pruneGrants); }
-
 export async function grantFromPopup(msg, sender) {
   if (!sender || sender.url !== popupUrl()) throw new Error('GRANT_FORBIDDEN');
   const tabs = Array.isArray(msg.tabIds) ? msg.tabIds : [];
@@ -73,6 +46,36 @@ export async function grantFromPopup(msg, sender) {
     const keep = saved.filter(id => after.some(t => t.id === id));
     before.filter(id => !keep.includes(id)).forEach(releaseGrantedTab);
     await write(keep); await saveOwners(); return read();
+  });
+}
+export async function assignFromPopup(msg, sender) {
+  if (!sender || sender.url !== popupUrl()) throw new Error('GRANT_FORBIDDEN');
+  const assignments = Array.isArray(msg.assignments) ? msg.assignments : [];
+  return mutate(async () => {
+    await loadOwners();
+    const revocations = Array.isArray(msg.revocations) ? msg.revocations : [];
+    for (const item of revocations) {
+      const id = Number(item?.tabId), expected = String(item?.expectedSessionId || '');
+      if (getSessionForTab(id) !== (expected || null)) throw new Error('AGENT_ASSIGNMENT_STALE');
+    }
+    const agents = new Set(getAgentDirectory().filter(a => a.connected).map(a => a.sessionId));
+    const live = await chrome.tabs.query({});
+    const byId = new Map(live.map(tab => [tab.id, tab]));
+    for (const item of assignments) {
+      const id = Number(item?.tabId), sid = String(item?.sessionId || '');
+      if (!Number.isInteger(id) || !byId.has(id)) throw new Error('TAB_NOT_FOUND');
+      if (!isGrantableUrl(byId.get(id).url)) throw new Error('TAB_NOT_ALLOWED');
+      if (!agents.has(sid)) throw new Error('AGENT_NOT_AVAILABLE');
+      const expected = String(item?.expectedSessionId || '');
+      if (getSessionForTab(id) !== (expected || null)) throw new Error('AGENT_ASSIGNMENT_STALE');
+    }
+    const before = await read(), ids = new Set(before), owners = ownerStore.ownersFor(before);
+    revocations.forEach(item => { const id = Number(item.tabId); ids.delete(id); delete owners[id]; });
+    assignments.forEach(item => { const id = Number(item.tabId); ids.add(id); owners[id] = String(item.sessionId); });
+    await ownerStore.saveState([...ids], owners);
+    revocations.forEach(item => releaseGrantedTab(Number(item.tabId)));
+    assignments.forEach(item => reassignGrantedTab(item.sessionId, item.tabId));
+    return read();
   });
 }
 export async function targetId(requested, sessionId = null) {
@@ -104,7 +107,6 @@ export async function requireGranted(requested, sessionId = null) {
   if (!tab || tab.id !== id || !isGrantableUrl(tab.url)) { await revoke(id); throw new Error('TAB_NOT_ALLOWED'); }
   return tab;
 }
-
 export async function revoke(id) {
   return mutate(async () => { await loadOwners(); releaseGrantedTab(id); const next = (await read()).filter(item => item !== Number(id));
     await write(next); await saveOwners(); return next;
@@ -116,20 +118,10 @@ const toState = (tabs, ids, sid = null) => tabs
   .map(t => ({
     id: t.id, windowId: t.windowId, title: t.title || '', url: t.url || '',
     active: !!t.active, allowedForAgent: sid ? (ids.includes(t.id) || getSessionForTab(t.id) === sid) : (ids.includes(t.id) || !!getSessionForTab(t.id)),
-    selectable: isGrantableUrl(t.url)
+    selectable: isGrantableUrl(t.url), sessionId: getSessionForTab(t.id)
   }));
-
 export async function openGrantedTab(message, sender) {
-  if (!sender || sender.url !== popupUrl()) throw new Error('GRANT_FORBIDDEN');
-  const url = String(message.url || '').trim();
-  let p;
-  try { p = new URL(url); } catch (_) { throw new Error('URL_NOT_ALLOWED'); }
-  if (!['http:', 'https:'].includes(p.protocol) || p.username || p.password) throw new Error('URL_NOT_ALLOWED');
-  return mutate(async () => {
-    const tab = await chrome.tabs.create({ url, active: false });
-    if (!tab?.id || !Number.isInteger(tab.id)) throw new Error('TAB_CREATE_FAILED');
-    return toState(await chrome.tabs.query({}), await write([...(await read()), tab.id]));
-  });
+  return openTab(message, sender, { popupUrl, mutate, read, write, toState });
 }
 export async function popupGrantState(currOnly = false, sid = null) {
   return toState(await chrome.tabs.query(currOnly ? { currentWindow: true } : {}), await grantedTabs(), sid);

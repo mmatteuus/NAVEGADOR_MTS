@@ -16,12 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const { automationEnabled, connectionStatus, latencyMs, computerUseAllowed, totalCommands, activePort } = response.data;
+    const { automationEnabled, connectionStatus, latencyMs, computerUseAllowed, totalCommands, activePort, updateState } = response.data;
     ui.updateToggleDisplay(automationEnabled);
     ui.updateConnectionDisplay(connectionStatus, latencyMs);
     ui.updateSafetyDisplay(computerUseAllowed);
     ui.updateCommandsCount(totalCommands);
     if (activePort) ui.updatePortDisplay(activePort);
+    ui.updateExtensionUpdateState(updateState);
   });
 
   // 2. Manipula o clique no interruptor de automação
@@ -30,8 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const isChecked = e.target.checked;
       ui.updateToggleDisplay(isChecked);
 
-      chrome.runtime.sendMessage({ type: 'TOGGLE_AUTOMATION', enabled: isChecked }, () => {
-        if (!isChecked) {
+      chrome.runtime.sendMessage({ type: 'TOGGLE_AUTOMATION', enabled: isChecked }, (response) => {
+        if (!response?.success) ui.updateToggleDisplay(false);
+        else ui.updateToggleDisplay(response.enabled);
+        if (response?.success && !response.enabled) {
           ui.updateConnectionDisplay('disconnected', 0);
         }
       });
@@ -70,6 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (changes.browser_mts_active_port) {
       ui.updatePortDisplay(changes.browser_mts_active_port.newValue);
+    }
+    if (changes.browser_mts_extension_update_state) {
+      ui.updateExtensionUpdateState(changes.browser_mts_extension_update_state.newValue);
     }
   });
 });

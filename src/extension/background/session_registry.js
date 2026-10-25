@@ -37,6 +37,13 @@ export function claimGrantedTab(sessionId, tabId) {
   return true;
 }
 
+/** Reassociação explícita feita somente pela UI do popup. */
+export function reassignGrantedTab(sessionId, tabId) {
+  const tid = Number(tabId), owner = getSessionForTab(tid);
+  if (owner && owner !== String(sessionId)) releaseTabFromSession(tid);
+  claimGrantedTab(sessionId, tid);
+}
+
 export function restoreGrantedTab(sessionId, tabId) {
   if (!getSessionForTab(tabId)) claimGrantedTab(sessionId, tabId);
 }

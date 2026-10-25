@@ -9,18 +9,47 @@
 import { STORAGE_KEYS, CONNECTION_STATE } from '../common/constants.js';
 import { logger } from '../common/logger.js';
 
+let automationState = true;
+let automationBlocked = false;
+let transition = Promise.resolve();
+let transitionId = 0;
+const SESSION_BLOCK_KEY = 'browser_mts_automation_blocked_session';
+
+async function sessionBlock() {
+  if (!chrome.storage.session?.get) return false;
+  const data = await chrome.storage.session.get(SESSION_BLOCK_KEY);
+  return data?.[SESSION_BLOCK_KEY] === true;
+}
+async function setSessionBlock(blocked) {
+  if (!chrome.storage.session?.set) return;
+  await chrome.storage.session.set({ [SESSION_BLOCK_KEY]: !!blocked });
+}
+function enqueue(operation) {
+  const result = transition.then(operation, operation);
+  transition = result.catch(() => {});
+  return result;
+}
+
 /**
  * Consulta se a automação web está autorizada pelo usuário.
  * @returns {Promise<boolean>} Verdadeiro se a chave estiver ligada (padrão true).
  */
 export async function isAutomationEnabled() {
-  try {
-    const data = await chrome.storage.local.get(STORAGE_KEYS.AUTOMATION_ENABLED);
-    return data[STORAGE_KEYS.AUTOMATION_ENABLED] !== false;
-  } catch (err) {
-    logger.error('Falha ao ler permissão de automação do storage:', err);
-    return true;
-  }
+  const id = transitionId;
+  return enqueue(async () => {
+    if (automationBlocked || id !== transitionId) return false;
+    try { if (await sessionBlock()) return false; }
+    catch (err) { automationBlocked = true; automationState = false; return false; }
+    try {
+      const data = await chrome.storage.local.get(STORAGE_KEYS.AUTOMATION_ENABLED);
+      if (id !== transitionId || automationBlocked) return false;
+      automationState = data[STORAGE_KEYS.AUTOMATION_ENABLED] !== false;
+      return automationState;
+    } catch (err) {
+      logger.error('Falha ao ler permissão de automação do storage:', err);
+      automationState = false; return false;
+    }
+  });
 }
 
 /**
@@ -28,12 +57,33 @@ export async function isAutomationEnabled() {
  * @param {boolean} enabled - Novo estado do interruptor.
  */
 export async function setAutomationEnabled(enabled) {
-  try {
-    await chrome.storage.local.set({ [STORAGE_KEYS.AUTOMATION_ENABLED]: !!enabled });
-    logger.info(`Automação web ${enabled ? 'HABILITADA' : 'DESABILITADA'} pelo usuário.`);
-  } catch (err) {
-    logger.error('Erro ao persistir estado de automação:', err);
-  }
+  const desired = !!enabled;
+  const id = ++transitionId;
+  if (!desired) { automationState = false; automationBlocked = true; }
+  return enqueue(async () => {
+    if (id !== transitionId) return automationState;
+    try {
+      if (!desired) {
+        let failure = null;
+        try { await setSessionBlock(true); } catch (err) { failure = err; }
+        try { await chrome.storage.local.set({ [STORAGE_KEYS.AUTOMATION_ENABLED]: false }); }
+        catch (err) { failure = failure || err; }
+        if (failure) throw failure;
+      } else {
+        await chrome.storage.local.set({ [STORAGE_KEYS.AUTOMATION_ENABLED]: true });
+        await setSessionBlock(false);
+      }
+      if (id !== transitionId) return automationState;
+      automationState = desired; automationBlocked = !desired;
+      logger.info(`Automação web ${desired ? 'HABILITADA' : 'DESABILITADA'} pelo usuário.`);
+      return automationState;
+    } catch (err) {
+      logger.error('Erro ao persistir estado de automação:', err);
+      automationState = false; automationBlocked = true;
+      await setSessionBlock(true).catch(() => {});
+      throw new Error('AUTOMATION_STATE_PERSIST_FAILED');
+    }
+  });
 }
 
 /**

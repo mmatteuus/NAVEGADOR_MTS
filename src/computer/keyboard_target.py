@@ -5,10 +5,11 @@ from __future__ import annotations
 import ctypes
 import threading
 from ctypes import wintypes
-from typing import Optional
+from typing import Optional, Dict
 
 from .mouse_background import get_agent_cursor_position
 from .window_finder import find_window_at
+from .window_assignments import window_assignments
 
 user32 = ctypes.windll.user32
 user32.IsWindow.argtypes = [wintypes.HWND]
@@ -30,8 +31,10 @@ user32.GetGUIThreadInfo.argtypes = [wintypes.DWORD, ctypes.POINTER(_GUIThreadInf
 user32.GetGUIThreadInfo.restype = wintypes.BOOL
 
 _lock = threading.RLock()
-_target_hwnd = 0
-_target_identity: tuple[int, int] | None = None
+_targets: Dict[str, tuple[int, tuple[int, int]]] = {}
+
+def _sid(session_id: Optional[str]) -> str:
+    return str(session_id).strip() if session_id and str(session_id).strip() else "default"
 
 
 def is_valid_target(hwnd: Optional[int]) -> bool:
@@ -63,32 +66,39 @@ def is_target_in_use(hwnd: int) -> bool:
     return bool(user32.GetGUIThreadInfo(0, ctypes.byref(info)) and int(info.hwndFocus or 0) == int(hwnd))
 
 
-def revalidate_keyboard_target(hwnd: int, identity: tuple[int, int]) -> None:
+def revalidate_keyboard_target(hwnd: int, identity: tuple[int, int], session_id: Optional[str] = None, lease=None) -> None:
     """Revalida identidade e foco antes de cada lote enviado ao Windows."""
     if not is_valid_target(hwnd) or _identity(hwnd) != identity:
         raise ValueError("TARGET_INVALID: alvo mudou durante a operação")
     if is_target_in_use(hwnd):
         raise ValueError("TARGET_IN_USE: alvo virtual está focado pelo usuário")
+    if session_id:
+        lease = lease or window_assignments.get(session_id)
+        if lease is None or lease.hwnd != int(hwnd):
+            raise ValueError("TARGET_REVOKED: atribuição ausente durante o lote")
+        window_assignments.validate(lease)
 
 
-def resolve_keyboard_target(hwnd: Optional[int] = None) -> int:
+def resolve_keyboard_target(hwnd: Optional[int] = None, session_id: Optional[str] = None) -> int:
     """Retorna alvo explícito, alvo fixado ou janela sob cursor virtual, nessa ordem."""
-    global _target_hwnd, _target_identity
+    sid = _sid(session_id)
     with _lock:
         if hwnd is not None:
             if not is_valid_target(hwnd):
                 raise ValueError("TARGET_INVALID: hwnd explícito não é uma janela válida")
             if is_target_in_use(int(hwnd)):
                 raise ValueError("TARGET_IN_USE: alvo virtual está focado pelo usuário")
-            _target_hwnd = int(hwnd)
-            _target_identity = _identity(_target_hwnd)
-            return _target_hwnd
-        if _target_hwnd and _target_identity is not None:
-            if not is_valid_target(_target_hwnd) or _identity(_target_hwnd) != _target_identity:
+            target_identity = _identity(int(hwnd))
+            _targets[sid] = (int(hwnd), target_identity)
+            return int(hwnd)
+        pinned = _targets.get(sid)
+        if pinned:
+            target_hwnd, target_identity = pinned
+            if not is_valid_target(target_hwnd) or _identity(target_hwnd) != target_identity:
                 raise ValueError("TARGET_INVALID: alvo explícito foi encerrado ou reutilizado")
-            if is_target_in_use(_target_hwnd):
+            if is_target_in_use(target_hwnd):
                 raise ValueError("TARGET_IN_USE: alvo virtual está focado pelo usuário")
-            return _target_hwnd
+            return target_hwnd
         x, y = get_agent_cursor_position()
         candidate = find_window_at(x, y)
         if not is_valid_target(candidate):
@@ -98,9 +108,10 @@ def resolve_keyboard_target(hwnd: Optional[int] = None) -> int:
         return int(candidate)
 
 
-def clear_keyboard_target() -> None:
+def clear_keyboard_target(session_id: Optional[str] = None) -> None:
     """Limpa o alvo virtual, útil após encerramento ou revogação de sessão."""
-    global _target_hwnd, _target_identity
     with _lock:
-        _target_hwnd = 0
-        _target_identity = None
+        if session_id is None:
+            _targets.clear()
+        else:
+            _targets.pop(_sid(session_id), None)

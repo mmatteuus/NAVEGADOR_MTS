@@ -6,7 +6,7 @@ from .server import MCPServer
 
 
 class MCPHTTPServer:
-    """Transporte stateless no loopback; tráfego externo requer túnel autenticado."""
+    """Transporte com identidade por sessão; tráfego externo requer túnel autenticado."""
 
     def __init__(self, server: MCPServer, port: int, host: str = "127.0.0.1") -> None:
         if host != "127.0.0.1":
@@ -86,11 +86,18 @@ class MCPHTTPServer:
         if session_id:
             session_id = str(session_id).strip()
 
+        if message.get("method") == "tools/call":
+            from .session_manager import session_manager
+            session = session_manager.get_session(session_id) if session_id else None
+            if not session or session.status != "active":
+                code = "SESSION_NOT_FOUND" if session_id else "SESSION_REQUIRED"
+                return web.json_response({"jsonrpc": "2.0", "id": message.get("id"),
+                    "error": {"code": -32000, "message": f"{code}: inicialize uma sessão MCP antes de usar ferramentas."}},
+                    status=404 if session_id else 400)
+
         if message.get("method") == "initialize" and not session_id:
             import uuid
-            from .session_manager import session_manager
             session_id = f"sess_{uuid.uuid4().hex}"
-            await session_manager.get_or_create_session(session_id)
 
         from .session_context import set_current_session_id, reset_current_session_id
         token = set_current_session_id(session_id)

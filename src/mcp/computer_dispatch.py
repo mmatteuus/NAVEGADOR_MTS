@@ -10,6 +10,9 @@ def _enrich(payload: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
     payload["background"] = args.get("background", True)
     if "hwnd" in args:
         payload["hwnd"] = args["hwnd"]
+    for key in ("session_id", "sessionId"):
+        if key in args:
+            payload[key] = args[key]
     return payload
 
 
@@ -17,7 +20,7 @@ def _plan(name: str, args: dict[str, Any]) -> list[tuple[str, dict]]:
     """Valida argumentos e devolve uma sequência de operações Win32."""
     if not isinstance(args, dict):
         raise ValueError("Argumentos MCP devem ser um objeto JSON.")
-    if name in ("computer_screenshot", "computer_get_status", "computer_launch_app"):
+    if name in ("computer_screenshot", "computer_get_status", "computer_launch_app", "computer_window_action"):
         return [(name, args)]
     if name == "computer_mouse_action":
         action = args.get("action")
@@ -77,10 +80,17 @@ async def execute_mcp_computer(
     executor: Callable[[str, dict], dict] | None = None,
 ) -> dict:
     """Executa no thread pool; o executor nativo também exige SafetyGate."""
-    if executor is None:
-        from ..computer import execute_computer_action
-        executor = execute_computer_action
     try:
+        if not isinstance(args, dict):
+            raise ValueError("Argumentos MCP devem ser um objeto JSON.")
+        if name == "computer_folder_action":
+            from ..computer.folder_actions import execute_folder_action
+            from .session_context import get_current_session_id
+            sid = get_current_session_id() or args.get("sessionId")
+            return await asyncio.to_thread(execute_folder_action, args, sid)
+        if executor is None:
+            from ..computer import execute_computer_action
+            executor = execute_computer_action
         operations = _plan(name, args)
         result = {}
         for operation, params in operations:

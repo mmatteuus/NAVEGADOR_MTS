@@ -1,7 +1,3 @@
-"""Módulo de Controle Virtual de Mouse em Segundo Plano (Background Win32).
-Despacha mensagens Win32 via PostMessageW diretamente para a janela alvo,
-mantendo o cursor virtual isolado sem alterar o ponteiro físico.
-"""
 from __future__ import annotations
 import ctypes
 from ctypes import wintypes
@@ -10,11 +6,12 @@ import time
 from typing import Any, Dict, Optional, Tuple
 from .safety_gate import safety_gate
 from .window_finder import resolve_target_window
-
+from .window_assignments import window_assignments
+from .window_assignments import window_identity
+from .mouse_drag import run_drag
 user32 = ctypes.windll.user32
 user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
 user32.PostMessageW.restype = wintypes.BOOL
-
 WM_MOUSEMOVE, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_LBUTTONDBLCLK = 0x0200, 0x0201, 0x0202, 0x0203
 WM_RBUTTONDOWN, WM_RBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP = 0x0204, 0x0205, 0x0207, 0x0208
 WM_MOUSEWHEEL, WM_MOUSEHWHEEL, MK_LBUTTON, MK_RBUTTON, MK_MBUTTON = 0x020A, 0x020E, 0x0001, 0x0002, 0x0010
@@ -22,9 +19,24 @@ WM_MOUSEWHEEL, WM_MOUSEHWHEEL, MK_LBUTTON, MK_RBUTTON, MK_MBUTTON = 0x020A, 0x02
 _cursor_lock = threading.Lock()
 _agent_cursors: Dict[str, Dict[str, int]] = {}
 
+def _lease(session_id: Optional[str], hwnd: int):
+    if not session_id:
+        return None
+    lease = window_assignments.get(session_id)
+    if lease is None:
+        raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
+    if lease.hwnd != int(hwnd):
+        raise ValueError("TARGET_REVOKED: atribuição ausente durante a ação")
+    window_assignments.validate(lease)
+    return lease
 
 def _makelparam(x: int, y: int) -> int:
     return ((int(y) & 0xFFFF) << 16) | (int(x) & 0xFFFF)
+
+def _validate_target(hwnd: int, lease, identity) -> None:
+    if window_identity(hwnd) != identity:
+        raise ValueError("TARGET_INVALID: HWND foi reutilizado")
+    if lease: window_assignments.validate(lease)
 
 
 def _get_sid(session_id: Optional[str] = None) -> str:
@@ -51,8 +63,10 @@ def post_mouse_move(
     """Despacha movimento de mouse em segundo plano para a janela alvo."""
     safety_gate.check_authorization("move_mouse")
     target_hwnd, cx, cy = resolve_target_window(x, y, hwnd)
+    _lease(session_id, target_hwnd)
     _set_cursor(x, y, target_hwnd, session_id=session_id)
-    user32.PostMessageW(wintypes.HWND(target_hwnd), WM_MOUSEMOVE, 0, _makelparam(cx, cy))
+    if not user32.PostMessageW(wintypes.HWND(target_hwnd), WM_MOUSEMOVE, 0, _makelparam(cx, cy)):
+        raise RuntimeError("MOUSE_POST_FAILED: WM_MOUSEMOVE não entrou na fila")
     return {"currentX": int(x), "currentY": int(y), "background": True, "targetHwnd": target_hwnd}
 
 
@@ -69,6 +83,8 @@ def post_mouse_click(
         tx = cur["x"] if x is None else int(x)
         ty = cur["y"] if y is None else int(y)
     target_hwnd, cx, cy = resolve_target_window(tx, ty, hwnd)
+    _lease(session_id, target_hwnd)
+    original_identity = window_identity(target_hwnd)
     _set_cursor(tx, ty, target_hwnd, session_id=session_id)
     lp, btn = _makelparam(cx, cy), button.lower()
     down_msg, up_msg, mk = {
@@ -77,11 +93,16 @@ def post_mouse_click(
     }.get(btn, (WM_LBUTTONDOWN, WM_LBUTTONUP, MK_LBUTTON))
     hw = wintypes.HWND(target_hwnd)
     if double and btn == "left":
-        user32.PostMessageW(hw, WM_LBUTTONDBLCLK, mk, lp)
+        if not user32.PostMessageW(hw, WM_LBUTTONDBLCLK, mk, lp):
+            raise RuntimeError("MOUSE_POST_FAILED: clique não entrou na fila")
     else:
-        user32.PostMessageW(hw, down_msg, mk, lp)
+        if not user32.PostMessageW(hw, down_msg, mk, lp):
+            raise RuntimeError("MOUSE_POST_FAILED: botão não entrou na fila")
         time.sleep(0.02)
-    user32.PostMessageW(hw, up_msg, 0, lp)
+    if window_identity(target_hwnd) != original_identity:
+        raise RuntimeError("MOUSE_RELEASE_BLOCKED: HWND foi reutilizado")
+    if not user32.PostMessageW(hw, up_msg, 0, lp):
+        raise RuntimeError("MOUSE_POST_FAILED: soltura não entrou na fila")
     return {"clicked": True, "button": button, "double": double, "background": True, "position": {"x": tx, "y": ty}}
 
 
@@ -91,20 +112,13 @@ def post_mouse_drag(
 ) -> Dict[str, Any]:
     """Arrasta suavemente o cursor virtual de início ao fim em segundo plano."""
     safety_gate.check_authorization("drag_mouse")
-    target_hwnd, sx, sy = resolve_target_window(start_x, start_y, hwnd)
-    hw, n_steps = wintypes.HWND(target_hwnd), max(int(steps), 2)
-    user32.PostMessageW(hw, WM_MOUSEMOVE, 0, _makelparam(sx, sy))
-    user32.PostMessageW(hw, WM_LBUTTONDOWN, MK_LBUTTON, _makelparam(sx, sy))
-    for i in range(1, n_steps + 1):
-        ix = int(start_x + (end_x - start_x) * (i / n_steps))
-        iy = int(start_y + (end_y - start_y) * (i / n_steps))
-        _, icx, icy = resolve_target_window(ix, iy, target_hwnd)
-        user32.PostMessageW(hw, WM_MOUSEMOVE, MK_LBUTTON, _makelparam(icx, icy))
-        time.sleep(0.01)
-    _, ex, ey = resolve_target_window(end_x, end_y, target_hwnd)
-    user32.PostMessageW(hw, WM_LBUTTONUP, 0, _makelparam(ex, ey))
-    _set_cursor(end_x, end_y, target_hwnd, session_id=session_id)
-    return {"dragged": True, "from": {"x": start_x, "y": start_y}, "to": {"x": end_x, "y": end_y}, "background": True}
+    target_hwnd, _, _ = resolve_target_window(start_x, start_y, hwnd)
+    lease = _lease(session_id, target_hwnd)
+    original_identity = window_identity(target_hwnd)
+    return run_drag(start_x, start_y, end_x, end_y, steps, target_hwnd, lease, original_identity,
+                    resolve_target_window, _validate_target,
+                    lambda msg, wp, lp: user32.PostMessageW(wintypes.HWND(target_hwnd), msg, wp, lp),
+                    safety_gate.check_authorization, _makelparam, _set_cursor, session_id)
 
 
 def post_mouse_scroll(
@@ -119,11 +133,14 @@ def post_mouse_scroll(
         tx = cur["x"] if x is None else int(x)
         ty = cur["y"] if y is None else int(y)
     target_hwnd, _, _ = resolve_target_window(tx, ty, hwnd)
+    _lease(session_id, target_hwnd)
     hw, lp = wintypes.HWND(target_hwnd), _makelparam(tx, ty)
     if delta_y != 0:
-        user32.PostMessageW(hw, WM_MOUSEWHEEL, (int(delta_y) << 16) & 0xFFFFFFFF, lp)
+        if not user32.PostMessageW(hw, WM_MOUSEWHEEL, (int(delta_y) << 16) & 0xFFFFFFFF, lp):
+            raise RuntimeError("MOUSE_POST_FAILED: roda vertical não entrou na fila")
     if delta_x != 0:
-        user32.PostMessageW(hw, WM_MOUSEHWHEEL, (int(delta_x) << 16) & 0xFFFFFFFF, lp)
+        if not user32.PostMessageW(hw, WM_MOUSEHWHEEL, (int(delta_x) << 16) & 0xFFFFFFFF, lp):
+            raise RuntimeError("MOUSE_POST_FAILED: roda horizontal não entrou na fila")
     return {"scrolled": True, "deltaY": delta_y, "deltaX": delta_x, "background": True}
 
 

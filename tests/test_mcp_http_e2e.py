@@ -29,7 +29,11 @@ def test_http_to_websocket_end_to_end(dynamic_port):
                 assert json.loads(await extension.recv())["type"] == "server_hello"
                 async with ClientSession() as client:
                     url = f"http://127.0.0.1:{http_port}/mcp"
-                    task = asyncio.create_task(client.post(url, json={
+                    async with client.post(url, json={"jsonrpc": "2.0", "id": 1,
+                        "method": "initialize", "params": {}}) as initialized:
+                        sid = initialized.headers["Mcp-Session-Id"]
+                    assert json.loads(await asyncio.wait_for(extension.recv(), 3))["type"] == "agents_changed"
+                    task = asyncio.create_task(client.post(url, headers={"Mcp-Session-Id": sid}, json={
                         "jsonrpc": "2.0", "id": 7, "method": "tools/call",
                         "params": {"name": "browser_navigate",
                                    "arguments": {"url": "https://example.com"}}}))

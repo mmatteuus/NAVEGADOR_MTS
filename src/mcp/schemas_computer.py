@@ -12,8 +12,22 @@ from typing import Any, Dict, List
 # Lista de esquemas formais das ferramentas do computador
 COMPUTER_TOOLS: List[Dict[str, Any]] = [
     {
+        "name": "computer_window_action",
+        "description": "Inspeciona ou opera controles UI Automation na janela atribuída ao agente. Não usa entrada física; o aplicativo pode alterar foco ao abrir menus.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "operation": {"type": "string", "enum": ["inspect", "invoke", "set_value", "read_value"]},
+                "selector": {"type": "object", "description": "Use ref retornado por inspect; alternativamente name, title, auto_id ou control_type"},
+                "value": {"type": "string"},
+                "hwnd": {"type": "integer", "description": "Opcional; deve ser o HWND atribuído à sessão"}
+            },
+            "required": ["operation"]
+        }
+    },
+    {
         "name": "computer_screenshot",
-        "description": "Captura a imagem da tela inteira do Windows ou de região multi-monitor em Base64.",
+        "description": "Captura em Base64 a janela concedida ao agente. Sessões remotas exigem atribuição humana e não capturam o desktop inteiro.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -106,4 +120,5 @@ __all__ = ["COMPUTER_TOOLS", "get_computer_tools"]
 
 def get_computer_tools() -> List[Dict[str, Any]]:
     """Retorna uma cópia da lista de ferramentas de computador disponíveis."""
-    return [dict(tool) for tool in COMPUTER_TOOLS]
+    from .schemas_folders import get_folder_tools
+    return [dict(tool) for tool in COMPUTER_TOOLS] + get_folder_tools()

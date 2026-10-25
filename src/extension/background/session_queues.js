@@ -5,6 +5,8 @@
  */
 
 const queues = new Map();
+let pendingCount = 0;
+let idleCallback = null;
 
 /**
  * Enfileira a execução de um comando assíncrono para uma sessão específica.
@@ -15,10 +17,17 @@ const queues = new Map();
 export function enqueueSessionCommand(sessionId, asyncFn) {
   const key = sessionId || '__default__';
   const current = queues.get(key) || Promise.resolve();
+  pendingCount += 1;
   const next = current.then(asyncFn, asyncFn);
-  queues.set(key, next.catch(() => {}));
+  const tracked = next.finally(() => {
+    pendingCount = Math.max(0, pendingCount - 1);
+    if (pendingCount === 0 && typeof idleCallback === 'function') idleCallback();
+  });
+  queues.set(key, tracked.catch(() => {}));
   return next;
 }
+
+export function setQueueIdleCallback(callback) { idleCallback = typeof callback === 'function' ? callback : null; }
 
 /**
  * Remove a fila de uma sessão encerrada.
@@ -32,7 +41,8 @@ export function removeSessionQueue(sessionId) {
  * Limpa todas as filas registradas.
  */
 export function clearAllSessionQueues() {
-  queues.clear();
+  queues.clear(); pendingCount = 0;
+  if (typeof idleCallback === 'function') idleCallback();
 }
 
 /**
@@ -40,5 +50,5 @@ export function clearAllSessionQueues() {
  * @returns {number}
  */
 export function getActiveQueueCount() {
-  return queues.size;
+  return pendingCount;
 }

@@ -2,21 +2,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("BrowserMTS.WSSessionRegistry")
 
-def is_socket_healthy(sock: Any) -> bool:
-    """Verifica se o socket está conectado e em estado operacional aberto."""
-    if sock is None:
-        return False
-    if hasattr(sock, "state"):
-        try:
-            from websockets.protocol import State
-            return sock.state == State.OPEN
-        except Exception:
-            return getattr(sock.state, "name", "") == "OPEN"
-    return not getattr(sock, "closed", False)
+from .ws_socket_health import is_socket_healthy
+from .ws_browser_targets import assigned_sockets
 
 class WSSessionRegistry:
     """Gerencia conexões de extensões de navegador e agentes de IA."""
@@ -30,6 +21,9 @@ class WSSessionRegistry:
     def is_connected(self) -> bool:
         """Retorna True se houver pelo menos uma extensão ativa saudável."""
         return self.get_active_extension() is not None
+
+    def extension_sockets(self) -> list[Any]:
+        return [sock for sock in self._extension_sockets if is_socket_healthy(sock)]
 
     def get_active_extension(self) -> Optional[Any]:
         """Obtém a extensão ativa atual ou encontra uma saudável."""
@@ -65,6 +59,12 @@ class WSSessionRegistry:
 
     def select_socket(self, session_id: Optional[str], tab_id: Any = None) -> Optional[Any]:
         """Escolhe o socket correto usando a sessão e/ou a aba."""
+        assigned = assigned_sockets(self.extension_sockets(), self._client_info, session_id, tab_id)
+        if len(assigned) == 1:
+            self.bind_session_socket(session_id, assigned[0])
+            return assigned[0]
+        if len(assigned) > 1:
+            return None
         if session_id and str(session_id) in self._session_instances:
             return self.get_socket_for_session(session_id)
         sockets = [s for s in self._extension_sockets if is_socket_healthy(s)]
@@ -76,10 +76,6 @@ class WSSessionRegistry:
             except (TypeError, ValueError):
                 return None
             sockets = [s for s in sockets if tid in self._granted_ids(s)]
-            if not sockets and len(self._extension_sockets) == 1:
-                only = self._extension_sockets[0]
-                if not self._client_info.get(only, {}).get("grantedTabIds") and is_socket_healthy(only):
-                    sockets = [only]
             if not sockets:
                 logger.warning("Nenhuma extensão possui autorização para a aba especificada: %s", tab_id)
         elif len(sockets) > 1:

@@ -18,6 +18,17 @@ from .response_formatter import format_mcp_result, format_mcp_error
 logger = logging.getLogger("BrowserMTS.HubClient")
 
 
+async def register_agent_with_hub(session_id: str, client_info: Any, host: str, port: int) -> None:
+    """Anuncia o cliente stdio antes da primeira ferramenta para seleção no popup."""
+    async with asyncio.timeout(5):
+        async with connect(f"ws://{host}:{port}") as ws:
+            await ws.send(json.dumps({"type": "agent_hello", "payload": {
+                "sessionId": session_id, "clientInfo": client_info}}))
+            response = json.loads(await ws.recv())
+            if response.get("type") != "agent_registered" or response.get("sessionId") != session_id:
+                raise ConnectionError("O hub não confirmou o registro do agente.")
+
+
 async def is_hub_running(host: str = "127.0.0.1", port: int = 3456, timeout: float = 0.5) -> bool:
     """Verifica se há um hub BROWSER MTS ativo escutando na porta especificada."""
     try:

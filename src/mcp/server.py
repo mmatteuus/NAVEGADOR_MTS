@@ -74,6 +74,8 @@ class MCPServer:
                     "error": {"code": -32602, "message": "Parâmetros inválidos"}}
 
         if method == "initialize":
+            from .agent_directory import initialize_agent
+            await initialize_agent(self, effective_sid, params)
             res = {
                 "protocolVersion": params.get("protocolVersion") if params.get("protocolVersion") in (
                     "2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"

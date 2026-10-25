@@ -25,8 +25,9 @@ export async function getActiveTab() {
  * @returns {Promise<object>} Detalhes da navegação concluída.
  */
 export async function navigate(url, tabId, active = false) {
+  if (tabId != null && (!Number.isInteger(tabId) || tabId <= 0)) throw new Error('TAB_ID_INVALID');
   let targetTabId = tabId;
-  if (!targetTabId) {
+  if (targetTabId == null) {
     const activeTab = await getActiveTab();
     if (!activeTab || !activeTab.id) {
       const created = await chrome.tabs.create({ url, active: active });
@@ -58,15 +59,16 @@ export async function newTab(url = 'about:blank', active = false) {
  * @returns {Promise<object>} Confirmação de fechamento.
  */
 export async function closeTab(tabId) {
+  if (tabId != null && (!Number.isInteger(tabId) || tabId <= 0)) throw new Error('TAB_ID_INVALID');
   const allTabs = await chrome.tabs.query({ currentWindow: true });
   let targetId = tabId;
 
-  if (!targetId) {
+  if (targetId == null) {
     const active = await getActiveTab();
     targetId = active?.id;
   }
 
-  if (!targetId) throw new Error('Nenhuma aba disponível para fechar.');
+  if (targetId == null) throw new Error('Nenhuma aba disponível para fechar.');
 
   // Prevenção: se for a única aba aberta, abre uma aba neutra antes
   if (allTabs.length <= 1) {
@@ -116,7 +118,9 @@ export async function listTabs(currentWindowOnly = true) {
  * @param {number} [tabId] - ID da aba alvo.
  */
 export async function goBack(tabId) {
-  const active = tabId ? { id: tabId } : await getActiveTab();
+  if (tabId != null && (!Number.isInteger(tabId) || tabId <= 0)) throw new Error('TAB_ID_INVALID');
+  const active = tabId == null ? await getActiveTab() : { id: tabId };
+  if (!active?.id) throw new Error('Nenhuma aba disponível.');
   await chrome.tabs.goBack(active.id);
   return { success: true, action: 'go_back', tabId: active.id };
 }
@@ -126,7 +130,9 @@ export async function goBack(tabId) {
  * @param {number} [tabId] - ID da aba alvo.
  */
 export async function goForward(tabId) {
-  const active = tabId ? { id: tabId } : await getActiveTab();
+  if (tabId != null && (!Number.isInteger(tabId) || tabId <= 0)) throw new Error('TAB_ID_INVALID');
+  const active = tabId == null ? await getActiveTab() : { id: tabId };
+  if (!active?.id) throw new Error('Nenhuma aba disponível.');
   await chrome.tabs.goForward(active.id);
   return { success: true, action: 'go_forward', tabId: active.id };
 }

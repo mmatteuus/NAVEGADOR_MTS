@@ -7,7 +7,6 @@ import { createInterface } from 'node:readline';
 import { spawn } from 'node:child_process';
 import { createTestHttpServer } from './fixture_http_server.mjs';
 import { MCPAgentClient } from './mcp_agent_client.mjs';
-
 async function waitBridge(url) {
   for (let i = 0; i < 300; i++) {
     try { if ((await (await fetch(`${url}/bridge-status`)).json()).connected) return; } catch (_) {}
@@ -21,7 +20,19 @@ async function waitForWorkerReload(context, previous, timeout = 30000) {
   const existing = context.serviceWorkers().find(worker => worker !== previous);
   if (existing) return existing;
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { context.off('serviceworker', onWorker); reject(new Error('Service Worker não recarregou no prazo.')); }, timeout);
+    const timer = setTimeout(async () => {
+      context.off('serviceworker', onWorker);
+      let detail = '';
+      const probe = await context.newPage().catch(() => null);
+      if (probe) {
+        try {
+          await probe.goto('chrome://extensions', { waitUntil: 'domcontentloaded', timeout: 5000 });
+          detail = (await probe.locator('body').innerText()).slice(0, 2000);
+        } catch (error) { detail = `extensions-probe=${error.message}`; }
+        await probe.close().catch(() => {});
+      }
+      reject(new Error(`Service Worker não recarregou no prazo. ${detail}`));
+    }, timeout);
     const onWorker = worker => {
       if (worker === previous) return;
       clearTimeout(timer); context.off('serviceworker', onWorker); resolve(worker);
@@ -29,7 +40,6 @@ async function waitForWorkerReload(context, previous, timeout = 30000) {
     context.on('serviceworker', onWorker);
   });
 }
-
 async function savePopup(popup, ids) {
   await popup.reload();
   await popup.locator('#tab-access-list input').first().waitFor({ timeout: 10000 });
@@ -37,6 +47,7 @@ async function savePopup(popup, ids) {
     const checked = ids.includes(Number(await box.getAttribute('value')));
     if (await box.isChecked() !== checked) await box.setChecked(checked);
   }
+  for (const select of await popup.locator('.tab-agent-select').all()) await select.selectOption({ index: 1 });
   await popup.locator('#save-tab-grants').click();
   await popup.waitForFunction(() => document.querySelector('#tab-access-message').textContent.includes('salva'), { timeout: 10000 });
 }
@@ -60,6 +71,7 @@ async function launchVersioned(wsPort, version) {
     ignoreDefaultArgs: ['--disable-extensions'],
     args: [ ...(process.env.QA_HEADLESS === '0' ? [] : ['--headless=new']), '--no-sandbox', `--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`]
   });
+  const settings = await context.newPage(); await settings.goto('chrome://extensions'); await settings.evaluate(() => new Promise(resolve => chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true }, resolve))); await settings.close();
   const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker', { timeout: 30000 });
   const extensionId = worker.url().split('/')[2];
   return { context, worker, extDir, extensionId,
@@ -118,7 +130,6 @@ try {
   await ctx.close(); await fetch(`${info.mcpUrl}/stop`, { method: 'POST' }).catch(() => {});
   child.kill(); await http.stop(); throw error;
 }
-
 try {
   const browserTabs = await currentWorker.evaluate(() => chrome.tabs.query({}));
   const tabId = browserTabs.find(tab => tab.url === `${http.url}/`).id;

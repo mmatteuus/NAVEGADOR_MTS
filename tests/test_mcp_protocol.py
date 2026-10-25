@@ -85,7 +85,7 @@ def test_router_browser_disconnected_and_formatting() -> None:
 
         # Mock de imagem Base64
         bridge._active_socket = object()
-        bridge.send_action = lambda a, p, timeout=30.0: asyncio.sleep(
+        bridge.send_action = lambda a, p, timeout=30.0, session_id=None: asyncio.sleep(
             0, result={"base64": "iVBORw0KGgoAAAANSUhEUgAAAAE=", "width": 100}
         )
         img_res = await router.dispatch("browser_screenshot", {"format": "png"})

@@ -65,7 +65,7 @@ def test_agent_action_browser_routing(dynamic_port: int) -> None:
     asyncio.run(_run())
 
 
-def test_agent_action_computer_routing(dynamic_port: int) -> None:
+def test_agent_action_computer_routing(dynamic_port: int, monkeypatch: pytest.MonkeyPatch) -> None:
     """Valida o despacho de ações computer_* respeitando a trava Fail-Closed."""
     bridge = WebSocketBridge(host="127.0.0.1", port=dynamic_port)
 
@@ -74,6 +74,14 @@ def test_agent_action_computer_routing(dynamic_port: int) -> None:
         uri = f"ws://127.0.0.1:{dynamic_port}"
 
         async with connect(uri) as agent_ws:
+            await agent_ws.send(json.dumps({
+                "type": "agent_hello",
+                "payload": {"sessionId": "agent-a", "clientInfo": {"name": "test"}},
+            }))
+            registered = json.loads(await agent_ws.recv())
+            assert registered["type"] == "agent_registered"
+            assert registered["sessionId"] == "agent-a"
+
             # Trava desativada: deve retornar erro de segurança amigável
             safety_gate.revoke("Teste")
             agent_msg = {
@@ -89,12 +97,20 @@ def test_agent_action_computer_routing(dynamic_port: int) -> None:
             assert res["success"] is False
             assert "ERRO_SEGURANCA" in res["result"]["error"]
 
-            # Trava ativada: deve executar com sucesso
+            # Trava ativada sem concessão: o alvo remoto continua bloqueado
             safety_gate.authorize()
             await agent_ws.send(json.dumps(agent_msg))
             res_raw2 = await agent_ws.recv()
             res2 = json.loads(res_raw2)
-            assert res2["success"] is True
+            assert res2["success"] is False
+            assert "TARGET_NOT_ASSIGNED" in res2["result"]["error"]
+
+            # Roteamento com sessão válida e executor isolado simulado
+            monkeypatch.setattr("src.computer.execute_computer_action", lambda *_args, **_kwargs: {"success": True, "data": {"mocked": True}})
+            valid = {**agent_msg, "id": "agent_comp_2", "sessionId": "agent-a", "params": {"x": 100, "y": 100, "sessionId": "agent-a"}}
+            await agent_ws.send(json.dumps(valid))
+            routed = json.loads(await agent_ws.recv())
+            assert routed["success"] is True, routed
 
         await bridge.stop()
 

@@ -8,13 +8,20 @@
 window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
 (function () {
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  const previous = window.__BrowserMTS__.__contentBridge;
+  if (previous?.listener) {
+    try { chrome.runtime.onMessage.removeListener(previous.listener); } catch (_) {}
+  }
+  const listener = (message, _sender, sendResponse) => {
+    if (window.__BrowserMTS__.__contentBridge?.listener !== listener) return false;
     const { action, params = {} } = message;
     handleAction(action, params)
       .then((data) => sendResponse({ success: true, data }))
       .catch((err) => sendResponse({ success: false, error: err.message || String(err) }));
     return true; // Mantém canal aberto para resposta assíncrona
-  });
+  };
+  window.__BrowserMTS__.__contentBridge = { listener, runtimeId: chrome.runtime.id || '' };
+  chrome.runtime.onMessage.addListener(listener);
 
   /**
    * Encaminha o comando recebido para a função correspondente.

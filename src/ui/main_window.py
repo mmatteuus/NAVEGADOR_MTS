@@ -1,16 +1,12 @@
-"""Módulo da Janela Principal (Main Window).
-
-Responsabilidades:
-- Janela principal Fluent UI com suporte a efeito Mica e cantos arredondados.
-- Alternância de abas entre Dashboard e Configurações e alternância de temas.
-- Interceptação de fechamento para minimizar para a bandeja do sistema.
-"""
+"""Janela principal: navegação, tema e ciclo de vida na bandeja do Windows."""
 
 from typing import Optional
 import customtkinter as ctk
 from .theme import PALETTE, apply_mica_theme, configure_app_theme
 from .dashboard_panel import DashboardPanel
 from .settings_panel import SettingsPanel
+from .destinations_panel import DestinationsPanel
+from .main_navigation import show_panel
 
 class MainWindow(ctk.CTk):
     """Janela principal do aplicativo BROWSER MTS no Windows 11."""
@@ -50,25 +46,31 @@ class MainWindow(ctk.CTk):
             self.nav_bar, text="🌐 NAVEGADOR MTS",
             font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_dark
         )
-        lbl_brand.pack(side="left", padx=(4, 16))
+        lbl_brand.pack(anchor="w", padx=4, pady=(0, 6))
+        controls = ctk.CTkFrame(self.nav_bar, fg_color="transparent")
+        controls.pack(fill="x")
 
-        self.btn_nav_dash = ctk.CTkButton(self.nav_bar, text="📊 Dashboard", width=110, height=32, corner_radius=6, command=self.show_dashboard, fg_color=PALETTE.accent)
+        self.btn_nav_dash = ctk.CTkButton(controls, text="📊 Dashboard", width=110, height=32, corner_radius=6, command=self.show_dashboard, fg_color=PALETTE.accent)
         self.btn_nav_dash.pack(side="left", padx=4)
 
-        self.btn_nav_settings = ctk.CTkButton(self.nav_bar, text="⚙️ Configurações", width=120, height=32, corner_radius=6, command=self.show_settings, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
+        self.btn_nav_settings = ctk.CTkButton(controls, text="⚙️ Configurações", width=120, height=32, corner_radius=6, command=self.show_settings, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
         self.btn_nav_settings.pack(side="left", padx=4)
 
-        self.btn_mcp_connect = ctk.CTkButton(self.nav_bar, text="🤖 Conectar IA", width=125, height=32, corner_radius=6, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover)
+        self.btn_nav_windows = ctk.CTkButton(controls, text="🪟 Destinos", width=95, height=32, corner_radius=6, command=self.show_windows, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
+        self.btn_nav_windows.pack(side="left", padx=4)
+
+        self.btn_mcp_connect = ctk.CTkButton(controls, text="🤖 Conectar IA", width=125, height=32, corner_radius=6, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover)
         self.btn_mcp_connect.pack(side="left", padx=4)
 
-        self.btn_theme_toggle = ctk.CTkButton(self.nav_bar, text="🌙 Tema", width=90, height=32, corner_radius=6, command=self.toggle_theme, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
+        self.btn_theme_toggle = ctk.CTkButton(controls, text="🌙 Tema", width=90, height=32, corner_radius=6, command=self.toggle_theme, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
         self.btn_theme_toggle.pack(side="right")
 
-        self.btn_update = ctk.CTkButton(self.nav_bar, text="🔄 Atualizar", width=100, height=32, corner_radius=6, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
+        self.btn_update = ctk.CTkButton(controls, text="🔄 Atualizar", width=100, height=32, corner_radius=6, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
         self.btn_update.pack(side="right", padx=(0, 6))
 
         self.panel_dashboard = DashboardPanel(self)
         self.panel_settings = SettingsPanel(self, on_shutdown_app=self.on_quit_app)
+        self.panel_windows = DestinationsPanel(self)
         self.panel_dashboard.grid(row=1, column=0, sticky="nsew", padx=16, pady=(4, 16))
 
     def open_mcp_connect_dialog(self) -> None:
@@ -77,18 +79,16 @@ class MainWindow(ctk.CTk):
         show_mcp_dialog(self)
 
     def show_dashboard(self) -> None:
-        """Exibe o painel de Dashboard e atualiza o destaque do botão."""
-        self.panel_settings.grid_forget()
-        self.panel_dashboard.grid(row=1, column=0, sticky="nsew", padx=16, pady=(4, 16))
-        self.btn_nav_dash.configure(fg_color=PALETTE.accent)
-        self.btn_nav_settings.configure(fg_color="transparent")
+        """Abre o painel principal."""
+        show_panel(self, "dashboard")
 
     def show_settings(self) -> None:
-        """Exibe o painel de Configurações e atualiza o destaque do botão."""
-        self.panel_dashboard.grid_forget()
-        self.panel_settings.grid(row=1, column=0, sticky="nsew", padx=16, pady=(4, 16))
-        self.btn_nav_settings.configure(fg_color=PALETTE.accent)
-        self.btn_nav_dash.configure(fg_color="transparent")
+        """Abre as configurações."""
+        show_panel(self, "settings")
+
+    def show_windows(self) -> None:
+        """Abre e atualiza destinos atribuídos aos agentes."""
+        show_panel(self, "windows")
 
     def toggle_theme(self) -> None:
         """Alterna dinamicamente entre tema Claro e Escuro."""

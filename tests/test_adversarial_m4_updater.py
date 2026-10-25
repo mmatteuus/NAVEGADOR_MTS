@@ -37,10 +37,10 @@ def _mock_github_release(tag: str, assets: list[dict] | None = None, draft: bool
     return resp
 
 
-@pytest.mark.parametrize("old_version", ["1.0.0", "2.0.0", "2.1.0", "v2.1.9", "2.1.9.9", "2.2.0", "2.2.0.41", "2.2.1", "2.3.1"])
+@pytest.mark.parametrize("old_version", ["1.0.0", "2.0.0", "2.1.0", "v2.1.9", "2.1.9.9", "2.2.0", "2.2.0.41", "2.2.1", "2.3.1", "2.3.2"])
 def test_updater_rejects_older_versions_than_current(old_version: str) -> None:
     """Garante que qualquer versão menor que a atual seja classificada como current."""
-    assert APP_VERSION == "2.3.2"
+    assert APP_VERSION == "2.3.3"
     assert _version_key(parse_version_tuple(old_version)) < _version_key(parse_version_tuple(APP_VERSION))
 
     mock_resp = _mock_github_release(old_version)
@@ -51,10 +51,10 @@ def test_updater_rejects_older_versions_than_current(old_version: str) -> None:
     assert info.status == "current"
 
 
-@pytest.mark.parametrize("same_version", ["2.3.2", "v2.3.2", "2.3.2.0"])
+@pytest.mark.parametrize("same_version", ["2.3.3", "v2.3.3", "2.3.3.0"])
 def test_updater_rejects_identical_version(same_version: str) -> None:
     """Garante que a versão idêntica à instalada não seja marcada para update."""
-    assert APP_VERSION == "2.3.2"
+    assert APP_VERSION == "2.3.3"
     mock_resp = _mock_github_release(same_version)
     with patch("urllib.request.urlopen", return_value=mock_resp):
         info = check_for_updates("https://mock.api/latest", allow_local_fallback=False)
@@ -63,10 +63,10 @@ def test_updater_rejects_identical_version(same_version: str) -> None:
     assert info.status == "current"
 
 
-@pytest.mark.parametrize("new_version", ["2.3.2.1", "2.3.3", "v2.4.0", "3.0.0"])
+@pytest.mark.parametrize("new_version", ["2.3.3.1", "2.3.4", "v2.4.0", "3.0.0"])
 def test_updater_accepts_newer_version_with_valid_asset(new_version: str) -> None:
     """Garante que versões genuinamente superiores ativem o canal de update."""
-    assert APP_VERSION == "2.3.2"
+    assert APP_VERSION == "2.3.3"
     assert _version_key(parse_version_tuple(new_version)) > _version_key(parse_version_tuple(APP_VERSION))
 
     mock_resp = _mock_github_release(new_version)

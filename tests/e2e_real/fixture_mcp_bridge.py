@@ -31,7 +31,7 @@ class QAMCPServer(MCPServer):
             call_args = params.get("arguments") or {}
             res = await self.router.dispatch(name, call_args, session_id=session_id)
             return {"jsonrpc": "2.0", "id": req.get("id"), "result": res}
-        return await super().handle_jsonrpc(req)
+        return await super().handle_jsonrpc(req, session_id=session_id)
 
 
 class QABridge(WebSocketBridge):

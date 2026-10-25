@@ -3,6 +3,8 @@
   const list = document.getElementById('tab-access-list');
   const message = document.getElementById('tab-access-message');
   const count = document.getElementById('tab-access-count');
+  const directory = document.getElementById('agent-directory');
+  let agents = [];
   const send = (type, extra = {}) => new Promise(resolve => {
     chrome.runtime.sendMessage({ type, ...extra }, response => resolve(response || {}));
   });
@@ -21,21 +23,46 @@
       const title = document.createElement('strong'); title.textContent = tab.title || '(sem título)';
       const url = document.createElement('small'); url.textContent = tab.url || '';
       const meta = document.createElement('small'); meta.textContent = `ID ${tab.id} · janela ${tab.windowId}${input.disabled ? ' · protegida' : ''}`;
+      if (agents.length && tab.selectable !== false) {
+        const select = document.createElement('select'); select.className = 'tab-agent-select';
+        select.dataset.tabId = String(tab.id); select.setAttribute('aria-label', `Agente da aba ${title.textContent}`);
+        select.dataset.expectedSessionId = tab.sessionId || '';
+        if (!tab.sessionId) { const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Escolha o agente'; empty.selected = true; select.append(empty); }
+        agents.forEach(agent => {
+          const option = document.createElement('option'); option.value = agent.sessionId;
+          option.textContent = agent.agentId ? `${agent.agentId} (${agent.sessionId.slice(0, 8)})` : agent.sessionId;
+          option.selected = agent.sessionId === tab.sessionId; select.append(option);
+        });
+        text.append(select);
+      }
       text.title = `${title.textContent} — ${url.textContent} (${meta.textContent})`;
       text.append(title, url, meta); label.append(input, text); list.append(label);
     });
     count.textContent = `${tabs.filter(tab => tab.allowedForAgent).length} abas selecionadas`;
+    directory.textContent = agents.length ? `${agents.length} agente(s) conectado(s)` : 'Nenhum agente conectado';
   }
 
   async function load() {
     const response = await send('GET_TAB_GRANTS');
     if (!response.success) { message.textContent = response.error || 'Falha ao carregar abas.'; return; }
+    agents = Array.isArray(response.agents) ? response.agents : [];
     render(response.data || []);
   }
 
   document.getElementById('save-tab-grants').addEventListener('click', async () => {
     const tabIds = [...list.querySelectorAll('input:checked')].map(input => Number(input.value));
-    const response = await send('SAVE_TAB_GRANTS', { tabIds });
+    const selects = [...list.querySelectorAll('.tab-agent-select')];
+    const assignments = selects
+      .filter(select => tabIds.includes(Number(select.dataset.tabId)))
+      .map(select => ({ tabId: Number(select.dataset.tabId), sessionId: select.value,
+        expectedSessionId: select.dataset.expectedSessionId || '' }));
+    const revocations = [...list.querySelectorAll('.tab-access-item')]
+      .filter(row => !row.querySelector('input')?.checked)
+      .map(row => row.querySelector('.tab-agent-select'))
+      .filter(Boolean).map(select => ({ tabId: Number(select.dataset.tabId), expectedSessionId: select.dataset.expectedSessionId }))
+      .filter(item => item.expectedSessionId);
+    const response = await send(agents.length ? 'ASSIGN_TAB_GRANTS' : 'SAVE_TAB_GRANTS',
+      agents.length ? { assignments, revocations } : { tabIds });
     message.textContent = response.success ? 'Seleção salva.' : (response.error || 'Falha ao salvar.');
     if (response.success) render(response.data || []);
   });

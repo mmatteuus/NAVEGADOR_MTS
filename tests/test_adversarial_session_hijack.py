@@ -78,7 +78,7 @@ def test_adversarial_tab_hijack_without_session_id_bypass() -> None:
 
 
 def test_adversarial_tab_assignment_on_browser_manage_tabs_new() -> None:
-    """Desafio: Verifica se a aba criada por browser_manage_tabs(new) é vinculada à sessão do transporte."""
+    """Desafio: criação não vincula aba; atribuição humana continua explícita."""
     async def _run():
         session_manager.clear()
         try:
@@ -89,7 +89,9 @@ def test_adversarial_tab_assignment_on_browser_manage_tabs_new() -> None:
 
             await router.dispatch("browser_manage_tabs", {"action": "new", "url": "https://app.com"}, session_id="sess_A")
             sess = session_manager.get_session("sess_A")
-            assert sess is not None and sess.has_tab(202) is True
+            assert sess is None or not sess.has_tab(202)
+            session_manager.assign_tab_to_session("sess_A", 202)
+            assert session_manager.validate_tab_access("sess_A", 202) is True
         finally:
             session_manager.clear()
 

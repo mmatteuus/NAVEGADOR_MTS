@@ -38,12 +38,12 @@ def test_bound_session_does_not_fallback_after_disconnect():
     assert reg.select_socket("sess", 7) is replacement
 
 
-def test_single_legacy_extension_remains_compatible():
-    """Uma extensão sem metadados novos mantém compatibilidade histórica."""
+def test_single_extension_without_grants_cannot_route_arbitrary_tab():
+    """Mesmo uma única extensão precisa anunciar a concessão do destino."""
     reg = WSSessionRegistry()
     legacy = Socket({})
     reg.register_extension(legacy, legacy.info)
-    assert reg.select_socket(None, 99) is legacy
+    assert reg.select_socket(None, 99) is None
     assert reg.select_socket("sess") is legacy
 
 
@@ -65,7 +65,7 @@ def test_same_instance_overlap_recovers_after_old_socket_closes():
 def test_disconnected_legacy_session_does_not_switch_socket():
     """Sessão legada desconectada permanece bloqueada mesmo com outra extensão."""
     reg = WSSessionRegistry()
-    old = Socket({})
+    old = Socket({"grantedTabIds": [7]})
     reg.register_extension(old, old.info)
     assert reg.select_socket("sess", 7) is old
     old.closed = True

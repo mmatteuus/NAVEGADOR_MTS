@@ -31,3 +31,29 @@ a mensagem contém sua causa (por exemplo, seleção ou autorização de aba).
 As garantias da API estão documentadas pelo Chrome em
 [runtime.reload](https://developer.chrome.com/docs/extensions/reference/api/runtime#method-reload)
 e [storage.session](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session).
+
+## Recarga após atualização
+
+O Service Worker guarda em `chrome.storage.local` o estado da atualização
+(`browser_mts_extension_update_state`). Para cada versão alvo, a recarga é
+solicitada uma única vez. Se houver comandos em execução, o pedido fica
+pendente até a fila sinalizar que está livre; isso evita invalidar um contexto
+de conteúdo no meio de uma ação.
+
+Depois da recarga, o próximo `client_hello` deve confirmar a versão real do
+manifesto. Uma versão ainda antiga produz o estado `error` e aparece no popup
+para diagnóstico. Uma cópia carregada de outra pasta não recebe os arquivos do
+instalador: nesse caso o diagnóstico permanece explícito e não há loop de
+recargas. Para atualização automática, mantenha a extensão carregada da pasta
+`extension` da instalação do aplicativo.
+
+### Evidência de QA
+
+No perfil Chromium descartável de QA, o modo de desenvolvedor foi habilitado
+somente nesse perfil por `chrome.developerPrivate.updateProfileConfiguration`.
+O E2E então substituiu a versão `2.2.0` pela versão do manifesto `2.3.2`,
+observou o novo Service Worker com `onInstalled: update`, e confirmou o fluxo
+de atribuição explícita: AgentA executou a ação, AgentB recebeu
+`TAB_ACCESS_DENIED`, e a revogação foi respeitada. Isso valida o mecanismo no
+perfil de teste; não declara que o navegador do usuário já está instalado ou
+atualizado.

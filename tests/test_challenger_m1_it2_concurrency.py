@@ -7,6 +7,7 @@ Testa empiricamente estresse extremo de concorrência multissessão:
 """
 from __future__ import annotations
 import asyncio
+import json
 import random
 import pytest
 from src.mcp import MCPToolRouter, WebSocketBridge
@@ -54,10 +55,23 @@ def test_concurrent_burst_tab_creation_multi_session() -> None:
                 )
                 assert res["isError"] is False
                 assert len(res["content"]) > 0
+                # A resposta de criação não é uma concessão de posse.
+                payload = json.loads(res["content"][0]["text"])
+                tid = int(payload["tabId"])
+                created_tabs[(sid, tid)] = True
 
             tasks = [agent_create_tab(a, t) for a in range(num_agents) for t in range(tabs_per_agent)]
             random.shuffle(tasks)
             await asyncio.gather(*tasks)
+
+            # Nenhuma aba criada deve aparecer vinculada antes do popup.
+            assert all(
+                (sess is None or not sess.has_tab(tid))
+                for sid, tid in created_tabs
+                for sess in [session_manager.get_session(sid)]
+            )
+            for sid, tid in created_tabs:
+                session_manager.assign_tab_to_session(sid, tid)
 
             total_registered = 0
             all_tabs = set()
@@ -79,7 +93,6 @@ def test_concurrent_burst_tab_creation_multi_session() -> None:
             assert total_registered == num_agents * tabs_per_agent == 50
         finally:
             session_manager.clear()
-
     asyncio.run(_run())
 
 
@@ -134,5 +147,4 @@ def test_concurrent_tab_close_and_cross_session_attack() -> None:
             assert len(sess_b.assigned_tabs) == 0, "Todas as abas de legit_B devem ter sido liberadas"
         finally:
             session_manager.clear()
-
     asyncio.run(_run())
