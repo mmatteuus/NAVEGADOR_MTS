@@ -16,6 +16,7 @@
       const input = document.createElement('input');
       input.type = 'checkbox'; input.value = String(tab.id); input.checked = !!tab.allowedForAgent;
       input.disabled = tab.selectable === false;
+      input.setAttribute('aria-label', `Permitir acesso para a aba ${tab.title || '(sem título)'}`);
       const text = document.createElement('span'); text.className = 'tab-access-text';
       const title = document.createElement('strong'); title.textContent = tab.title || '(sem título)';
       const url = document.createElement('small'); url.textContent = tab.url || '';

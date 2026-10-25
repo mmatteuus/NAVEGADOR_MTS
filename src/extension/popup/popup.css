@@ -95,6 +95,15 @@ input:checked + .slider:before { transform: translateX(20px); }
   background: var(--accent-color); color: white; cursor: pointer;
 }
 
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+.fluent-switch input:focus-visible + .slider {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .safety-header { display: flex; align-items: center; gap: 10px; }
 .safety-icon { font-size: 18px; }
 .safety-text-group { display: flex; flex-direction: column; }

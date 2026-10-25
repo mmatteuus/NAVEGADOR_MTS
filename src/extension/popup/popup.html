@@ -26,7 +26,7 @@
         <span class="card-desc" id="toggle-desc">Permitir comandos do agente</span>
       </div>
       <label class="fluent-switch">
-        <input type="checkbox" id="automation-toggle" checked>
+        <input type="checkbox" id="automation-toggle" aria-label="Automação do Navegador" aria-describedby="toggle-desc" checked>
         <span class="slider"></span>
       </label>
     </section>
@@ -34,7 +34,7 @@
     <section class="card tab-access-card">
       <div class="status-header"><span class="status-title">Abas permitidas ao agente</span></div>
       <div class="card-desc">A seleção vale para a aba inteira, mesmo após navegar, e é limpa ao reiniciar o navegador.</div>
-      <div id="tab-access-count" class="card-desc">0 abas selecionadas</div>
+      <div id="tab-access-count" class="card-desc" aria-live="polite">0 abas selecionadas</div>
       <div id="tab-access-list" class="tab-access-list">Carregando abas...</div>
       <div class="tab-access-actions">
         <button id="save-tab-grants" class="fluent-btn-secondary">Salvar seleção</button>
@@ -45,7 +45,7 @@
         <input id="new-agent-tab-url" type="url" placeholder="https://exemplo.com">
         <button id="open-agent-tab" class="fluent-btn-secondary">Abrir e liberar</button>
       </div>
-      <small id="tab-access-message" class="card-desc"></small>
+      <small id="tab-access-message" class="card-desc" aria-live="polite"></small>
     </section>
 
     <!-- Cartão de Status e Conexão Local -->
@@ -54,7 +54,7 @@
         <span class="status-title">Conexão Desktop App</span>
         <div class="led-wrapper">
           <span class="led" id="status-led"></span>
-          <span class="status-text" id="status-text">Conectando...</span>
+          <span class="status-text" id="status-text" aria-live="polite">Conectando...</span>
         </div>
       </div>
 
