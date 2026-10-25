@@ -1,14 +1,49 @@
 /** Regressões do contrato de avaliação e de erros do content script. */
 import assert from 'node:assert/strict';
 
-globalThis.document = { title: 'Página local' };
+const eventListeners = new Map();
+globalThis.window = {
+  addEventListener: (type, fn) => eventListeners.set(type, fn),
+  removeEventListener: (type) => eventListeners.delete(type),
+  dispatchEvent: (evt) => {
+    const fn = eventListeners.get(evt.type);
+    if (fn) fn(evt);
+  }
+};
+globalThis.CustomEvent = class CustomEvent {
+  constructor(type, params) {
+    this.type = type;
+    this.detail = params?.detail;
+  }
+};
+globalThis.document = {
+  title: 'Página local',
+  createElement: () => {
+    const el = {
+      remove: () => {},
+      set textContent(code) {
+        // Simula execução síncrona de tag <script> ao anexar
+        try {
+          const fn = Function(`return (async () => { ${code} })()`);
+          fn();
+        } catch (e) {}
+      }
+    };
+    return el;
+  },
+  head: {
+    appendChild: (el) => {}
+  }
+};
+
 let receivedWorld = '';
 globalThis.chrome = {
   tabs: { query: async () => [{ id: 11, url: 'https://example.com', active: true }] },
   scripting: {
     executeScript: async (options) => {
       receivedWorld = options.world;
-      const injected = eval(`(${options.func.toString()})`);
+      const funcStr = options.func.toString();
+      const injected = Function(`return (${funcStr})`)();
       return [{ result: await injected(...options.args) }];
     }
   }
