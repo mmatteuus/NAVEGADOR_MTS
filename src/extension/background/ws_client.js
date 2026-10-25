@@ -99,8 +99,7 @@ function handleIncomingMessage(rawData) {
       return;
     }
     if (msg.type === 'agents_changed') {
-      setAgentDirectory(msg.payload?.agents || msg.agents);
-      return;
+      setAgentDirectory(msg.payload?.agents || msg.agents); return;
     }
     if (msg.type === 'reload_extension' || msg.action === 'reload_extension') {
       logger.info('Auto-atualização da extensão solicitada pelo Desktop App.');
