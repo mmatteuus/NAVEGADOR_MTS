@@ -15,10 +15,16 @@ const replaced = { addListener: () => {} };
 globalThis.chrome = {
   runtime: { getURL: (path) => `chrome-extension://test/${path}` },
   storage: { session: {
-    get: async (key) => key ? { [key]: sessionStorage[key] } : sessionStorage,
+    get: async (key) => {
+      const stored = [...(sessionStorage.browser_mts_session_tab_grants || [])];
+      return key ? { [key]: stored } : { ...sessionStorage, browser_mts_session_tab_grants: stored };
+    },
     set: async (value) => {
+      if (value && value.browser_mts_session_tab_grants) {
+        value = { ...value, browser_mts_session_tab_grants: [...value.browser_mts_session_tab_grants] };
+      }
       Object.assign(sessionStorage, value);
-      grants = sessionStorage.browser_mts_session_tab_grants || [];
+      grants = [...(sessionStorage.browser_mts_session_tab_grants || [])];
     }
   } },
   tabs: {

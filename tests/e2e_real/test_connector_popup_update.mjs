@@ -32,13 +32,13 @@ async function waitForWorkerReload(context, previous, timeout = 30000) {
 
 async function savePopup(popup, ids) {
   await popup.reload();
-  await popup.locator('#tab-access-list input').first().waitFor();
+  await popup.locator('#tab-access-list input').first().waitFor({ timeout: 10000 });
   for (const box of await popup.locator('#tab-access-list input').all()) {
     const checked = ids.includes(Number(await box.getAttribute('value')));
     if (await box.isChecked() !== checked) await box.setChecked(checked);
   }
   await popup.locator('#save-tab-grants').click();
-  await popup.waitForFunction(() => document.querySelector('#tab-access-message').textContent.includes('salva'));
+  await popup.waitForFunction(() => document.querySelector('#tab-access-message').textContent.includes('salva'), { timeout: 10000 });
 }
 
 async function launchVersioned(wsPort, version) {

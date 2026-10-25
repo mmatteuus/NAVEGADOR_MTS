@@ -24,7 +24,7 @@ class ExtensionReloadPolicy:
         self._desktop = _key(parse_version_tuple(desktop_version))
         self._requested: set[tuple[str, str]] = set()
 
-    def should_reload(self, client_payload: Any, connection_key: Any = None) -> bool:
+    def should_reload(self, client_payload: Any) -> bool:
         """Retorna True no máximo uma vez por versão antiga relatada.
 
         A memória por versão evita laço infinito quando a extensão foi

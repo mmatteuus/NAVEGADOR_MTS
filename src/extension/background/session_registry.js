@@ -20,9 +20,13 @@ export function assignTabToSession(sessionId, tabId) {
 }
 
 export function claimGrantedTab(sessionId, tabId) {
-  if (!sessionId || tabId == null) return false;
+  if (!sessionId || tabId == null) {
+    throw new Error('TAB_ACCESS_DENIED: Missing sessionId or tabId.');
+  }
   const tid = Number(tabId), owner = getSessionForTab(tid);
-  if (owner && owner !== String(sessionId)) throw new Error('TAB_ACCESS_DENIED: A aba solicitada pertence a outra sessão de agente.');
+  if (owner && owner !== String(sessionId)) {
+    throw new Error('TAB_ACCESS_DENIED: The requested tab belongs to another agent session.');
+  }
   if (!owner) {
     const sid = String(sessionId);
     tabToSession.set(tid, sid);

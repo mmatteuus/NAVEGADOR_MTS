@@ -33,7 +33,9 @@ export async function createClientHello(activeTabInfo = null) {
 
 export function installGrantSync(sendHello) {
   chrome.storage?.onChanged?.addListener((changes, area) => {
-    if (area !== 'session' || !changes[GRANTS_KEY]) return;
-    Promise.resolve().then(sendHello).catch(() => {});
+    if (area !== 'session' || !(GRANTS_KEY in changes)) return;
+    Promise.resolve().then(sendHello).catch((err) => {
+      console.error('Erro na sincronização de concessões:', err);
+    });
   });
 }

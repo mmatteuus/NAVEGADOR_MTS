@@ -42,9 +42,7 @@ export async function connectWebSocket() {
       const pending = candidate.readyState === 0 || candidate.readyState === WebSocket.CONNECTING;
       if (connectionId === attemptId && socket === candidate && pending) {
         logger.warn(`Tempo esgotado ao conectar em ${targetUrl}; testando recuperação.`);
-        portRecovery.advance();
-        cleanupSocket();
-        connectionInProgress = false;
+        portRecovery.advance(); cleanupSocket(); connectionInProgress = false;
         scheduleReconnect(250);
       }
     }, CONNECT_TIMEOUT_MS);
@@ -69,15 +67,13 @@ export async function connectWebSocket() {
       clearTimeout(connectionTimer); connectionTimer = null;
       connectionInProgress = false;
       logger.warn(`Conexão na porta ${activePort} encerrada. Tentando reconexão...`);
-      portRecovery.advance();
-      cleanupSocket(); scheduleReconnect();
+      portRecovery.advance(); cleanupSocket(); scheduleReconnect();
     };
     candidate.onerror = (err) => logger.debug('Falha de transporte no WebSocket:', err);
   } catch (err) {
     connectionInProgress = false;
     logger.error('Erro na instanciação do WebSocket:', err);
-    portRecovery.advance();
-    scheduleReconnect(250);
+    portRecovery.advance(); scheduleReconnect(250);
   }
 }
 function handleIncomingMessage(rawData) {
@@ -85,28 +81,25 @@ function handleIncomingMessage(rawData) {
     const msg = JSON.parse(rawData);
     if (msg.type === 'pong') {
       const lat = heartbeat.handlePong(msg.ts);
-      updateConnectionStatus(CONNECTION_STATE.CONNECTED, lat);
-      return;
+      updateConnectionStatus(CONNECTION_STATE.CONNECTED, lat); return;
     }
     if (msg.type === 'ping') {
       const { pongPayload, latencyMs } = heartbeat.handlePing(msg.ts);
       updateConnectionStatus(CONNECTION_STATE.CONNECTED, latencyMs);
-      sendMessage(pongPayload);
-      return;
+      sendMessage(pongPayload); return;
     }
     if (msg.type === 'server_hello') {
       logger.info('Handshake confirmado pelo Desktop App:', msg.payload?.desktopVersion);
       if (typeof msg.payload?.computerUseAuthorized === 'boolean') setComputerUseAllowed(msg.payload.computerUseAuthorized);
       if (msg.payload?.extensionUpdateRequired && !msg.payload?.reloadRequired) {
-        logger.warn(msg.payload.extensionUpdateMessage || 'A extensão está desatualizada; carregue a pasta instalada pelo aplicativo.');
+        logger.warn(msg.payload.extensionUpdateMessage || 'A extensão está desatualizada; carregue a pasta instalada.');
       }
       if (msg.payload?.reloadRequired) chrome.runtime.reload();
       return;
     }
     if (msg.type === 'reload_extension' || msg.action === 'reload_extension') {
       logger.info('Auto-atualização da extensão solicitada pelo Desktop App.');
-      chrome.runtime.reload();
-      return;
+      chrome.runtime.reload(); return;
     }
     if (typeof messageDispatcherFn === 'function') messageDispatcherFn(msg);
   } catch (err) {
@@ -129,8 +122,7 @@ function scheduleReconnect(delayOverride = null) {
 }
 
 function cleanupSocket() {
-  heartbeat.stop();
-  connectionInProgress = false;
+  heartbeat.stop(); connectionInProgress = false;
   clearTimeout(connectionTimer); connectionTimer = null;
   if (socket) {
     socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null;
@@ -143,7 +135,11 @@ export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
 installGrantSync(async () => {
-  if (!socket || socket.readyState !== WebSocket.OPEN) return;
-  const active = await getActiveTab();
-  sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
+  try {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const active = await getActiveTab();
+    sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
+  } catch (err) {
+    console.error('Erro na sincronização de concessões no WebSocket:', err);
+  }
 });

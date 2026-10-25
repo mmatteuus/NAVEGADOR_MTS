@@ -30,7 +30,10 @@ def test_process_death_and_auto_restart(process_cleanup_tracker: List[psutil.Pro
     start_time = time.time()
     # Injeta a falha: mata o processo abruptamente via kernel
     proc.kill()
-    time.sleep(0.1)
+    try:
+        proc.wait(timeout=2.0)
+    except psutil.TimeoutExpired:
+        pass
     assert not supervisor.is_alive()
 
     # Dispara a auto-cura

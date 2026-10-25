@@ -30,8 +30,8 @@ def test_old_extensions_have_independent_reload_budget():
 def test_legacy_extension_budget_survives_reconnect():
     """Extensão antiga sem identidade não entra em laço após reconectar."""
     policy = ExtensionReloadPolicy("2.3.0")
-    assert policy.should_reload({"version": "2.2.0"}, object()) is True
-    assert policy.should_reload({"version": "2.2.0"}, object()) is False
+    assert policy.should_reload({"version": "2.2.0"}) is True
+    assert policy.should_reload({"version": "2.2.0"}) is False
 
 
 def test_outdated_status_is_diagnostic_without_consuming_budget():
