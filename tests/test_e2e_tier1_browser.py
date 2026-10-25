@@ -18,7 +18,7 @@ class MockBrowserBridge:
         self.is_connected = True
         self.recorded_actions: list[tuple[str, dict]] = []
 
-    async def send_action(self, name: str, params: dict, timeout: float = 30.0) -> dict:
+    async def send_action(self, name: str, params: dict, timeout: float = 30.0, **kwargs) -> dict:
         self.recorded_actions.append((name, dict(params)))
         if name == "browser_manage_tabs":
             act = params.get("action")

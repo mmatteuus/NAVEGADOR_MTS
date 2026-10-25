@@ -18,7 +18,7 @@ class ScenarioBridge:
         self.is_connected = True
         self.workflow_history: list[str] = []
 
-    async def send_action(self, name: str, params: dict, timeout: float = 30.0) -> dict:
+    async def send_action(self, name: str, params: dict, timeout: float = 30.0, **kwargs) -> dict:
         self.workflow_history.append(name)
         if name == "browser_manage_tabs":
             return {"tabId": 303, "status": "created"}
