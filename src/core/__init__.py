@@ -6,22 +6,22 @@ Módulos fundamentais:
 """
 
 from src.core.config import (
-    AppConfig,
-    current_config,
-    load_config,
+    AppConfig as AppConfig,
+    current_config as current_config,
+    load_config as load_config,
 )
 from src.core.security import (
-    SecurityError,
-    decrypt_dpapi,
-    encrypt_dpapi,
-    mask_credential,
-    sanitize_log,
+    SecurityError as SecurityError,
+    decrypt_dpapi as decrypt_dpapi,
+    encrypt_dpapi as encrypt_dpapi,
+    mask_credential as mask_credential,
+    sanitize_log as sanitize_log,
 )
 from src.core.updater import (
-    APP_VERSION,
-    UpdateInfo,
-    check_for_updates,
-    download_and_launch_update,
+    APP_VERSION as APP_VERSION,
+    UpdateInfo as UpdateInfo,
+    check_for_updates as check_for_updates,
+    download_and_launch_update as download_and_launch_update,
 )
 
 __all__ = [
