@@ -24,7 +24,7 @@ def _lease(session_id: Optional[str], hwnd: int):
         return None
     lease = window_assignments.get(session_id)
     if lease is None:
-        return None
+        raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
     if lease.hwnd != int(hwnd):
         raise ValueError("TARGET_REVOKED: atribuição ausente durante a ação")
     window_assignments.validate(lease)
