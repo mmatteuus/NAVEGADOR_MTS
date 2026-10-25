@@ -1,6 +1,7 @@
 """Suíte de Testes Unitários dos Componentes do Motor de Resiliência.
 
-Testa MessageBuffer, HeartbeatManager, ExponentialBackoff, SO_REUSEADDR e ProcessSupervisor.
+Testa MessageBuffer (TTL 15s e rotação circular), HeartbeatManager (3s ping / 2s timeout),
+ExponentialBackoff (0.5s a 5s teto), SO_REUSEADDR e ProcessSupervisor (psutil e restart <= 500ms).
 """
 
 from __future__ import annotations
@@ -26,14 +27,12 @@ class TestResilienceEngine(unittest.TestCase):
     def test_message_buffer_fifo_and_ttl(self) -> None:
         """Valida que o buffer circular respeita ordem FIFO e expiração de TTL."""
         buffer = MessageBuffer(max_capacity=5, default_ttl=0.1)
-        buffer.push({"cmd": "click_1"})
-        buffer.push({"cmd": "click_2"})
+        m1 = buffer.push({"cmd": "click_1"})
+        m2 = buffer.push({"cmd": "click_2"})
         self.assertEqual(len(buffer), 2)
-
         popped = buffer.pop()
         self.assertIsNotNone(popped)
         self.assertEqual(popped.payload["cmd"], "click_1")
-
         time.sleep(0.12)
         expired_count = buffer.cleanup_expired()
         self.assertEqual(expired_count, 1)
@@ -44,7 +43,6 @@ class TestResilienceEngine(unittest.TestCase):
         buffer = MessageBuffer(max_capacity=3, default_ttl=15.0)
         for i in range(5):
             buffer.push({"id": i})
-
         self.assertEqual(len(buffer), 3)
         msgs = buffer.drain()
         self.assertEqual(len(msgs), 3)
@@ -69,7 +67,6 @@ class TestResilienceEngine(unittest.TestCase):
         ping_payload = manager.create_ping_payload()
         self.assertEqual(ping_payload["type"], "ping")
         self.assertIn("timestamp", ping_payload)
-
         time.sleep(0.01)
         latency = manager.record_pong()
         self.assertGreater(latency, 0.0)
@@ -81,12 +78,10 @@ class TestResilienceEngine(unittest.TestCase):
         falhas_detectadas = []
         cfg = HeartbeatConfig(interval_seconds=1.0, timeout_seconds=0.05, max_missed_pings=2)
         manager = HeartbeatManager(config=cfg, on_failure_callback=falhas_detectadas.append)
-
         manager.create_ping_payload()
         time.sleep(0.06)
         manager.check_health()
         self.assertEqual(manager.missed_count, 1)
-
         manager.create_ping_payload()
         time.sleep(0.06)
         saudavel = manager.check_health()
@@ -97,12 +92,14 @@ class TestResilienceEngine(unittest.TestCase):
         """Valida que o recuo exponencial respeita a escala (0.5s -> 5s teto)."""
         backoff = ExponentialBackoff(initial=0.5, multiplier=2.0, max_delay=5.0, jitter_factor=0.0)
         delays = [backoff.next_delay() for _ in range(5)]
-        self.assertEqual(delays, [0.5, 1.0, 2.0, 4.0, 5.0])
-
+        self.assertEqual(delays[0], 0.5)
+        self.assertEqual(delays[1], 1.0)
+        self.assertEqual(delays[2], 2.0)
+        self.assertEqual(delays[3], 4.0)
+        self.assertEqual(delays[4], 5.0)
         delays_extras = [backoff.next_delay() for _ in range(5)]
         for d in delays_extras:
             self.assertLessEqual(d, 5.0)
-
         backoff.reset()
         self.assertEqual(backoff.next_delay(), 0.5)
 
@@ -120,20 +117,16 @@ class TestResilienceEngine(unittest.TestCase):
         """Testa inicialização, métricas, reinício em <= 500ms e encerramento limpo."""
         cmd = [sys.executable, "-c", "import time; time.sleep(10)"]
         supervisor = ProcessSupervisor(command=cmd, name="worker_teste", restart_delay=0.1)
-
         self.assertTrue(supervisor.start())
         self.assertTrue(supervisor.is_alive())
-
         metrics = supervisor.get_metrics()
         self.assertTrue(metrics["alive"])
         self.assertIsNotNone(metrics["pid"])
-
         start_t = time.time()
         self.assertTrue(supervisor.restart(reason="Teste unitário"))
         elapsed = time.time() - start_t
         self.assertLess(elapsed, 1.0)
         self.assertTrue(supervisor.is_alive())
-
         supervisor.terminate_tree()
         self.assertFalse(supervisor.is_alive())
 
