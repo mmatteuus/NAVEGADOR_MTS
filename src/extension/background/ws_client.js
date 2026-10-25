@@ -126,8 +126,7 @@ function scheduleReconnect(delayOverride = null) {
   reconnectTimer = setTimeout(() => { reconnectTimer = null; connectWebSocket(); }, delayMs);
 }
 function cleanupSocket() {
-  heartbeat.stop(); connectionInProgress = false;
-  clearAgentDirectory();
+  heartbeat.stop(); connectionInProgress = false; clearAgentDirectory();
   clearTimeout(connectionTimer); connectionTimer = null;
   if (socket) {
     socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null;
@@ -135,7 +134,6 @@ function cleanupSocket() {
     socket = null;
   }
 }
-
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
