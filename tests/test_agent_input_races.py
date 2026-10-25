@@ -24,6 +24,7 @@ def test_keyboard_uses_one_lease_for_all_characters(monkeypatch):
 def test_mouse_revocation_between_dispatch_and_lease_fails(monkeypatch):
     monkeypatch.setattr(mouse, "resolve_target_window", lambda *a: (321, 1, 1))
     monkeypatch.setattr(mouse.window_assignments, "get", lambda _: None)
+    monkeypatch.setattr(mouse.window_assignments, "has_assignments", lambda: True)
     with pytest.raises(ValueError, match="TARGET_REVOKED"):
         mouse.post_mouse_move(1, 1, hwnd=321, session_id="revoked")
 

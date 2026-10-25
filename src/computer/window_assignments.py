@@ -100,6 +100,10 @@ class WindowAssignmentRegistry:
         with self._lock:
             return self._by_session.get(str(session_id or "").strip())
 
+    def has_assignments(self) -> bool:
+        with self._lock:
+            return len(self._by_session) > 0
+
     def clear(self) -> None:
         with self._lock:
             self._by_session.clear()

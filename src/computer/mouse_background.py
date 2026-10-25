@@ -22,9 +22,11 @@ _agent_cursors: Dict[str, Dict[str, int]] = {}
 def _lease(session_id: Optional[str], hwnd: int):
     if not session_id:
         return None
+    if not window_assignments.has_assignments():
+        return None
     lease = window_assignments.get(session_id)
     if lease is None:
-        return None
+        raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
     if lease.hwnd != int(hwnd):
         raise ValueError("TARGET_REVOKED: atribuição ausente durante a ação")
     window_assignments.validate(lease)
@@ -38,16 +40,13 @@ def _validate_target(hwnd: int, lease, identity) -> None:
         raise ValueError("TARGET_INVALID: HWND foi reutilizado")
     if lease: window_assignments.validate(lease)
 
-
 def _get_sid(session_id: Optional[str] = None) -> str:
     return str(session_id).strip() if session_id and str(session_id).strip() else "default"
-
 
 def _set_cursor(x: int, y: int, hwnd: int, session_id: Optional[str] = None) -> None:
     sid = _get_sid(session_id)
     with _cursor_lock:
         _agent_cursors[sid] = {"x": int(x), "y": int(y), "last_hwnd": int(hwnd)}
-
 
 def get_agent_cursor_position(session_id: Optional[str] = None) -> Tuple[int, int]:
     """Retorna as coordenadas virtuais (x, y) do cursor exclusivo do agente na sessão."""
