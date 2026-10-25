@@ -104,8 +104,7 @@ function handleIncomingMessage(rawData) {
     }
     if (msg.type === 'reload_extension' || msg.action === 'reload_extension') {
       logger.info('Auto-atualização da extensão solicitada pelo Desktop App.');
-      handleExtensionUpdate({ ...(msg.payload || {}), desktopVersion: msg.payload?.desktopVersion || msg.desktopVersion,
-        reloadRequired: true }).catch(err => logger.error('Falha ao processar recarga da extensão:', err)); return;
+      handleExtensionUpdate({ ...(msg.payload || {}), desktopVersion: msg.payload?.desktopVersion || msg.desktopVersion, reloadRequired: true }).catch(err => logger.error('Falha ao processar recarga da extensão:', err)); return;
     }
     if (typeof messageDispatcherFn === 'function') messageDispatcherFn(msg);
   } catch (err) {
@@ -126,8 +125,7 @@ function scheduleReconnect(delayOverride = null) {
   reconnectTimer = setTimeout(() => { reconnectTimer = null; connectWebSocket(); }, delayMs);
 }
 function cleanupSocket() {
-  heartbeat.stop(); connectionInProgress = false;
-  clearAgentDirectory();
+  heartbeat.stop(); connectionInProgress = false; clearAgentDirectory();
   clearTimeout(connectionTimer); connectionTimer = null;
   if (socket) {
     socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null;
