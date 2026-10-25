@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const local = {};
 const listeners = [];
 globalThis.chrome = {
-  runtime: { getManifest: () => ({ version: '2.3.1' }) },
+  runtime: { getManifest: () => ({ version: '2.3.2' }) },
   storage: {
     local: {
       async get(key) { return { [key]: local[key] }; },
