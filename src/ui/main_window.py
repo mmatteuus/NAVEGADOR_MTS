@@ -43,28 +43,28 @@ class MainWindow(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.nav_bar = ctk.CTkFrame(self, height=48, corner_radius=0, fg_color="transparent")
-        self.nav_bar.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 4))
-        
+        self.nav_bar = ctk.CTkFrame(self, height=52, corner_radius=8, fg_color="transparent")
+        self.nav_bar.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 6))
+
         lbl_brand = ctk.CTkLabel(
             self.nav_bar, text="🌐 NAVEGADOR MTS",
             font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_dark
         )
-        lbl_brand.pack(side="left", padx=(0, 20))
+        lbl_brand.pack(side="left", padx=(4, 16))
 
-        self.btn_nav_dash = ctk.CTkButton(self.nav_bar, text="📊 Dashboard", width=110, height=30, command=self.show_dashboard, fg_color=PALETTE.accent)
+        self.btn_nav_dash = ctk.CTkButton(self.nav_bar, text="📊 Dashboard", width=110, height=32, corner_radius=6, command=self.show_dashboard, fg_color=PALETTE.accent)
         self.btn_nav_dash.pack(side="left", padx=4)
 
-        self.btn_nav_settings = ctk.CTkButton(self.nav_bar, text="⚙️ Configurações", width=120, height=30, command=self.show_settings, fg_color="transparent", text_color=PALETTE.text_dark)
+        self.btn_nav_settings = ctk.CTkButton(self.nav_bar, text="⚙️ Configurações", width=120, height=32, corner_radius=6, command=self.show_settings, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
         self.btn_nav_settings.pack(side="left", padx=4)
 
-        self.btn_mcp_connect = ctk.CTkButton(self.nav_bar, text="🤖 Conectar com IA", width=135, height=30, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover)
+        self.btn_mcp_connect = ctk.CTkButton(self.nav_bar, text="🤖 Conectar IA", width=125, height=32, corner_radius=6, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover)
         self.btn_mcp_connect.pack(side="left", padx=4)
 
-        self.btn_theme_toggle = ctk.CTkButton(self.nav_bar, text="🌙 Modo Escuro", width=110, height=30, command=self.toggle_theme, fg_color="transparent", border_width=1)
+        self.btn_theme_toggle = ctk.CTkButton(self.nav_bar, text="🌙 Tema", width=90, height=32, corner_radius=6, command=self.toggle_theme, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
         self.btn_theme_toggle.pack(side="right")
 
-        self.btn_update = ctk.CTkButton(self.nav_bar, text="🔄 Atualizações", width=115, height=30, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1)
+        self.btn_update = ctk.CTkButton(self.nav_bar, text="🔄 Atualizar", width=100, height=32, corner_radius=6, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
         self.btn_update.pack(side="right", padx=(0, 6))
 
         self.panel_dashboard = DashboardPanel(self)
