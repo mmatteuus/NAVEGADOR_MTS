@@ -135,7 +135,6 @@ function cleanupSocket() {
     socket = null;
   }
 }
-
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
