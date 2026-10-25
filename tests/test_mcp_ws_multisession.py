@@ -90,14 +90,14 @@ def test_tab_isolation_and_ownership_in_router() -> None:
 
         # Sessão não autorizada deve ser rejeitada
         res_denied = await router.dispatch(
-            "browser_navigate", {"url": "https://sec.com", "tabId": 101, "sessionId": "sess_beta"}
+            "browser_navigate", {"url": "https://sec.com", "tabId": 101, "sessionId": "sess_beta"}, session_id="sess_beta"
         )
         assert res_denied["isError"] is True
         assert "Acesso recusado" in res_denied["content"][0]["text"]
 
         # Sessão proprietária deve ter acesso concedido
         res_allowed = await router.dispatch(
-            "browser_navigate", {"url": "https://sec.com", "tabId": 101, "sessionId": "sess_alpha"}
+            "browser_navigate", {"url": "https://sec.com", "tabId": 101, "sessionId": "sess_alpha"}, session_id="sess_alpha"
         )
         assert res_allowed["isError"] is False
 
