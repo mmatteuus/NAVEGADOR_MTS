@@ -17,9 +17,10 @@ from src.computer import (
 
 
 @pytest.fixture(autouse=True)
-def clean_agent_cursors() -> Generator[None, None, None]:
+def clean_agent_cursors(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Garante ambiente limpo para cursores de agentes antes e pós teste."""
     reset_agent_cursors()
+    monkeypatch.setattr("src.computer.mouse_background._lease", lambda sid, hwnd: None)
     yield
     reset_agent_cursors()
 

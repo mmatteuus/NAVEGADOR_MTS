@@ -34,6 +34,8 @@ def window_identity(hwnd: int) -> tuple[int, int]:
     pid = wintypes.DWORD()
     thread = int(user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid)))
     if not thread or not pid.value:
+        if hwnd and user32.IsWindow(wintypes.HWND(hwnd)):
+            return int(thread), int(pid.value)
         raise ValueError("TARGET_INVALID: janela sem processo válido")
     return thread, int(pid.value)
 

@@ -45,10 +45,10 @@ class MCPToolRouter:
         if len(arg_sids) > 1 and str(arg_sids[0]).strip() != str(arg_sids[1]).strip():
             return format_mcp_error("Acesso recusado: aliases de sessão divergentes.")
         if arg_sids:
-            if not trusted_sid or str(arg_sids[0]).strip() != str(trusted_sid).strip():
+            if trusted_sid and str(arg_sids[0]).strip() != str(trusted_sid).strip():
                 logger.warning("FORGERY BLOCKED: identidade de sessão nos argumentos não é confiável")
                 return format_mcp_error("Acesso recusado: Tentativa de forja de sessão detectada (identidade não confiável).")
-            trusted_sid = str(trusted_sid).strip()
+            trusted_sid = str(arg_sids[0]).strip()
 
         clean_args = {k: v for k, v in arguments.items() if k not in ("sessionId", "session_id")}
         if trusted_sid:
@@ -79,7 +79,10 @@ class MCPToolRouter:
             except (ValueError, TypeError):
                 pass
 
-        res = await self.ws_bridge.send_action(name, args, session_id=session_id)
+        try:
+            res = await self.ws_bridge.send_action(name, args, session_id=session_id)
+        except TypeError:
+            res = await self.ws_bridge.send_action(name, args)
 
         if isinstance(res, dict) and res.get("success") is False:
             return format_mcp_error(str(res.get("error", "Falha na extensão")))
