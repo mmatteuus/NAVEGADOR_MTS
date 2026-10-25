@@ -11,16 +11,18 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 (function () {
   /**
    * Determina se um nó do DOM está visível na viewport do usuário.
+   * Reutiliza limites pré-calculados se fornecidos para evitar layout thrashing.
    * @param {Element} el - Nó HTML a verificar.
+   * @param {DOMRect|object} [precomputedRect=null] - Limites do elemento pré-calculados.
    * @returns {boolean} Verdadeiro se o elemento tiver área e visibilidade ativa.
    */
-  function isElementVisible(el) {
+  function isElementVisible(el, precomputedRect = null) {
     if (!el || !(el instanceof Element)) return false;
     const style = window.getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
       return false;
     }
-    const rect = el.getBoundingClientRect();
+    const rect = precomputedRect || el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
 
@@ -70,8 +72,15 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
     let index = 0;
     for (const node of nodeList) {
-      if (visibleOnly && !isElementVisible(node)) continue;
+      if (visibleOnly) {
+        const style = window.getComputedStyle(node);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+          continue;
+        }
+      }
+      // Reutiliza o rect obtido em 1 única chamada para evitar layout thrashing no DOM
       const rect = node.getBoundingClientRect();
+      if (visibleOnly && (rect.width <= 0 || rect.height <= 0)) continue;
 
       results.push({
         index: index++,
