@@ -42,8 +42,8 @@ export async function grantFromPopup(msg, sender) {
     const live = await chrome.tabs.query({}), liveIds = new Set(live.map(t => t.id));
     if (tabs.some(id => !Number.isInteger(id) || id <= 0 || !liveIds.has(id))) throw new Error('TAB_NOT_FOUND');
     if (live.some(t => tabs.includes(t.id) && !isGrantableUrl(t.url))) throw new Error('TAB_NOT_ALLOWED');
-    const before = await read(), saved = await write(tabs), after = await chrome.tabs.query({});
-    const keep = saved.filter(id => after.some(t => t.id === id));
+    const before = await read(), saved = await write(tabs);
+    const keep = saved.filter(id => liveIds.has(id));
     before.filter(id => !keep.includes(id)).forEach(releaseGrantedTab);
     await write(keep); await saveOwners(); return read();
   });
