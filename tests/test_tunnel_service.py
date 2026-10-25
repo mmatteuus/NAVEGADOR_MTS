@@ -52,7 +52,7 @@ def test_tunnel_process_environment_and_command(tmp_path, dynamic_port):
          patch("src.core.tunnel_service.ProcessSupervisor", FakeSupervisor):
         assert tunnel.start()
         try:
-            assert created[0]["command"] == ["C:\\Fake\\tunnel-client.exe", "run"]
+            assert created[0]["command"] == [str(Path("C:/Fake/tunnel-client.exe")), "run"]
             assert "sk-test-hidden" not in " ".join(created[0]["command"])
             assert created[0]["env"]["CONTROL_PLANE_API_KEY"] == "sk-test-hidden"
             assert created[0]["env"]["CONTROL_PLANE_TUNNEL_ID"] == "tunnel_" + "a" * 32
