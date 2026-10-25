@@ -94,7 +94,7 @@ function handleIncomingMessage(rawData) {
       handleExtensionUpdate(msg.payload).catch(err => logger.error('Falha ao processar atualização da extensão:', err));
       if (typeof msg.payload?.computerUseAuthorized === 'boolean') setComputerUseAllowed(msg.payload.computerUseAuthorized);
       if (msg.payload?.extensionUpdateRequired && !msg.payload?.reloadRequired) {
-        logger.warn(msg.payload.extensionUpdateMessage || 'A extensão está desatualizada; carregue a pasta instalada.');
+        logger.warn(msg.payload.extensionUpdateMessage || 'A extensão está desatualizada.');
       }
       return;
     }
@@ -135,7 +135,6 @@ function cleanupSocket() {
     socket = null;
   }
 }
-
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
