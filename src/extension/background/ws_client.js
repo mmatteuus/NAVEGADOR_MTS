@@ -12,8 +12,7 @@ let socket = null, reconnectAttempt = 0, reconnectTimer = null, messageDispatche
 let connectionInProgress = false, connectionTimer = null, connectionId = 0;
 const CONNECT_TIMEOUT_MS = 2000;
 const portRecovery = createPortRecovery();
-setUpdateIdleCheck(() => getActiveQueueCount() === 0);
-setQueueIdleCallback(notifyUpdateQueueIdle);
+setUpdateIdleCheck(() => getActiveQueueCount() === 0); setQueueIdleCallback(notifyUpdateQueueIdle);
 const heartbeat = createHeartbeatManager(
   () => { cleanupSocket(); scheduleReconnect(); },
   (pingMsg) => sendMessage(pingMsg)
@@ -135,7 +134,6 @@ function cleanupSocket() {
     socket = null;
   }
 }
-
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
