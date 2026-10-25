@@ -4,11 +4,13 @@ Validações:
 - Criptografia e descriptografia real via Windows DPAPI.
 - Mascaramento seguro de credenciais para UI.
 - Sanitização de logs contra vazamento de chaves sk-* e tunnel IDs.
-- Configurações centralizadas e leitura de portas (3456).
+- Configurações centralizadas, leitura de portas e diretório secrets_dir.
 """
 
 import os
+from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -26,6 +28,7 @@ from src.core.security import (
 class TestSecurityModule(unittest.TestCase):
     """Suíte de validação de criptografia e sanitização."""
 
+    @unittest.skipUnless(sys.platform == "win32", "DPAPI requer Windows")
     def test_dpapi_encrypt_decrypt_roundtrip(self) -> None:
         """Garante que a DPAPI criptografa e restaura o dado original fielmente."""
         secreto = "sk-proj-teste-real-de-credencial-1234567890"
@@ -36,6 +39,7 @@ class TestSecurityModule(unittest.TestCase):
         restaurado = decrypt_dpapi(cifrado)
         self.assertEqual(secreto, restaurado)
 
+    @unittest.skipUnless(sys.platform == "win32", "DPAPI requer Windows")
     def test_dpapi_empty_input_raises_value_error(self) -> None:
         """Valida que entradas vazias lançam exceção explicativa."""
         with self.assertRaises(ValueError):
@@ -82,6 +86,25 @@ class TestConfigModule(unittest.TestCase):
         self.assertEqual(config.host, "127.0.0.1")
         self.assertEqual(config.mcp_port, 3457)
         self.assertTrue(str(config.secrets_dir).endswith("secrets"))
+
+    def test_secrets_dir_property_and_credentials_path(self) -> None:
+        """Garante o cálculo correto de secrets_dir e credentials_file."""
+        custom_app_dir = Path("/tmp/browser-mcp-test")
+        config = AppConfig(app_data_dir=custom_app_dir)
+        self.assertIsInstance(config.secrets_dir, Path)
+        self.assertEqual(config.secrets_dir, custom_app_dir / "secrets")
+        self.assertEqual(config.secrets_dir.name, "secrets")
+        self.assertEqual(config.credentials_file, config.secrets_dir / "runtime_key.enc")
+
+    def test_secrets_dir_creation_on_disk(self) -> None:
+        """Valida que ensure_directories cria secrets_dir em disco de forma isolada."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_app_data = Path(tmp_dir) / "app_data"
+            config = AppConfig(app_data_dir=temp_app_data)
+            self.assertFalse(config.secrets_dir.exists())
+            config.ensure_directories()
+            self.assertTrue(config.secrets_dir.exists())
+            self.assertTrue(config.secrets_dir.is_dir())
 
     def test_env_var_override(self) -> None:
         """Verifica se variáveis de ambiente sobrescrevem os padrões corretamente."""
