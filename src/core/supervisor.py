@@ -79,34 +79,50 @@ class ProcessSupervisor:
             return
 
         try:
-            parent = self._psutil_proc
+            self._terminate_process_tree(self._psutil_proc, timeout)
+        finally:
+            if self._popen is not None:
+                self._close_popen_streams(self._popen)
+            self._popen = None
+            self._psutil_proc = None
+
+    @staticmethod
+    def _terminate_process_tree(parent: psutil.Process, timeout: float) -> None:
+        """Término gracioso e forçado da árvore de processos."""
+        try:
             children = parent.children(recursive=True)
             all_procs = children + [parent]
 
-            # 1. Envia sinal de término gracioso para todos os processos
             for proc in all_procs:
-                try: proc.terminate()
-                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
+                try:
+                    proc.terminate()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
 
-            # 2. Aguarda a liberação dos processos pelo kernel do Windows
             _, alive = psutil.wait_procs(all_procs, timeout=timeout)
 
-            # 3. Se algum processo filho resistir, força a finalização imediata
             for proc in alive:
-                try: proc.kill()
-                except (psutil.NoSuchProcess, psutil.AccessDenied): pass
+                try:
+                    proc.kill()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
-        finally:
-            if self._popen is not None:
-                for stream in (self._popen.stdin, self._popen.stdout, self._popen.stderr):
-                    if stream is not None and not stream.closed:
-                        try: stream.close()
-                        except Exception: pass
-                if self._popen.poll() is None:
-                    self._popen.kill()
-            self._popen = None
-            self._psutil_proc = None
+
+    @staticmethod
+    def _close_popen_streams(popen: subprocess.Popen[Any]) -> None:
+        """Fecha os canais I/O e assegura a finalização do processo Popen."""
+        for stream in (popen.stdin, popen.stdout, popen.stderr):
+            if stream is not None and not stream.closed:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
+        if popen.poll() is None:
+            try:
+                popen.kill()
+            except Exception:
+                pass
 
     def restart(self, reason: str = "") -> bool:
         """Mata a árvore anterior, aguarda o intervalo de liberação e reinicia."""
