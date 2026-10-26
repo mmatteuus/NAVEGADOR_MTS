@@ -14,12 +14,44 @@ async function runInPage(source) {
     return value;
   }
 
-  try {
-    const result = await (0, eval)(`(async () => { ${source} })()`);
-    return { success: true, result: serialize(result), type: typeof result };
-  } catch (error) {
-    return { success: false, error: error.message || String(error), stack: error.stack || null };
-  }
+  return new Promise((resolve) => {
+    const eventId = 'mts_eval_' + Math.random().toString(36).slice(2);
+    const cleanup = () => {
+      window.removeEventListener(eventId, handler);
+      clearTimeout(timer);
+    };
+    const handler = (e) => {
+      cleanup();
+      resolve(e.detail);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve({ success: false, error: 'Tempo limite esgotado ou erro de sintaxe no script da página.' });
+    }, 5000);
+    window.addEventListener(eventId, handler);
+
+    const script = document.createElement('script');
+    script.textContent = `(async () => {
+      try {
+        const __res = await (async () => { ${source} })();
+        window.dispatchEvent(new CustomEvent('${eventId}', {
+          detail: { success: true, result: (${serialize.toString()})(__res), type: typeof __res }
+        }));
+      } catch (__err) {
+        window.dispatchEvent(new CustomEvent('${eventId}', {
+          detail: { success: false, error: __err?.message || String(__err), stack: __err?.stack || null }
+        }));
+      }
+    })();`;
+    const target = document.head || document.documentElement || document.body;
+    if (target) {
+      target.appendChild(script);
+      script.remove();
+    } else {
+      window.removeEventListener(eventId, handler);
+      resolve({ success: false, error: 'Elemento raiz DOM indisponível para execução.' });
+    }
+  });
 }
 
 export async function evaluatePageScript(tabId, source) {

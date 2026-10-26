@@ -1,7 +1,28 @@
 /** Regressões do contrato de avaliação e de erros do content script. */
 import assert from 'node:assert/strict';
 
-globalThis.document = { title: 'Página local' };
+globalThis.window = globalThis;
+let handlers = {};
+globalThis.addEventListener = (type, fn) => { handlers[type] = fn; };
+globalThis.removeEventListener = (type) => { delete handlers[type]; };
+globalThis.dispatchEvent = (event) => { if (handlers[event.type]) handlers[event.type](event); };
+globalThis.CustomEvent = class CustomEvent {
+  constructor(type, options) {
+    this.type = type;
+    this.detail = options.detail;
+  }
+};
+let createdElement = null;
+globalThis.document = {
+  title: 'Página local',
+  head: {
+    appendChild: (elem) => {
+      createdElement = elem;
+      eval(elem.textContent);
+    }
+  },
+  createElement: (tag) => ({ textContent: '', remove: () => {} })
+};
 let receivedWorld = '';
 globalThis.chrome = {
   tabs: { query: async () => [{ id: 11, url: 'https://example.com', active: true }] },
