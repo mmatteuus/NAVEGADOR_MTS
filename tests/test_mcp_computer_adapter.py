@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
+from types import ModuleType
+from unittest.mock import patch
 import pytest
 
 from src.mcp.computer_dispatch import _plan, execute_mcp_computer
@@ -48,6 +51,54 @@ def test_executor_failure_stops_following_actions():
         "computer_mouse_action", {"action": "click", "x": 3, "y": 4}, fail_first))
     assert result["success"] is False
     assert calls == ["computer_mouse_move"]
+
+
+def test_execute_mcp_computer_non_dict_args_and_exceptions():
+    """Valida argumentos não-dicionário e captura de exceções."""
+    res1 = asyncio.run(execute_mcp_computer("computer_get_status", "invalid_args", executor=lambda n, a: {}))
+    assert res1["success"] is False
+    assert "Argumentos MCP devem ser um objeto JSON" in res1["error"]
+
+    res2 = asyncio.run(execute_mcp_computer("unknown_tool", {}, executor=lambda n, a: {}))
+    assert res2["success"] is False
+    assert "Ferramenta de computador desconhecida" in res2["error"]
+
+
+def test_execute_mcp_computer_folder_action_routing():
+    """Despacho de ações de pasta via execute_folder_action."""
+    folder_mod = ModuleType("src.computer.folder_actions")
+    called_args = []
+
+    def fake_execute(args, sid):
+        called_args.append((args, sid))
+        return {"success": True, "files": []}
+
+    folder_mod.execute_folder_action = fake_execute
+
+    with patch.dict("sys.modules", {"src.computer.folder_actions": folder_mod}), \
+         patch("src.mcp.session_context.get_current_session_id", return_value="sess_ctx"):
+        res = asyncio.run(execute_mcp_computer("computer_folder_action", {"sessionId": "sess_arg"}))
+        assert res == {"success": True, "files": []}
+        assert called_args == [({"sessionId": "sess_arg"}, "sess_ctx")]
+
+
+def test_execute_mcp_computer_default_executor_and_multi_op():
+    """Uso do executor padrão nativo e encadeamento multi-operação com sucesso."""
+    calls = []
+
+    def multi_fake(op, params):
+        calls.append(op)
+        return {"success": True, "op": op}
+
+    res_multi = asyncio.run(execute_mcp_computer("computer_mouse_action", {"action": "click", "x": 10, "y": 20}, multi_fake))
+    assert res_multi == {"success": True, "op": "computer_mouse_click"}
+    assert calls == ["computer_mouse_move", "computer_mouse_click"]
+
+    comp_mod = ModuleType("src.computer")
+    comp_mod.execute_computer_action = lambda op, params: {"success": True, "op": op}
+    with patch.dict("sys.modules", {"src.computer": comp_mod}):
+        res_default = asyncio.run(execute_mcp_computer("computer_get_status", {}))
+        assert res_default == {"success": True, "op": "computer_get_status"}
 
 
 def test_router_rejects_when_gate_closed_and_handles_images():
