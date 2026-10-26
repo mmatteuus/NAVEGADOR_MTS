@@ -2,7 +2,7 @@
 import { getActiveTab } from './tab_manager.js';
 
 async function runInPage(source) {
-  function serialize(value) {
+  function serializeFn(value) {
     if (typeof value === 'function') return value.toString();
     if (typeof Element !== 'undefined' && value instanceof Element) {
       return {
@@ -14,43 +14,69 @@ async function runInPage(source) {
     return value;
   }
 
-  return new Promise((resolve) => {
-    const eventId = 'mts_eval_' + Math.random().toString(36).slice(2);
-    const cleanup = () => {
-      window.removeEventListener(eventId, handler);
-      clearTimeout(timer);
-    };
-    const handler = (e) => {
-      cleanup();
-      resolve(e.detail);
-    };
-    const timer = setTimeout(() => {
-      cleanup();
-      resolve({ success: false, error: 'Tempo limite esgotado ou erro de sintaxe no script da página.' });
-    }, 5000);
-    window.addEventListener(eventId, handler);
+  const doc = typeof document !== 'undefined' ? document : null;
+  const win = typeof window !== 'undefined' ? window : globalThis;
 
-    const script = document.createElement('script');
+  if (!doc || typeof doc.createElement !== 'function') {
+    return { success: false, error: 'Documento da página indisponível para avaliação de script.' };
+  }
+
+  return new Promise((resolve) => {
+    const eventName = '__mcp_eval_' + Math.random().toString(36).slice(2);
+    const script = doc.createElement('script');
+    let timer = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      if (win.removeEventListener) {
+        win.removeEventListener(eventName, handler);
+        win.removeEventListener('error', errorHandler);
+      }
+      script.remove();
+    };
+
+    const handler = (evt) => {
+      cleanup();
+      resolve(evt.detail);
+    };
+
+    const errorHandler = (evt) => {
+      cleanup();
+      resolve({ success: false, error: evt?.error?.message || evt?.message || 'Falha ao executar JavaScript na página.' });
+    };
+
+    timer = setTimeout(() => {
+      cleanup();
+      resolve({ success: false, error: 'Tempo limite esgotado para execução de script na página.' });
+    }, 3000);
+
+    if (win.addEventListener) {
+      win.addEventListener(eventName, handler, { once: true });
+      win.addEventListener('error', errorHandler);
+    }
+
+    const evtNameStr = JSON.stringify(eventName);
+    const serializeStr = serializeFn.toString();
+
     script.textContent = `(async () => {
+      const serialize = ${serializeStr};
       try {
-        const __res = await (async () => { ${source} })();
-        window.dispatchEvent(new CustomEvent('${eventId}', {
-          detail: { success: true, result: (${serialize.toString()})(__res), type: typeof __res }
-        }));
-      } catch (__err) {
-        window.dispatchEvent(new CustomEvent('${eventId}', {
-          detail: { success: false, error: __err?.message || String(__err), stack: __err?.stack || null }
-        }));
+        const raw = await (async () => { ${source} })();
+        const detail = { success: true, result: serialize(raw), type: typeof raw };
+        window.dispatchEvent(new CustomEvent(${evtNameStr}, { detail }));
+      } catch (err) {
+        const detail = { success: false, error: err?.message || String(err), stack: err?.stack || null };
+        window.dispatchEvent(new CustomEvent(${evtNameStr}, { detail }));
       }
     })();`;
-    const target = document.head || document.documentElement || document.body;
+
+    const target = doc.head || doc.documentElement || doc.body;
     if (target) {
       target.appendChild(script);
-      script.remove();
-    } else {
-      window.removeEventListener(eventId, handler);
-      resolve({ success: false, error: 'Elemento raiz DOM indisponível para execução.' });
+      return;
     }
+    cleanup();
+    resolve({ success: false, error: 'Documento da página indisponível para avaliação de script.' });
   });
 }
 
