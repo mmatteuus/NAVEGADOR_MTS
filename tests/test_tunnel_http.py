@@ -94,6 +94,18 @@ def test_tunnel_host_validation():
                 }) as r:
                     assert r.status == 403, f"Requisição com Host e Origin inválidos deve falhar: {r.status}"
 
+                # Origin com prefixo malicioso de domínio permitido (deve falhar)
+                async with client.post(url, headers={
+                    "Host": "external-domain.com",
+                    "Origin": "https://chatgpt.com.attacker.com"
+                }, json={
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "initialize",
+                    "params": {}
+                }) as r:
+                    assert r.status == 403, f"Requisição com Origin maliciosa com prefixo deve falhar: {r.status}"
+
         finally:
             await server.stop()
             await bridge.stop()
