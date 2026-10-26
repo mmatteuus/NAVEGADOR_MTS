@@ -61,6 +61,43 @@ class MCPServer:
             await self.ws_bridge.stop()
         logger.info("Servidor MCP finalizado.")
 
+    async def _handle_initialize(self, req_id: Any, params: Dict[str, Any], sid: str) -> Dict[str, Any]:
+        from .agent_directory import initialize_agent
+        await initialize_agent(self, sid, params)
+        supported = ("2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25")
+        ver = params.get("protocolVersion")
+        res = {
+            "protocolVersion": ver if ver in supported else "2024-11-05",
+            "capabilities": {"tools": {"listChanged": True}},
+            "serverInfo": {"name": self.name, "version": self.version}
+        }
+        return {"jsonrpc": "2.0", "id": req_id, "result": res}
+
+    async def _handle_initialized(self, req_id: Any, params: Dict[str, Any], sid: str) -> None:
+        return None
+
+    async def _handle_ping(self, req_id: Any, params: Dict[str, Any], sid: str) -> Dict[str, Any]:
+        return {"jsonrpc": "2.0", "id": req_id, "result": {}}
+
+    async def _handle_tools_list(self, req_id: Any, params: Dict[str, Any], sid: str) -> Dict[str, Any]:
+        tools = get_browser_tools() + get_computer_tools()
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": tools}}
+
+    async def _handle_tools_call(self, req_id: Any, params: Dict[str, Any], sid: str) -> Dict[str, Any]:
+        name = params.get("name", "")
+        args = params.get("arguments") or {}
+        if not isinstance(args, dict):
+            return {"jsonrpc": "2.0", "id": req_id,
+                    "error": {"code": -32602, "message": "Argumentos inválidos"}}
+        if self._use_active_hub:
+            from .hub_client import forward_tool_to_hub
+            call_res = await forward_tool_to_hub(
+                name, args, host=self.host, port=self.ws_port, session_id=sid
+            )
+        else:
+            call_res = await self.router.dispatch(name, args, session_id=sid)
+        return {"jsonrpc": "2.0", "id": req_id, "result": call_res}
+
     async def handle_jsonrpc(
         self, req: Dict[str, Any], session_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
@@ -73,41 +110,19 @@ class MCPServer:
             return {"jsonrpc": "2.0", "id": req_id,
                     "error": {"code": -32602, "message": "Parâmetros inválidos"}}
 
-        if method == "initialize":
-            from .agent_directory import initialize_agent
-            await initialize_agent(self, effective_sid, params)
-            res = {
-                "protocolVersion": params.get("protocolVersion") if params.get("protocolVersion") in (
-                    "2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"
-                ) else "2024-11-05",
-                "capabilities": {"tools": {"listChanged": True}},
-                "serverInfo": {"name": self.name, "version": self.version}
-            }
-            return {"jsonrpc": "2.0", "id": req_id, "result": res}
-        elif method == "notifications/initialized":
-            return None
-        elif method == "ping":
-            return {"jsonrpc": "2.0", "id": req_id, "result": {}}
-        elif method == "tools/list":
-            tools = get_browser_tools() + get_computer_tools()
-            return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": tools}}
-        elif method == "tools/call":
-            name = params.get("name", "")
-            args = params.get("arguments") or {}
-            if not isinstance(args, dict):
-                return {"jsonrpc": "2.0", "id": req_id,
-                        "error": {"code": -32602, "message": "Argumentos inválidos"}}
-            if self._use_active_hub:
-                from .hub_client import forward_tool_to_hub
-                call_res = await forward_tool_to_hub(
-                    name, args, host=self.host, port=self.ws_port, session_id=effective_sid
-                )
-            else:
-                call_res = await self.router.dispatch(name, args, session_id=effective_sid)
-            return {"jsonrpc": "2.0", "id": req_id, "result": call_res}
-        else:
-            err = {"code": -32601, "message": f"Método não encontrado: '{method}'"}
-            return {"jsonrpc": "2.0", "id": req_id, "error": err} if req_id is not None else None
+        dispatch_map: Dict[str, Callable] = {
+            "initialize": self._handle_initialize,
+            "notifications/initialized": self._handle_initialized,
+            "ping": self._handle_ping,
+            "tools/list": self._handle_tools_list,
+            "tools/call": self._handle_tools_call,
+        }
+        handler = dispatch_map.get(method)
+        if handler:
+            return await handler(req_id, params, effective_sid)
+
+        err = {"code": -32601, "message": f"Método não encontrado: '{method}'"}
+        return {"jsonrpc": "2.0", "id": req_id, "error": err} if req_id is not None else None
 
     async def run_stdio(self) -> None:
         """Loop principal do transporte Stdio (lê de stdin e escreve em stdout)."""
