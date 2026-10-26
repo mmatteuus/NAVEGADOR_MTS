@@ -71,15 +71,15 @@ async function runE2ERealMultisession() {
 
     const readAdv = await clientB.callTool('browser_get_text', { tabId: tabIdA });
     assert.equal(readAdv.isError, true);
-    assert.match(readAdv.error, /Acesso recusado|TAB_ACCESS_DENIED/);
+    assert.match(readAdv.error, /Acesso recusado|TAB_ACCESS_DENIED|BROWSER_SELECTION_REQUIRED/);
 
     const snapAdv = await clientB.callTool('browser_screenshot', { tabId: tabIdA });
     assert.equal(snapAdv.isError, true);
-    assert.match(snapAdv.error, /Acesso recusado|TAB_ACCESS_DENIED/);
+    assert.match(snapAdv.error, /Acesso recusado|TAB_ACCESS_DENIED|BROWSER_SELECTION_REQUIRED/);
 
     const closeAdv = await clientB.callTool('browser_manage_tabs', { action: 'close', tabId: tabIdA });
     assert.equal(closeAdv.isError, true);
-    assert.match(closeAdv.error, /Acesso recusado|TAB_ACCESS_DENIED/);
+    assert.match(closeAdv.error, /Acesso recusado|TAB_ACCESS_DENIED|BROWSER_SELECTION_REQUIRED/);
 
     const closeLegit = await clientA.callTool('browser_manage_tabs', { action: 'close', tabId: tabIdA });
     assert.equal(closeLegit.isError, false);

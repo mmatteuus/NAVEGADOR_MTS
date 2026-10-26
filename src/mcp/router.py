@@ -84,11 +84,9 @@ class MCPToolRouter:
         if isinstance(res, dict) and res.get("success") is False:
             return format_mcp_error(str(res.get("error", "Falha na extensão")))
 
-        if ((name == "browser_manage_tabs" and args.get("action") == "new") or name == "browser_new_tab") and session_id:
-            tid = session_manager.extract_tab_id(res)
-            if tid is not None:
-                session_manager.assign_tab_to_session(session_id, tid)
-        elif name == "browser_manage_tabs" and args.get("action") == "close":
+        # Criação não concede posse: somente a atribuição humana no popup pode
+        # vincular a aba a uma sessão. Fechamento ainda limpa posse existente.
+        if name == "browser_manage_tabs" and args.get("action") == "close":
             close_tid = args.get("tabId")
             if close_tid is not None:
                 try:
