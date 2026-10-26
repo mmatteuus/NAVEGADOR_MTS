@@ -17,9 +17,12 @@ class MockBrowserBridge:
     def __init__(self) -> None:
         self.is_connected = True
         self.recorded_actions: list[tuple[str, dict]] = []
+        self.recorded_sessions: list[str | None] = []
 
-    async def send_action(self, name: str, params: dict, timeout: float = 30.0) -> dict:
+    async def send_action(self, name: str, params: dict, timeout: float = 30.0,
+                          session_id: str | None = None) -> dict:
         self.recorded_actions.append((name, dict(params)))
+        self.recorded_sessions.append(session_id)
         if name == "browser_manage_tabs":
             act = params.get("action")
             if act == "list":
@@ -114,3 +117,4 @@ def test_tier1_browser_jsonrpc_server_flow(dynamic_port: int) -> None:
     assert response["id"] == 100
     assert not response["result"]["isError"]
     assert "Entrar" in response["result"]["content"][0]["text"]
+    assert bridge.recorded_sessions == [server.process_session_id]

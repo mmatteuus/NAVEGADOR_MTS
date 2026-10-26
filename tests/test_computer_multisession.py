@@ -6,6 +6,7 @@ o mutex _physical_device_lock em mouse.py, o despacho multissessão e Fail-Close
 from __future__ import annotations
 import threading
 import time
+import importlib
 from unittest.mock import patch
 from typing import Generator
 import pytest
@@ -14,6 +15,9 @@ from src.computer import (
     get_agent_cursor_position, post_mouse_click, post_mouse_move,
     reset_agent_cursors, safety_gate,
 )
+from src.computer import mouse_background
+from src.computer.window_assignments import window_assignments
+assignments_module = importlib.import_module("src.computer.window_assignments")
 
 
 @pytest.fixture(autouse=True)
@@ -24,19 +28,34 @@ def clean_agent_cursors() -> Generator[None, None, None]:
     reset_agent_cursors()
 
 
-def test_virtual_cursor_isolation_between_sessions(reset_safety_gate: None) -> None:
+@pytest.fixture
+def assigned_windows(monkeypatch: pytest.MonkeyPatch) -> Generator[dict[str, int], None, None]:
+    """Registra HWNDs sintéticos e impede qualquer entrada física durante o teste."""
+    monkeypatch.setattr(assignments_module.user32, "IsWindow", lambda _hwnd: 1)
+    monkeypatch.setattr(assignments_module, "window_identity", lambda hwnd: (int(hwnd), 1))
+    monkeypatch.setattr(mouse_background, "window_identity", lambda hwnd: (int(hwnd), 1))
+    monkeypatch.setattr(mouse_background, "resolve_target_window", lambda x, y, hwnd=None: (int(hwnd), int(x), int(y)))
+    monkeypatch.setattr(mouse_background.user32, "PostMessageW", lambda *_args: 1)
+    targets = {"agent_alpha": 101, "agent_beta": 102}
+    for sid, hwnd in targets.items():
+        window_assignments.assign(sid, hwnd)
+    yield targets
+    window_assignments.clear()
+
+
+def test_virtual_cursor_isolation_between_sessions(reset_safety_gate: None, assigned_windows: dict[str, int]) -> None:
     """Verifica isolamento estrito de coordenadas virtuais entre múltiplos agentes."""
     safety_gate.authorize()
     try:
-        post_mouse_move(100, 200, session_id="agent_alpha")
-        post_mouse_move(500, 600, session_id="agent_beta")
+        post_mouse_move(100, 200, hwnd=assigned_windows["agent_alpha"], session_id="agent_alpha")
+        post_mouse_move(500, 600, hwnd=assigned_windows["agent_beta"], session_id="agent_beta")
 
         assert get_agent_cursor_position("agent_alpha") == (100, 200)
         assert get_agent_cursor_position("agent_beta") == (500, 600)
         assert get_agent_cursor_position("agent_gamma") == (0, 0)
         assert get_agent_cursor_position(None) == (0, 0)
 
-        post_mouse_click(session_id="agent_alpha")
+        post_mouse_click(hwnd=assigned_windows["agent_alpha"], session_id="agent_alpha")
         assert get_agent_cursor_position("agent_alpha") == (100, 200)
         assert get_agent_cursor_position("agent_beta") == (500, 600)
 
@@ -48,7 +67,7 @@ def test_virtual_cursor_isolation_between_sessions(reset_safety_gate: None) -> N
         safety_gate.revoke("Fim do teste de isolamento multissessão")
 
 
-def test_concurrent_multithreaded_virtual_cursors(reset_safety_gate: None) -> None:
+def test_concurrent_multithreaded_virtual_cursors(reset_safety_gate: None, assigned_windows: dict[str, int]) -> None:
     """Valida execução concorrente de múltiplos agentes sem contaminação mútua."""
     safety_gate.authorize()
     errors: list[Exception] = []
@@ -56,10 +75,12 @@ def test_concurrent_multithreaded_virtual_cursors(reset_safety_gate: None) -> No
 
     def _worker(idx: int) -> None:
         sid = f"agent_worker_{idx}"
+        hwnd = 1000 + idx
+        window_assignments.assign(sid, hwnd)
         try:
             for step in range(1, 6):
-                post_mouse_move(idx * 50 + step * 2, idx * 30 + step * 2, session_id=sid)
-                post_mouse_click(session_id=sid)
+                post_mouse_move(idx * 50 + step * 2, idx * 30 + step * 2, hwnd=hwnd, session_id=sid)
+                post_mouse_click(hwnd=hwnd, session_id=sid)
         except Exception as exc:
             errors.append(exc)
 
