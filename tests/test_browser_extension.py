@@ -71,7 +71,7 @@ def test_icons_integrity():
 
 
 def test_file_line_limits():
-    """Garante que TODOS os arquivos da extensão tenham estritamente menos de 150 linhas."""
+    """Garante que TODOS os arquivos da extensão tenham no máximo 150 linhas (<= 150)."""
     for root, _, files in os.walk(EXTENSION_DIR):
         for file in files:
             if file.endswith(".png"):
