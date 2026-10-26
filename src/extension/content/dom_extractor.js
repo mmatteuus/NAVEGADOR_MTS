@@ -11,6 +11,12 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 (function () {
   const IGNORED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'PATH', 'TEMPLATE', 'IFRAME']);
   const MAX_VISIBLE_TEXT = 20000;
+  // Cache de indentação para otimização de travessia do DOM
+  const INDENT_CACHE = Array.from({ length: 30 }, (_, i) => '  '.repeat(i));
+
+  function getIndent(depth) {
+    return INDENT_CACHE[depth] || '  '.repeat(depth);
+  }
 
   /**
    * Extrai e formata a árvore do DOM de forma simplificada e indentada.
@@ -23,9 +29,10 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
     function traverse(node, depth) {
       if (!node || depth > maxDepth) return '';
+      const indent = getIndent(depth);
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent.trim();
-        return text ? `${'  '.repeat(depth)}"${text}"\n` : '';
+        return text ? `${indent}"${text}"\n` : '';
       }
 
       if (node.nodeType !== Node.ELEMENT_NODE) return '';
@@ -37,15 +44,19 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
       if (node.id) meta += `#${node.id}`;
       if (node.className && typeof node.className === 'string') {
-        const firstClass = node.className.split(' ')[0];
+        const spaceIdx = node.className.indexOf(' ');
+        const firstClass = spaceIdx === -1 ? node.className : node.className.slice(0, spaceIdx);
         if (firstClass) meta += `.${firstClass}`;
       }
-      if (node.getAttribute('role')) meta += ` [role="${node.getAttribute('role')}"]`;
-      if (node.getAttribute('aria-label')) meta += ` [label="${node.getAttribute('aria-label')}"]`;
+      const role = node.getAttribute('role');
+      if (role) meta += ` [role="${role}"]`;
+      const ariaLabel = node.getAttribute('aria-label');
+      if (ariaLabel) meta += ` [label="${ariaLabel}"]`;
 
-      let output = `${'  '.repeat(depth)}<${meta}>\n`;
-      for (const child of node.childNodes) {
-        output += traverse(child, depth + 1);
+      let output = `${indent}<${meta}>\n`;
+      const children = node.childNodes;
+      for (let i = 0; i < children.length; i++) {
+        output += traverse(children[i], depth + 1);
       }
       return output;
     }
