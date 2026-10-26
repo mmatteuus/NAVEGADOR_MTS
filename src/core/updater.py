@@ -58,6 +58,11 @@ def _version_key(version: tuple[int, ...]) -> tuple[int, int, int, int]:
 def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: bool = True) -> UpdateInfo:
     """Consulta somente releases com instalador; nunca usa ZIP da fonte."""
     data, error = fetch_json(api_url)
+    if data is None and api_url == DEFAULT_RELEASE_URL:
+        from .update_web_fallback import fetch_release_web_fallback
+        fallback_data, _ = fetch_release_web_fallback(GITHUB_OWNER, GITHUB_REPO)
+        if fallback_data is not None:
+            data, error = fallback_data, None
     if data is not None:
         tag = str(data.get("tag_name", ""))
         if data.get("draft") or data.get("prerelease") or not re.fullmatch(r"v?\d+\.\d+\.\d+(?:\.\d+)?", tag):

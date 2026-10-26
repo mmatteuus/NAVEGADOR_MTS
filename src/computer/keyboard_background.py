@@ -52,14 +52,16 @@ def post_keyboard_type(
     text: str, delay_ms: int = 5, hwnd: Optional[int] = None, session_id: Optional[str] = None
 ) -> Dict[str, Any]:
     safety_gate.check_authorization("type_text")
-    target_hwnd = _resolve(hwnd, session_id)
-    target_identity = keyboard_target_identity(target_hwnd)
     lease = window_assignments.get(session_id) if session_id else None
     if session_id:
-        if lease is None or lease.hwnd != target_hwnd:
-            raise ValueError("TARGET_REVOKED: atribuição ausente durante a operação")
+        if lease is None:
+            raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
         if not getattr(lease, "allow_keyboard", True):
             raise ValueError("DEVICE_DISABLED: controle de teclado desativado pelo usuário para esta janela")
+    target_hwnd = _resolve(hwnd, session_id)
+    if session_id and lease and lease.hwnd != target_hwnd:
+        raise ValueError("TARGET_REVOKED: atribuição ausente durante a operação")
+    target_identity = keyboard_target_identity(target_hwnd)
     hw = wintypes.HWND(target_hwnd)
     delay_sec = max(delay_ms / 1000.0, 0.001)
 
@@ -95,14 +97,16 @@ def post_key_press(
     if not target_vk:
         raise ValueError(f"Tecla desconhecida: '{key}'")
 
-    target_hwnd = _resolve(hwnd, session_id)
-    target_identity = keyboard_target_identity(target_hwnd)
     lease = window_assignments.get(session_id) if session_id else None
     if session_id:
-        if lease is None or lease.hwnd != target_hwnd:
-            raise ValueError("TARGET_REVOKED: atribuição ausente durante a operação")
+        if lease is None:
+            raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
         if not getattr(lease, "allow_keyboard", True):
             raise ValueError("DEVICE_DISABLED: controle de teclado desativado pelo usuário para esta janela")
+    target_hwnd = _resolve(hwnd, session_id)
+    if session_id and lease and lease.hwnd != target_hwnd:
+        raise ValueError("TARGET_REVOKED: atribuição ausente durante a operação")
+    target_identity = keyboard_target_identity(target_hwnd)
     hw = wintypes.HWND(target_hwnd)
 
     pressed, release_failures, completed = [], [], False

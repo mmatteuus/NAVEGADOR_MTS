@@ -9,7 +9,6 @@ import importlib
 import pytest
 from src.computer import execute_computer_action
 from src.computer.mouse_background import post_mouse_click, post_mouse_move
-import src.computer.keyboard_background as kb_mod
 from src.computer.keyboard_background import post_keyboard_type, post_key_press
 from src.computer.safety_gate import safety_gate
 from src.core.tunnel_config import (
@@ -31,8 +30,6 @@ def clean_assignments_and_mocks(monkeypatch):
     monkeypatch.setattr(wa_mod.user32, "IsWindow", lambda _hwnd: 1)
     monkeypatch.setattr(wa_mod, "window_identity", lambda _hwnd: (100, 200))
     monkeypatch.setattr(wa_mod, "window_root", lambda hwnd: int(hwnd))
-    monkeypatch.setattr(kb_mod, "resolve_keyboard_target", lambda *a, **k: 42)
-    monkeypatch.setattr(kb_mod, "keyboard_target_identity", lambda _: (100, 200))
     yield
     window_assignments.clear()
     safety_gate.revoke("fim do teste")
@@ -62,14 +59,14 @@ def test_mouse_blocked_when_allow_mouse_is_false():
     window_assignments.assign("sess-no-mouse", 42, allow_mouse=False, allow_keyboard=True)
 
     with pytest.raises(ValueError, match="DEVICE_DISABLED.*mouse"):
-        post_mouse_click(button="left", x=10, y=10, hwnd=42, session_id="sess-no-mouse")
+        post_mouse_click("left", x=10, y=10, session_id="sess-no-mouse")
 
     with pytest.raises(ValueError, match="DEVICE_DISABLED.*mouse"):
-        post_mouse_move(20, 20, hwnd=42, session_id="sess-no-mouse")
+        post_mouse_move(20, 20, session_id="sess-no-mouse")
 
     # Também valida via despachante público
     res = execute_computer_action("computer_mouse_click", {
-        "button": "left", "x": 10, "y": 10, "hwnd": 42, "background": True, "session_id": "sess-no-mouse"
+        "button": "left", "x": 10, "y": 10, "background": True, "session_id": "sess-no-mouse"
     })
     assert res["success"] is False
     assert "DEVICE_DISABLED" in res["error"]
@@ -81,14 +78,14 @@ def test_keyboard_blocked_when_allow_keyboard_is_false():
     window_assignments.assign("sess-no-kbd", 42, allow_mouse=True, allow_keyboard=False)
 
     with pytest.raises(ValueError, match="DEVICE_DISABLED.*teclado"):
-        post_keyboard_type("olá mundo", hwnd=42, session_id="sess-no-kbd")
+        post_keyboard_type("olá mundo", session_id="sess-no-kbd")
 
     with pytest.raises(ValueError, match="DEVICE_DISABLED.*teclado"):
-        post_key_press("enter", hwnd=42, session_id="sess-no-kbd")
+        post_key_press("enter", session_id="sess-no-kbd")
 
     # Também valida via despachante público
     res = execute_computer_action("computer_keyboard_type", {
-        "text": "olá mundo", "hwnd": 42, "background": True, "session_id": "sess-no-kbd"
+        "text": "olá mundo", "background": True, "session_id": "sess-no-kbd"
     })
     assert res["success"] is False
     assert "DEVICE_DISABLED" in res["error"]
