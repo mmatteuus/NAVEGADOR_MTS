@@ -126,29 +126,14 @@ def test_router_rejects_when_gate_closed_and_handles_images():
 
 
 def test_is_computer_authorized_direct():
-    """Valida o comportamento direto de is_computer_authorized para autorização, negação e exceções."""
-    # Safety checker autorizando
-    router_authorized = MCPToolRouter(safety_checker=lambda: True)
-    assert router_authorized.is_computer_authorized() is True
+    """Valida o comportamento direto de is_computer_authorized para autorização e negação."""
+    assert MCPToolRouter(safety_checker=lambda: True).is_computer_authorized() is True
+    assert MCPToolRouter(safety_checker=lambda: False).is_computer_authorized() is False
+    assert MCPToolRouter().is_computer_authorized() is False
 
-    # Safety checker negando
-    router_denied = MCPToolRouter(safety_checker=lambda: False)
-    assert router_denied.is_computer_authorized() is False
-
-    # Safety checker padrão (None fornecido na inicialização)
-    router_default = MCPToolRouter()
-    assert router_default.is_computer_authorized() is False
-
-    # Safety checker lançando exceção (deve capturar e retornar False / fail-closed)
-    def failing_checker():
+    def failing():
         raise RuntimeError("Erro ao verificar segurança")
 
-    router_exception = MCPToolRouter(safety_checker=failing_checker)
-    assert router_exception.is_computer_authorized() is False
-
-    # Safety checker retornando valores truthy / falsy não-booleanos
-    router_truthy = MCPToolRouter(safety_checker=lambda: 1)
-    assert router_truthy.is_computer_authorized() is True
-
-    router_falsy = MCPToolRouter(safety_checker=lambda: None)
-    assert router_falsy.is_computer_authorized() is False
+    assert MCPToolRouter(safety_checker=failing).is_computer_authorized() is False
+    assert MCPToolRouter(safety_checker=lambda: 1).is_computer_authorized() is True
+    assert MCPToolRouter(safety_checker=lambda: None).is_computer_authorized() is False
