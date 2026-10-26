@@ -65,6 +65,25 @@ def test_computer_dispatch_scroll_and_enrichment() -> None:
     assert type_p[0][1]["background"] is True and type_p[0][1]["hwnd"] == 1234
 
 
+def test_get_browser_tab_tools_isolation_and_structure() -> None:
+    """Valida o retorno de get_browser_tab_tools, garantindo isolamento contra mutação e integridade do schema."""
+    tools = get_browser_tab_tools()
+    assert isinstance(tools, list)
+    assert len(tools) == len(BROWSER_TAB_TOOLS)
+    assert tools == BROWSER_TAB_TOOLS
+    assert tools is not BROWSER_TAB_TOOLS
+
+    # Garante que cada item retornado é um dicionário independente (cópia rasa do dict)
+    for original, copy_item in zip(BROWSER_TAB_TOOLS, tools):
+        assert copy_item == original
+        assert copy_item is not original
+        assert "name" in copy_item and "description" in copy_item and "inputSchema" in copy_item
+
+    # Mutação no dict retornado não deve afetar a lista original BROWSER_TAB_TOOLS
+    tools[0]["custom_test_key"] = "mutation_check"
+    assert "custom_test_key" not in BROWSER_TAB_TOOLS[0]
+
+
 def test_codebase_loc_under_150() -> None:
     """Garante que nenhum arquivo (.py, .js, .mjs) em src/ e tests/ exceda 150 linhas físicas.
 
