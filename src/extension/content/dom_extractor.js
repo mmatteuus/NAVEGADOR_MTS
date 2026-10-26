@@ -20,40 +20,46 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    */
   function extractCleanDOM(clean = true, maxDepth = 10) {
     let nodeCount = 0;
+    const parts = [];
+    // Pré-calcula identação até a profundidade máxima + 2
+    const indents = Array.from({ length: maxDepth + 2 }, (_, i) => '  '.repeat(i));
 
     function traverse(node, depth) {
-      if (!node || depth > maxDepth) return '';
+      if (!node || depth > maxDepth) return;
+      const indent = indents[depth] || '  '.repeat(depth);
+
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent.trim();
-        return text ? `${'  '.repeat(depth)}"${text}"\n` : '';
+        if (text) parts.push(`${indent}"${text}"\n`);
+        return;
       }
 
-      if (node.nodeType !== Node.ELEMENT_NODE) return '';
-      if (clean && IGNORED_TAGS.has(node.tagName)) return '';
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (clean && IGNORED_TAGS.has(node.tagName)) return;
 
       nodeCount++;
-      const tag = node.tagName.toLowerCase();
-      let meta = tag;
+      let meta = node.tagName.toLowerCase();
 
       if (node.id) meta += `#${node.id}`;
       if (node.className && typeof node.className === 'string') {
         const firstClass = node.className.split(' ')[0];
         if (firstClass) meta += `.${firstClass}`;
       }
-      if (node.getAttribute('role')) meta += ` [role="${node.getAttribute('role')}"]`;
-      if (node.getAttribute('aria-label')) meta += ` [label="${node.getAttribute('aria-label')}"]`;
+      const role = node.getAttribute('role');
+      if (role) meta += ` [role="${role}"]`;
+      const ariaLabel = node.getAttribute('aria-label');
+      if (ariaLabel) meta += ` [label="${ariaLabel}"]`;
 
-      let output = `${'  '.repeat(depth)}<${meta}>\n`;
+      parts.push(`${indent}<${meta}>\n`);
       for (const child of node.childNodes) {
-        output += traverse(child, depth + 1);
+        traverse(child, depth + 1);
       }
-      return output;
     }
 
-    const tree = traverse(document.body || document.documentElement, 0);
+    traverse(document.body || document.documentElement, 0);
     return {
       success: true,
-      dom: tree,
+      dom: parts.join(''),
       totalNodes: nodeCount,
       url: window.location.href,
       title: document.title
