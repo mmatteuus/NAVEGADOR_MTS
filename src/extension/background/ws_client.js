@@ -115,9 +115,7 @@ function handleIncomingMessage(rawData) {
 export function sendMessage(payload, expectedSocket = undefined) {
   if ((expectedSocket === undefined || expectedSocket === socket) && socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify(payload));
-  } else {
-    logger.warn('Tentativa de envio com socket fechado ou em reconexão.');
-  }
+  } else logger.warn('Tentativa de envio com socket fechado ou em reconexão.');
 }
 function scheduleReconnect(delayOverride = null) {
   clearTimeout(reconnectTimer);
