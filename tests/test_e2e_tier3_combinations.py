@@ -17,7 +17,7 @@ class ComprehensiveBridgeMock:
         self.is_connected = True
         self.log: list[tuple[str, dict]] = []
 
-    async def send_action(self, name: str, params: dict, timeout: float = 30.0) -> dict:
+    async def send_action(self, name: str, params: dict, timeout: float = 30.0, **kwargs) -> dict:
         self.log.append((name, dict(params)))
         if name == "browser_manage_tabs":
             return {"tabId": 999, "action": params.get("action")}
