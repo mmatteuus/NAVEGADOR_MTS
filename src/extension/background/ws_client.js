@@ -70,7 +70,7 @@ export async function connectWebSocket() {
       if (connectionId !== attemptId) return;
       clearTimeout(connectionTimer); connectionTimer = null;
       connectionInProgress = false;
-      portRecovery.advance(); cleanupSocket(); scheduleReconnect();
+      portRecovery.advance(); scheduleReconnect();
     };
   } catch (err) {
     connectionInProgress = false;
@@ -135,7 +135,6 @@ function cleanupSocket() {
     socket = null;
   }
 }
-
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
