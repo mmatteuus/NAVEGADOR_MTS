@@ -20,7 +20,7 @@ _cursor_lock = threading.Lock()
 _agent_cursors: Dict[str, Dict[str, int]] = {}
 
 def _lease(session_id: Optional[str], hwnd: int):
-    if not session_id:
+    if not session_id or str(session_id).strip() == "":
         return None
     lease = window_assignments.get(session_id)
     if lease is None:

@@ -76,6 +76,16 @@ mas o pacote/instalador local não está validado. O CI Windows limpo fará a
 compilação completa, obrigatória antes da publicação automática.
 Verificação remota permanece pendente até a execução para o SHA final.
 
+## Correção do gate CI 77 — SPEC DONE
+
+O CI 40221544162 bloqueou publicação: mock de bridge sem session_id, testes de
+cursor anteriores à concessão obrigatória de janela e ws_client.js com 150 linhas
+onde a suíte exige menos de 150. Adaptar fixtures ao contrato aprovado, mantendo
+as assertivas de concorrência e concessões reais do registro com Win32 simulado.
+Não remover testes, enfraquecer isolamento nem acionar janelas do usuário.
+Reduzir apenas espaço vertical de ws_client.js; executar testes afetados e
+revisão independente antes de novo push. O instalador não foi publicado no CI 77.
+
 ## Addendum SPEC DONE — identidade confiável no router
 
 Antes da publicação, `MCPToolRouter.dispatch` deve aceitar a identidade somente
