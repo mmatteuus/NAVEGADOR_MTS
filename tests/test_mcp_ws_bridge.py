@@ -100,6 +100,18 @@ def test_websocket_bridge_timeout_and_error(dynamic_port: int) -> None:
     asyncio.run(_run())
 
 
+def test_websocket_bridge_init() -> None:
+    """Valida a inicialização padrão e customizada da classe WebSocketBridge."""
+    bridge = WebSocketBridge()
+    assert bridge.host == "127.0.0.1" and bridge.port == 3456
+    assert bridge.server is None and bridge.registry is not None
+    assert bridge._pending_requests == {} and bridge.last_latency_ms == 0.0
+    assert bridge._reload_policy is not None and not bridge.is_connected
+
+    custom_bridge = WebSocketBridge(host="192.168.1.1", port=8080)
+    assert custom_bridge.host == "192.168.1.1" and custom_bridge.port == 8080
+
+
 def test_websocket_bridge_port_hopping(dynamic_port: int) -> None:
     """Valida que o WebSocketBridge pula automaticamente para a próxima porta se a inicial estiver ocupada."""
     import socket
