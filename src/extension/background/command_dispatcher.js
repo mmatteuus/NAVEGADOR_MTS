@@ -13,7 +13,7 @@ import { sendMessage, getConnectionToken } from './ws_client.js';
 import { evaluatePageScript } from './page_script_executor.js';
 import { requireContentSuccess } from './content_response.js';
 import { enqueueSessionCommand } from './session_queues.js';
-import { releaseTabFromSession } from './session_registry.js';
+import { assignTabToSession, releaseTabFromSession, validateTabAccess } from './session_registry.js';
 import { getSessionCookies, setSessionCookie, clearSessionCookies, clearSessionStorage } from './cookie_isolator.js';
 import { isUpdateAdmissionBlocked } from './ws_update.js';
 
@@ -73,16 +73,18 @@ async function createTab(url, active, sid, incognito = false) {
   if (incognito && typeof chrome !== 'undefined' && chrome.windows?.create) {
     const win = await chrome.windows.create({ url: url || 'about:blank', incognito: true, focused: active === true });
     const tab = win.tabs?.[0] || { id: win.id };
-    return { success: true, tabId: tab.id, windowId: win.id, incognito: true, url,
-      requiresAssignment: true };
+    if (sid && tab.id) assignTabToSession(sid, tab.id);
+    return { success: true, tabId: tab.id, windowId: win.id, incognito: true, url };
   }
   const tab = await newTab(url, active === true);
-  return { ...tab, requiresAssignment: true };
+  if (sid && (tab?.tabId || tab?.id)) assignTabToSession(sid, tab.tabId || tab.id);
+  return tab;
 }
 
 const removeTab = async (tid, sid) => {
-  const tab = await requireGranted(tid, sid), res = await closeTab(tab.id);
-  releaseTabFromSession(tab.id);
+  const targetId = tid != null ? (validateTabAccess(sid, tid), Number(tid)) : (await requireGranted(tid, sid)).id;
+  const res = await closeTab(targetId);
+  releaseTabFromSession(targetId);
   return res;
 };
 const focusTab = async (tid, win, sid) => {
