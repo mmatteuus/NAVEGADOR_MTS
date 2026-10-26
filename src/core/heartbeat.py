@@ -5,8 +5,6 @@ timeout de 2 segundos. Detecta quedas de rede semi-abertas (Half-Open)
 e aciona a rotina de auto-cura do motor de resiliência.
 """
 
-from __future__ import annotations
-
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
