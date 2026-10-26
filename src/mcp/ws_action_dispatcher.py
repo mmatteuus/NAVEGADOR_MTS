@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Tuple
 from .session_manager import session_manager
 from .ws_protocol import handle_incoming_envelope
 
@@ -27,6 +27,53 @@ def resolve_pending_request(data: Dict[str, Any], pending_requests: Dict[str, as
                 fut.set_exception(RuntimeError(str(p["error"])))
             else:
                 fut.set_result(p.get("result", p.get("data", {})))
+
+
+async def _handle_browser_action(
+    act: str, clean_params: Dict[str, Any], session_id: Optional[str], send_action_cb: Callable[..., Any]
+) -> Tuple[bool, Any, Optional[str]]:
+    """Processa ações de navegador com validação de abas e lock de sessão."""
+    tab_id = clean_params.get("tabId")
+    if tab_id is not None:
+        try:
+            tid = int(tab_id)
+            if not session_manager.validate_tab_access(session_id, tid):
+                err_msg = f"TAB_ACCESS_DENIED: Acesso recusado à aba {tid}. A aba pertence a outra sessão."
+                logger.warning(err_msg)
+                return False, None, err_msg
+        except (ValueError, TypeError):
+            pass
+
+    sess = await session_manager.get_or_create_session(session_id)
+    async with sess.lock:
+        res = await send_action_cb(act, clean_params, session_id=session_id)
+
+    if act == "browser_manage_tabs" and session_id and clean_params.get("action") == "close":
+        close_id = clean_params.get("tabId")
+        if close_id is not None:
+            try:
+                session_manager.release_tab(int(close_id))
+            except (ValueError, TypeError):
+                pass
+
+    success = res.get("success", True) if isinstance(res, dict) else True
+    return success, res, None
+
+
+async def _handle_computer_action(act: str, clean_params: Dict[str, Any]) -> Tuple[bool, Any]:
+    """Processa ações de computador (GUI/desktop ou MCP) e retorna o resultado."""
+    comp_actions = (
+        "computer_mouse_move", "computer_mouse_click", "computer_mouse_drag",
+        "computer_mouse_scroll", "computer_keyboard_type", "computer_key_press",
+    )
+    if act in comp_actions:
+        from ..computer import execute_computer_action
+        res = await asyncio.to_thread(execute_computer_action, act, clean_params)
+    else:
+        from .computer_dispatch import execute_mcp_computer
+        res = await execute_mcp_computer(act, clean_params)
+    success = res.get("success", False) if isinstance(res, dict) else False
+    return success, res
 
 
 async def dispatch_agent_action(
@@ -63,42 +110,14 @@ async def dispatch_agent_action(
 
     try:
         if act.startswith("browser_"):
-            tab_id = clean_params.get("tabId")
-            if tab_id is not None:
-                try:
-                    tid = int(tab_id)
-                    if not session_manager.validate_tab_access(session_id, tid):
-                        err_msg = f"TAB_ACCESS_DENIED: Acesso recusado à aba {tid}. A aba pertence a outra sessão."
-                        logger.warning(err_msg)
-                        await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": err_msg}))
-                        return
-                except (ValueError, TypeError):
-                    pass
-
-            sess = await session_manager.get_or_create_session(session_id)
-            async with sess.lock:
-                res = await send_action_cb(act, clean_params, session_id=session_id)
-
-            if act == "browser_manage_tabs" and session_id:
-                if clean_params.get("action") == "close":
-                    close_id = clean_params.get("tabId")
-                    if close_id is not None:
-                        try:
-                            session_manager.release_tab(int(close_id))
-                        except (ValueError, TypeError):
-                            pass
-
-            success = res.get("success", True) if isinstance(res, dict) else True
-            await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": success, "result": res}))
-        elif act.startswith("computer_"):
-            if act in ("computer_mouse_move", "computer_mouse_click", "computer_mouse_drag",
-                       "computer_mouse_scroll", "computer_keyboard_type", "computer_key_press"):
-                from ..computer import execute_computer_action
-                res = await asyncio.to_thread(execute_computer_action, act, clean_params)
+            success, res, err_msg = await _handle_browser_action(act, clean_params, session_id, send_action_cb)
+            if err_msg:
+                resp = {"id": call_id, "type": "agent_response", "success": False, "error": err_msg}
             else:
-                from .computer_dispatch import execute_mcp_computer
-                res = await execute_mcp_computer(act, clean_params)
-            success = res.get("success", False) if isinstance(res, dict) else False
+                resp = {"id": call_id, "type": "agent_response", "success": success, "result": res}
+            await websocket.send(json.dumps(resp))
+        elif act.startswith("computer_"):
+            success, res = await _handle_computer_action(act, clean_params)
             await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": success, "result": res}))
         else:
             await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": f"Ação desconhecida: '{act}'"}))

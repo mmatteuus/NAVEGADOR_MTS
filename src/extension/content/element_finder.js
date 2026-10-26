@@ -14,13 +14,13 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
    * @param {Element} el - Nó HTML a verificar.
    * @returns {boolean} Verdadeiro se o elemento tiver área e visibilidade ativa.
    */
-  function isElementVisible(el) {
+  function isElementVisible(el, precomputedRect = null) {
     if (!el || !(el instanceof Element)) return false;
     const style = window.getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
       return false;
     }
-    const rect = el.getBoundingClientRect();
+    const rect = precomputedRect || el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
 
@@ -70,8 +70,14 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
 
     let index = 0;
     for (const node of nodeList) {
-      if (visibleOnly && !isElementVisible(node)) continue;
+      if (visibleOnly) {
+        const style = window.getComputedStyle(node);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+          continue;
+        }
+      }
       const rect = node.getBoundingClientRect();
+      if (visibleOnly && (rect.width <= 0 || rect.height <= 0)) continue;
 
       results.push({
         index: index++,

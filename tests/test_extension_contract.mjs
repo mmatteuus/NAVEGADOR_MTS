@@ -1,35 +1,48 @@
 /** Regressões do contrato de avaliação e de erros do content script. */
 import assert from 'node:assert/strict';
 
-globalThis.window = globalThis;
-let handlers = {};
-globalThis.addEventListener = (type, fn) => { handlers[type] = fn; };
-globalThis.removeEventListener = (type) => { delete handlers[type]; };
-globalThis.dispatchEvent = (event) => { if (handlers[event.type]) handlers[event.type](event); };
-globalThis.CustomEvent = class CustomEvent {
-  constructor(type, options) {
-    this.type = type;
-    this.detail = options.detail;
+const eventListeners = new Map();
+globalThis.window = {
+  addEventListener: (type, fn) => eventListeners.set(type, fn),
+  removeEventListener: (type) => eventListeners.delete(type),
+  dispatchEvent: (evt) => {
+    const fn = eventListeners.get(evt.type);
+    if (fn) fn(evt);
   }
 };
-let createdElement = null;
+globalThis.CustomEvent = class CustomEvent {
+  constructor(type, params) {
+    this.type = type;
+    this.detail = params?.detail;
+  }
+};
 globalThis.document = {
   title: 'Página local',
-  head: {
-    appendChild: (elem) => {
-      createdElement = elem;
-      eval(elem.textContent);
-    }
+  createElement: () => {
+    const el = {
+      remove: () => {},
+      set textContent(code) {
+        try {
+          const fn = Function(`return (async () => { ${code} })()`);
+          fn();
+        } catch (e) {}
+      }
+    };
+    return el;
   },
-  createElement: (tag) => ({ textContent: '', remove: () => {} })
+  head: {
+    appendChild: (el) => {}
+  }
 };
+
 let receivedWorld = '';
 globalThis.chrome = {
   tabs: { query: async () => [{ id: 11, url: 'https://example.com', active: true }] },
   scripting: {
     executeScript: async (options) => {
       receivedWorld = options.world;
-      const injected = eval(`(${options.func.toString()})`);
+      const funcStr = options.func.toString();
+      const injected = Function(`return (${funcStr})`)();
       return [{ result: await injected(...options.args) }];
     }
   }
