@@ -73,6 +73,16 @@
     if (response.success) render(response.data || []);
   });
 
+  const urlInput = document.getElementById('new-agent-tab-url');
+  if (urlInput) {
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('open-agent-tab')?.click();
+      }
+    });
+  }
+
   document.getElementById('open-agent-tab').addEventListener('click', async () => {
     const input = document.getElementById('new-agent-tab-url');
     const response = await send('OPEN_GRANTED_TAB', { url: input.value });
