@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from unittest.mock import AsyncMock, patch
 import pytest
 from src.mcp import MCPServer, MCPToolRouter, WebSocketBridge, get_browser_tools, get_computer_tools
 
@@ -83,7 +84,6 @@ def test_router_browser_disconnected_and_formatting() -> None:
         res = await router.dispatch("browser_navigate", {"url": "https://google.com"})
         assert res["isError"] and "não está conectada" in res["content"][0]["text"].lower()
 
-        # Mock de imagem Base64
         bridge._active_socket = object()
         bridge.send_action = lambda a, p, timeout=30.0, session_id=None: asyncio.sleep(
             0, result={"base64": "iVBORw0KGgoAAAANSUhEUgAAAAE=", "width": 100}
@@ -92,5 +92,58 @@ def test_router_browser_disconnected_and_formatting() -> None:
         assert not img_res["isError"]
         types = [c["type"] for c in img_res["content"]]
         assert "image" in types and "text" in types
+
+    asyncio.run(_run())
+
+
+def test_mcp_server_start_and_stop_lifecycle() -> None:
+    """Valida a inicialização autônoma do MCPServer e a detecção de hub ativo."""
+    async def _run():
+        server = MCPServer(ws_port=9125)
+        server.ws_bridge.start, server.ws_bridge.stop = AsyncMock(), AsyncMock()
+        with patch("src.mcp.hub_client.is_hub_running", new=AsyncMock(return_value=False)):
+            await server.start(start_ws=True)
+            assert server._running is True and server._use_active_hub is False
+            server.ws_bridge.start.assert_called_once()
+
+        await server.stop()
+        assert server._running is False and server.ws_bridge.stop.call_count == 1
+
+        server.ws_bridge.start.reset_mock()
+        server.ws_bridge.stop.reset_mock()
+        with patch("src.mcp.hub_client.is_hub_running", new=AsyncMock(return_value=True)):
+            await server.start(start_ws=True)
+            assert server._running is True and server._use_active_hub is True
+            server.ws_bridge.start.assert_not_called()
+
+        await server.stop()
+        assert server._running is False and server.ws_bridge.stop.call_count == 0
+
+    asyncio.run(_run())
+
+
+def test_mcp_server_start_no_ws_and_external_bridge() -> None:
+    """Valida inicialização com start_ws=False e ponte WebSocket externa."""
+    async def _run():
+        server_no_ws = MCPServer(ws_port=9126)
+        server_no_ws.ws_bridge.start = AsyncMock()
+        with patch("src.mcp.hub_client.is_hub_running", new=AsyncMock(return_value=False)) as mock_hub:
+            await server_no_ws.start(start_ws=False)
+            assert server_no_ws._running is True and server_no_ws._use_active_hub is False
+            mock_hub.assert_not_called()
+            server_no_ws.ws_bridge.start.assert_not_called()
+
+        ext_bridge = WebSocketBridge(port=9127)
+        ext_bridge.start, ext_bridge.stop = AsyncMock(), AsyncMock()
+        server_ext = MCPServer(ws_bridge=ext_bridge)
+
+        with patch("src.mcp.hub_client.is_hub_running", new=AsyncMock(return_value=False)) as mock_hub:
+            await server_ext.start(start_ws=True)
+            assert server_ext._running is True and server_ext._use_active_hub is False
+            mock_hub.assert_not_called()
+            ext_bridge.start.assert_not_called()
+
+        await server_ext.stop()
+        assert server_ext._running is False and ext_bridge.stop.call_count == 0
 
     asyncio.run(_run())
