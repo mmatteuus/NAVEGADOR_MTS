@@ -17,72 +17,71 @@ class DashboardPanel(ctk.CTkFrame):
     """Painel de controle visual com métricas e status em tempo real."""
 
     def __init__(self, master, **kwargs) -> None:
-        super().__init__(master, corner_radius=PALETTE.corner_radius, **kwargs)
+        super().__init__(master, corner_radius=PALETTE.corner_radius, fg_color="transparent", **kwargs)
         self._setup_ui()
         safety_gate.add_listener(self._on_safety_gate_change)
 
     def _setup_ui(self) -> None:
         self.grid_columnconfigure((0, 1), weight=1)
 
-        # Cabeçalho do Dashboard
+        # Cabeçalho Principal (Hero Header)
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=16, pady=(8, 4))
-        self.lbl_system_status = ctk.CTkLabel(
-            self.header_frame, text="● SISTEMA OPERACIONAL & ONLINE",
-            font=(PALETTE.font_family, 14, "bold"), text_color=PALETTE.success
-        )
-        self.lbl_system_status.pack(side="left")
+        self.header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=8, pady=(4, 12))
+        f_title = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        f_title.pack(side="left")
+        ctk.CTkLabel(f_title, text="Visão Geral do Sistema", font=(PALETTE.font_family, 18, "bold")).pack(anchor="w")
+        self.lbl_system_status = ctk.CTkLabel(f_title, text="● SISTEMA OPERACIONAL & ONLINE", font=(PALETTE.font_family_body, 11, "bold"), text_color=PALETTE.success)
+        self.lbl_system_status.pack(anchor="w")
         self.lbl_version = ctk.CTkLabel(self.header_frame, text=f"Versão {APP_VERSION}", text_color=PALETTE.subtext_dark, font=(PALETTE.font_family_body, 11))
-        self.lbl_version.pack(side="right")
+        self.lbl_version.pack(side="right", anchor="n")
 
         # Cartão 1: Servidor MCP e Agente
         self.card_mcp = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.card_mcp.grid(row=1, column=0, sticky="nsew", padx=(16, 6), pady=4)
-        ctk.CTkLabel(self.card_mcp, text="🔌 Servidor MCP Local", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(10, 2))
+        self.card_mcp.grid(row=1, column=0, sticky="nsew", padx=(8, 6), pady=4)
+        ctk.CTkLabel(self.card_mcp, text="🔌 Servidor MCP & Agente", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(12, 4))
         self.lbl_mcp_status = ctk.CTkLabel(self.card_mcp, text="Status: Ativo (Porta 3456)", anchor="w", font=(PALETTE.font_family_body, 12))
-        self.lbl_mcp_status.pack(anchor="w", padx=14, pady=1)
+        self.lbl_mcp_status.pack(anchor="w", padx=14, pady=2)
         self.lbl_mcp_tunnel = ctk.CTkLabel(self.card_mcp, text=f"Agente: {get_tunnel_display_label()}", anchor="w", text_color=PALETTE.subtext_dark, font=(PALETTE.font_family_body, 11))
-        self.lbl_mcp_tunnel.pack(anchor="w", padx=14, pady=1)
+        self.lbl_mcp_tunnel.pack(anchor="w", padx=14, pady=2)
         self.lbl_mcp_latency = ctk.CTkLabel(self.card_mcp, text="Latência: -- ms", anchor="w", font=(PALETTE.font_family_body, 11))
-        self.lbl_mcp_latency.pack(anchor="w", padx=14, pady=(1, 10))
+        self.lbl_mcp_latency.pack(anchor="w", padx=14, pady=(2, 12))
 
         # Cartão 2: Extensão do Navegador
         self.card_ext = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.card_ext.grid(row=1, column=1, sticky="nsew", padx=(6, 16), pady=4)
-        ctk.CTkLabel(self.card_ext, text="🌐 Extensão Chrome / Edge", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(10, 2))
+        self.card_ext.grid(row=1, column=1, sticky="nsew", padx=(6, 8), pady=4)
+        ctk.CTkLabel(self.card_ext, text="🌐 Extensão Chrome / Edge", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(12, 4))
         self.lbl_ext_status = ctk.CTkLabel(self.card_ext, text="Status: Aguardando...", anchor="w", font=(PALETTE.font_family_body, 12))
-        self.lbl_ext_status.pack(anchor="w", padx=14, pady=1)
+        self.lbl_ext_status.pack(anchor="w", padx=14, pady=2)
         self.lbl_ext_tab = ctk.CTkLabel(self.card_ext, text="Aba Ativa: Nenhuma", anchor="w", text_color=PALETTE.subtext_dark, font=(PALETTE.font_family_body, 11))
-        self.lbl_ext_tab.pack(anchor="w", padx=14, pady=1)
+        self.lbl_ext_tab.pack(anchor="w", padx=14, pady=2)
         self.lbl_ext_port = ctk.CTkLabel(self.card_ext, text="Ponte: ws://127.0.0.1:3456", anchor="w", font=(PALETTE.font_family_body, 11))
-        self.lbl_ext_port.pack(anchor="w", padx=14, pady=(1, 10))
+        self.lbl_ext_port.pack(anchor="w", padx=14, pady=(2, 12))
 
         # Cartão 3: Trava de Controle do Computador (Computer Use)
         self.card_safety = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.card_safety.grid(row=2, column=0, columnspan=2, sticky="ew", padx=16, pady=4)
-        ctk.CTkLabel(self.card_safety, text="🛡️ CONTROLE DO COMPUTADOR (COMPUTER USE)", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(8, 2))
+        self.card_safety.grid(row=2, column=0, columnspan=2, sticky="ew", padx=8, pady=6)
+        ctk.CTkLabel(self.card_safety, text="🛡️ CONTROLE DO COMPUTADOR (COMPUTER USE)", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(10, 4))
         self.switch_safety = ctk.CTkSwitch(
             self.card_safety, text="Permitir controle de mouse, teclado e tela",
             command=self._on_switch_toggled, font=(PALETTE.font_family_body, 12)
         )
-        self.switch_safety.pack(anchor="w", padx=14, pady=3)
+        self.switch_safety.pack(anchor="w", padx=14, pady=4)
         self.lbl_safety_desc = ctk.CTkLabel(self.card_safety, text="Status: 🔴 Desautorizado pelo usuário", anchor="w", font=(PALETTE.font_family_body, 11))
-        self.lbl_safety_desc.pack(anchor="w", padx=14, pady=1)
-        ctk.CTkLabel(self.card_safety, text="🚨 Kill-Switch de Emergência: Pressione ESC 3x para interromper", text_color=PALETTE.warning, font=(PALETTE.font_family_body, 11)).pack(anchor="w", padx=14, pady=(1, 8))
+        self.lbl_safety_desc.pack(anchor="w", padx=14, pady=2)
+        ctk.CTkLabel(self.card_safety, text="🚨 Kill-Switch de Emergência: Pressione ESC 3x para interromper", text_color=PALETTE.warning, font=(PALETTE.font_family_body, 11)).pack(anchor="w", padx=14, pady=(2, 10))
 
         # Cartão 4: Console de Registro de Atividades em Tempo Real
         self.card_logs = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.card_logs.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=16, pady=(4, 10))
+        self.card_logs.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=8, pady=(4, 8))
         self.rowconfigure(3, weight=1)
-        ctk.CTkLabel(self.card_logs, text="📋 Registro de Atividades em Tempo Real", font=(PALETTE.font_family, 13, "bold")).pack(anchor="w", padx=14, pady=(8, 2))
-        self.txt_logs = ctk.CTkTextbox(self.card_logs, height=120, font=("Consolas", 11), wrap="char", border_width=1, border_color=PALETTE.card_border_dark)
-        self.txt_logs.pack(fill="both", expand=True, padx=14, pady=(0, 6))
+        f_log_hdr = ctk.CTkFrame(self.card_logs, fg_color="transparent")
+        f_log_hdr.pack(fill="x", padx=14, pady=(8, 4))
+        ctk.CTkLabel(f_log_hdr, text="📋 Registro de Atividades em Tempo Real", font=(PALETTE.font_family, 13, "bold")).pack(side="left")
+        ctk.CTkButton(f_log_hdr, text="Limpar", width=65, height=24, corner_radius=6, command=self.clear_logs).pack(side="right", padx=3)
+        ctk.CTkButton(f_log_hdr, text="Copiar", width=65, height=24, corner_radius=6, command=self.copy_logs).pack(side="right")
+        self.txt_logs = ctk.CTkTextbox(self.card_logs, height=130, font=("Consolas", 11), wrap="char", border_width=1, border_color=PALETTE.card_border_dark)
+        self.txt_logs.pack(fill="both", expand=True, padx=14, pady=(0, 10))
         self.txt_logs.configure(state="disabled")
-
-        btn_box = ctk.CTkFrame(self.card_logs, fg_color="transparent")
-        btn_box.pack(anchor="e", padx=12, pady=(0, 6))
-        ctk.CTkButton(btn_box, text="Limpar", width=65, height=24, corner_radius=6, command=self.clear_logs).pack(side="right", padx=3)
-        ctk.CTkButton(btn_box, text="Copiar", width=65, height=24, corner_radius=6, command=self.copy_logs).pack(side="right")
 
     def _on_switch_toggled(self) -> None:
         if self.switch_safety.get() == 1: safety_gate.authorize()

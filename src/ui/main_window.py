@@ -1,4 +1,4 @@
-"""Janela principal: navegação, tema e ciclo de vida na bandeja do Windows."""
+"""Janela principal redesenhada com barra lateral moderna no padrão Windows 11."""
 
 from typing import Optional
 import customtkinter as ctk
@@ -10,7 +10,7 @@ from .main_navigation import show_panel
 
 
 class MainWindow(ctk.CTk):
-    """Janela principal do aplicativo BROWSER MTS no Windows 11."""
+    """Janela principal do aplicativo BROWSER MTS com layout de barra lateral moderna."""
 
     def __init__(self, on_close_to_tray: Optional[any] = None, on_quit_app: Optional[any] = None) -> None:
         super().__init__()
@@ -21,49 +21,63 @@ class MainWindow(ctk.CTk):
         self._setup_layout()
 
     def _setup_window(self) -> None:
-        self.title("NAVEGADOR MTS — Windows 11")
-        self.geometry("860x680")
-        self.minsize(780, 600)
+        self.title("NAVEGADOR MTS — Centro de Automação Windows 11")
+        self.geometry("980x700")
+        self.minsize(860, 620)
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
         self.update_idletasks()
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
-        self.geometry(f"860x680+{max(0, (sw - 860) // 2)}+{max(0, (sh - 680) // 2)}")
+        self.geometry(f"980x700+{max(0, (sw - 980) // 2)}+{max(0, (sh - 700) // 2)}")
         apply_mica_theme(self, is_dark=True)
 
     def _setup_layout(self) -> None:
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=1)
 
-        self.nav_bar = ctk.CTkFrame(self, corner_radius=PALETTE.corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.nav_bar.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 6))
+        # Barra Lateral Esquerda (Sidebar Moderna)
+        self.sidebar = ctk.CTkFrame(self, width=225, corner_radius=0, border_width=1, border_color=PALETTE.card_border_dark)
+        self.sidebar.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+        self.sidebar.grid_propagate(False)
 
-        bar_box = ctk.CTkFrame(self.nav_bar, fg_color="transparent")
-        bar_box.pack(fill="x", padx=10, pady=7)
+        # Topo da Sidebar
+        f_brand = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        f_brand.pack(fill="x", padx=16, pady=(18, 14))
+        ctk.CTkLabel(f_brand, text="🌐 NAVEGADOR MTS", font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_dark).pack(anchor="w")
+        ctk.CTkLabel(f_brand, text="Automação & IA para Windows", font=(PALETTE.font_family_body, 10), text_color=PALETTE.subtext_dark).pack(anchor="w")
 
-        ctk.CTkLabel(bar_box, text="🌐 NAVEGADOR MTS", font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_dark).pack(side="left", padx=(4, 16))
+        # Itens de Menu
+        ctk.CTkLabel(self.sidebar, text="MENU PRINCIPAL", font=(PALETTE.font_family, 10, "bold"), text_color=PALETTE.subtext_dark).pack(anchor="w", padx=16, pady=(8, 4))
+        self.btn_nav_dash = ctk.CTkButton(self.sidebar, text="  📊  Visão Geral", height=36, corner_radius=8, anchor="w", command=self.show_dashboard, fg_color=PALETTE.accent)
+        self.btn_nav_dash.pack(fill="x", padx=12, pady=2)
 
-        self.btn_nav_dash = ctk.CTkButton(bar_box, text="📊 Dashboard", width=105, height=32, corner_radius=8, command=self.show_dashboard, fg_color=PALETTE.accent, font=(PALETTE.font_family_body, 12, "bold"))
-        self.btn_nav_dash.pack(side="left", padx=3)
+        self.btn_nav_windows = ctk.CTkButton(self.sidebar, text="  🪟  Destinos & Janelas", height=36, corner_radius=8, anchor="w", command=self.show_windows, fg_color="transparent", text_color=PALETTE.text_dark)
+        self.btn_nav_windows.pack(fill="x", padx=12, pady=2)
 
-        self.btn_nav_windows = ctk.CTkButton(bar_box, text="🪟 Destinos", width=95, height=32, corner_radius=8, command=self.show_windows, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
-        self.btn_nav_windows.pack(side="left", padx=3)
+        self.btn_nav_settings = ctk.CTkButton(self.sidebar, text="  ⚙️  Configurações", height=36, corner_radius=8, anchor="w", command=self.show_settings, fg_color="transparent", text_color=PALETTE.text_dark)
+        self.btn_nav_settings.pack(fill="x", padx=12, pady=2)
 
-        self.btn_nav_settings = ctk.CTkButton(bar_box, text="⚙️ Configurações", width=115, height=32, corner_radius=8, command=self.show_settings, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
-        self.btn_nav_settings.pack(side="left", padx=3)
+        ctk.CTkLabel(self.sidebar, text="INTEGRAÇÃO", font=(PALETTE.font_family, 10, "bold"), text_color=PALETTE.subtext_dark).pack(anchor="w", padx=16, pady=(14, 4))
+        self.btn_mcp_connect = ctk.CTkButton(self.sidebar, text="  🤖  Conectar Agente IA", height=36, corner_radius=8, anchor="w", command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover)
+        self.btn_mcp_connect.pack(fill="x", padx=12, pady=2)
 
-        self.btn_theme_toggle = ctk.CTkButton(bar_box, text="🌙", width=38, height=32, corner_radius=8, command=self.toggle_theme, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
-        self.btn_theme_toggle.pack(side="right", padx=(3, 0))
+        # Rodapé da Sidebar
+        f_foot = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        f_foot.pack(side="bottom", fill="x", padx=12, pady=14)
+        ctk.CTkLabel(f_foot, text="● Servidor Local Ativo (3456)", font=(PALETTE.font_family_body, 10), text_color=PALETTE.success).pack(anchor="w", pady=(0, 6))
 
-        self.btn_update = ctk.CTkButton(bar_box, text="🔄 Atualizar", width=95, height=32, corner_radius=8, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
-        self.btn_update.pack(side="right", padx=3)
+        f_foot_btns = ctk.CTkFrame(f_foot, fg_color="transparent")
+        f_foot_btns.pack(fill="x")
+        self.btn_update = ctk.CTkButton(f_foot_btns, text="🔄 Atualizar", height=30, corner_radius=8, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
+        self.btn_update.pack(side="left", fill="x", expand=True, padx=(0, 3))
+        self.btn_theme_toggle = ctk.CTkButton(f_foot_btns, text="🌙", width=34, height=30, corner_radius=8, command=self.toggle_theme, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
+        self.btn_theme_toggle.pack(side="right")
 
-        self.btn_mcp_connect = ctk.CTkButton(bar_box, text="🤖 Conectar IA", width=120, height=32, corner_radius=8, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, font=(PALETTE.font_family_body, 12, "bold"))
-        self.btn_mcp_connect.pack(side="right", padx=3)
-
+        # Painéis Principais
         self.panel_dashboard = DashboardPanel(self)
         self.panel_settings = SettingsPanel(self, on_shutdown_app=self.on_quit_app)
         self.panel_windows = DestinationsPanel(self)
-        self.panel_dashboard.grid(row=1, column=0, sticky="nsew", padx=16, pady=(4, 16))
+        self.show_dashboard()
 
     def open_mcp_connect_dialog(self) -> None:
         from .mcp_copy_dialog import show_mcp_dialog
