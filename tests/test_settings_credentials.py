@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from src.core.credential_validation import is_runtime_credential
 from src.core.security import mask_credential
 from src.ui import settings_panel
 
@@ -106,3 +107,26 @@ def test_invalid_environment_key_is_rejected(monkeypatch, tmp_path: Path) -> Non
         from src.core.tunnel_service import get_runtime_api_key
 
         assert get_runtime_api_key() is None
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("sk-valid-key-123", True),
+        ("  sk-valid-key-with-whitespace  ", True),
+        ("sk-a", True),
+        ("sk-", False),
+        ("sk", False),
+        ("invalid-prefix-123", False),
+        ("", False),
+        ("   ", False),
+        (None, False),
+        (12345, False),
+        (["sk-valid"], False),
+        ("sk-••••1234", False),
+        ("sk-•", False),
+    ],
+)
+def test_is_runtime_credential_validation(value: object, expected: bool) -> None:
+    """Valida que is_runtime_credential aceita apenas chaves não mascaradas com prefixo sk-."""
+    assert is_runtime_credential(value) is expected
