@@ -1,27 +1,35 @@
-"""Janela principal com barra de ferramentas e navegação moderna Windows 11."""
+"""Janela principal com barra de ferramentas moderna e suporte Dual-Mode para Windows."""
 
-from typing import Optional
+from __future__ import annotations
+
+from typing import Any, Optional
 import customtkinter as ctk
 from .theme import PALETTE, apply_mica_theme, configure_app_theme
 from .dashboard_panel import DashboardPanel
+from .ai_connections_panel import AIConnectionsPanel
 from .settings_panel import SettingsPanel
 from .destinations_panel import DestinationsPanel
 from .main_navigation import show_panel
 
 
 class MainWindow(ctk.CTk):
-    """Janela principal do aplicativo BROWSER MTS no padrão Windows 11 Fluent."""
+    """Janela principal do aplicativo NAVEGADOR MTS com tema Dual-Mode."""
 
-    def __init__(self, on_close_to_tray: Optional[any] = None, on_quit_app: Optional[any] = None) -> None:
-        super().__init__()
+    def __init__(self, on_close_to_tray: Optional[Any] = None, on_quit_app: Optional[Any] = None) -> None:
+        for attempt in range(3):
+            try: super().__init__(fg_color=PALETTE.bg_dual); break
+            except Exception:
+                if attempt == 2: raise
         self.on_close_to_tray, self.on_quit_app = on_close_to_tray, on_quit_app
         self.latest_update_info, self._update_timer = None, None
         self._update_dialog, self._update_check_in_flight, self._current_theme = None, False, "dark"
-        self._setup_window()
-        self._setup_layout()
+        self._setup_window(); self._setup_layout()
+
+    @property
+    def content_area(self) -> "MainWindow": return self
 
     def _setup_window(self) -> None:
-        self.title("NAVEGADOR MTS — Windows 11")
+        self.title("NAVEGADOR MTS — Centro de Automação & IA para Windows")
         self.geometry("860x680")
         self.minsize(760, 580)
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
@@ -34,68 +42,71 @@ class MainWindow(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.nav_bar = ctk.CTkFrame(self, corner_radius=PALETTE.corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.nav_bar.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 6))
+        self.nav_bar = ctk.CTkFrame(self, corner_radius=PALETTE.corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        self.nav_bar.grid(row=0, column=0, sticky="ew", padx=12, pady=(12, 6))
 
         header_top = ctk.CTkFrame(self.nav_bar, fg_color="transparent")
         header_top.pack(fill="x", padx=14, pady=(8, 4))
-        ctk.CTkLabel(header_top, text="🌐 NAVEGADOR MTS", font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_dark).pack(side="left")
-        ctk.CTkLabel(header_top, text="Centro de Automação & IA", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark).pack(side="left", padx=8)
+        ctk.CTkLabel(header_top, text="🌐 NAVEGADOR MTS", font=(PALETTE.font_family, 15, "bold"), text_color=PALETTE.accent_text_dual).pack(side="left")
+        ctk.CTkLabel(header_top, text="Centro de Automação & IA para Windows", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dual).pack(side="left", padx=8)
 
         controls = ctk.CTkFrame(self.nav_bar, fg_color="transparent")
-        controls.pack(fill="x", padx=10, pady=(2, 8))
+        controls.pack(fill="x", padx=6, pady=(2, 8))
 
-        self.btn_nav_dash = ctk.CTkButton(controls, text="📊 Dashboard", width=105, height=32, corner_radius=8, command=self.show_dashboard, fg_color=PALETTE.accent, font=(PALETTE.font_family_body, 12, "bold"))
+        btn_kw = dict(height=30, corner_radius=8, border_width=1, border_color=PALETTE.border_dual, fg_color="transparent", text_color=PALETTE.text_dual, hover_color=PALETTE.ghost_hover_dual, font=(PALETTE.font_family_body, 11))
+        self.btn_nav_dash = ctk.CTkButton(controls, text="📊 Dashboard", width=90, command=self.show_dashboard, **btn_kw)
         self.btn_nav_dash.pack(side="left", padx=2)
-
-        self.btn_nav_windows = ctk.CTkButton(controls, text="🪟 Destinos", width=95, height=32, corner_radius=8, command=self.show_windows, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
+        self.btn_nav_ai = ctk.CTkButton(controls, text="🤖 IAs & Túneis", width=92, command=self.show_ai, **btn_kw)
+        self.btn_nav_ai.pack(side="left", padx=2)
+        self.btn_nav_windows = ctk.CTkButton(controls, text="🪟 Destinos", width=80, command=self.show_windows, **btn_kw)
         self.btn_nav_windows.pack(side="left", padx=2)
-
-        self.btn_nav_settings = ctk.CTkButton(controls, text="⚙️ Configurações", width=115, height=32, corner_radius=8, command=self.show_settings, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark, text_color=PALETTE.text_dark)
+        self.btn_nav_settings = ctk.CTkButton(controls, text="⚙️ Configurações", width=100, command=self.show_settings, **btn_kw)
         self.btn_nav_settings.pack(side="left", padx=2)
-
-        self.btn_mcp_connect = ctk.CTkButton(controls, text="🤖 Conectar IA", width=115, height=32, corner_radius=8, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, font=(PALETTE.font_family_body, 12, "bold"))
+        self.btn_mcp_connect = ctk.CTkButton(controls, text="🤖 Conectar IA", width=94, height=30, corner_radius=8, command=self.open_mcp_connect_dialog, fg_color=PALETTE.accent_dual, hover_color=PALETTE.accent_hover_dual, text_color="#FFFFFF", font=(PALETTE.font_family_body, 11, "bold"))
         self.btn_mcp_connect.pack(side="left", padx=2)
-
-        self.btn_update = ctk.CTkButton(controls, text="🔄 Atualizar", width=95, height=32, corner_radius=8, command=lambda: self.check_for_updates_ui(auto_open=True), fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
+        self.btn_update = ctk.CTkButton(controls, text="🔄 Atualizar", width=82, command=lambda: self.check_for_updates_ui(auto_open=True), **btn_kw)
         self.btn_update.pack(side="left", padx=2)
-
-        self.btn_theme_toggle = ctk.CTkButton(controls, text="🌙 Tema", width=75, height=32, corner_radius=8, command=self.toggle_theme, fg_color="transparent", border_width=1, border_color=PALETTE.card_border_dark)
+        self.btn_theme_toggle = ctk.CTkButton(controls, text="🌙 Tema Escuro", width=94, command=self.toggle_theme, **btn_kw)
         self.btn_theme_toggle.pack(side="left", padx=2)
 
-        self.panel_dashboard = DashboardPanel(self)
-        self.panel_settings = SettingsPanel(self, on_shutdown_app=self.on_quit_app)
-        self.panel_windows = DestinationsPanel(self)
+        self.panel_dashboard = DashboardPanel(self.content_area)
+        self.panel_ai = AIConnectionsPanel(self.content_area)
+        self.panel_settings = SettingsPanel(self.content_area, on_shutdown_app=self.on_quit_app)
+        self.panel_windows = DestinationsPanel(self.content_area)
         self.show_dashboard()
 
     def open_mcp_connect_dialog(self) -> None:
-        from .mcp_copy_dialog import show_mcp_dialog
-        show_mcp_dialog(self)
+        from .mcp_copy_dialog import show_mcp_dialog; show_mcp_dialog(self)
 
-    def show_dashboard(self) -> None:
-        show_panel(self, "dashboard")
-
-    def show_settings(self) -> None:
-        show_panel(self, "settings")
-
-    def show_windows(self) -> None:
-        show_panel(self, "windows")
+    def show_dashboard(self) -> None: show_panel(self, "dashboard")
+    def show_ai(self) -> None: show_panel(self, "ai")
+    def show_settings(self) -> None: show_panel(self, "settings")
+    def show_windows(self) -> None: show_panel(self, "windows")
 
     def toggle_theme(self) -> None:
-        is_dark = self._current_theme == "dark"
-        self._current_theme = "light" if is_dark else "dark"
+        was_dark = self._current_theme == "dark"
+        self._current_theme = "light" if was_dark else "dark"
+        now_dark = not was_dark
         configure_app_theme(self._current_theme)
-        self.btn_theme_toggle.configure(text="☀️ Tema" if is_dark else "🌙 Tema")
-        apply_mica_theme(self, is_dark=not is_dark)
+        self.btn_theme_toggle.configure(text="☀️ Tema Claro" if not now_dark else "🌙 Tema Escuro", text_color=PALETTE.text_dual)
+        apply_mica_theme(self, is_dark=now_dark)
+
+    _toggle_theme = toggle_theme
 
     def hide_to_tray(self) -> None:
         self.withdraw()
         if self.on_close_to_tray: self.on_close_to_tray()
 
-    def show_from_tray(self) -> None:
-        self.deiconify()
-        self.lift()
-        self.focus_force()
+    def show_from_tray(self) -> None: self.deiconify(); self.lift(); self.focus_force()
+
+    def destroy(self) -> None:
+        try:
+            self.withdraw()
+            for aid in self.tk.splitlist(self.tk.call("after", "info")):
+                try: self.tk.call("after", "cancel", aid)
+                except Exception: pass
+            super().destroy()
+        except Exception: pass
 
     def check_for_updates_ui(self, auto_open: bool = True) -> None:
         import threading
@@ -113,15 +124,15 @@ class MainWindow(ctk.CTk):
                 self._update_timer = self.after(3600000, lambda: self.check_for_updates_ui(auto_open=True))
                 self.btn_update.configure(state="normal")
                 if not info or info.status in ("error", "unavailable"):
-                    self.btn_update.configure(text="⚠ Erro", fg_color=PALETTE.error)
-                    self.after(5000, lambda: self.btn_update.configure(text="🔄 Atualizar", fg_color="transparent"))
+                    self.btn_update.configure(text="⚠ Erro", fg_color=PALETTE.error_dual, text_color="#FFFFFF")
+                    self.after(5000, lambda: self.btn_update.configure(text="🔄 Atualizar", fg_color="transparent", text_color=PALETTE.text_dual))
                 elif info.is_newer:
                     self.latest_update_info = info
-                    self.btn_update.configure(text=f"✨ Atualizar ({info.version})", fg_color=PALETTE.success)
+                    self.btn_update.configure(text=f"✨ ({info.version})", fg_color=PALETTE.success_dual, text_color="#FFFFFF")
                     if auto_open and not (self._update_dialog and self._update_dialog.winfo_exists()):
                         self._update_dialog = UpdateDialog(self, update_info=info, on_shutdown_for_update=self.on_quit_app)
                 else:
-                    self.btn_update.configure(text="✓ Atualizado", fg_color="transparent")
-                    self.after(3000, lambda: self.btn_update.configure(text="🔄 Atualizar"))
+                    self.btn_update.configure(text="✓ Atualizado", fg_color="transparent", text_color=PALETTE.text_dual)
+                    self.after(3000, lambda: self.btn_update.configure(text="🔄 Atualizar", text_color=PALETTE.text_dual))
             self.after(0, _update_ui)
         threading.Thread(target=_worker, daemon=True, name="UpdateCheckThread").start()

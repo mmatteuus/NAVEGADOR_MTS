@@ -3,14 +3,14 @@ setlocal EnableDelayedExpansion
 title BROWSER MTS -- Instalador 1-Clique
 
 echo ==============================================================================
-echo               BROWSER MTS -- Instalador 1-Clique para Windows 11
+echo               BROWSER MTS -- Instalador 1-Clique para Windows
 echo ==============================================================================
 echo.
 echo Este instalador configura tudo automaticamente no seu computador:
 echo   - Cria o ambiente seguro local (armazenamento 100%% no seu computador)
 echo   - Instala as dependencias necessarias
 echo   - Cria os atalhos no Menu Iniciar e na Area de Trabalho
-echo   - Inicia o aplicativo moderno com visual nativo do Windows 11
+echo   - Inicia o aplicativo moderno com visual nativo do Windows
 echo.
 echo ==============================================================================
 echo.

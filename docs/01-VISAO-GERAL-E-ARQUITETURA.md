@@ -1,148 +1,127 @@
-# 🏛️ 01. Visão Geral e Arquitetura do Sistema
+# 🏛️ 01. Visão Geral e Arquitetura do Sistema (v2.4.0)
 
-## 1. O Desafio e o Novo Paradigma
+## 1. O Desafio e a Plataforma Unificada Multi-IA
 
-Na versão legada do **BROWSER MTS**, o usuário dispunha apenas de um binário compilado sem código-fonte (`BROWSER MTS.exe`), que executava um processo filho em Go (`browsermcp-runner.exe`), conectando um pacote Node.js (`@browsermcp/mcp`) a uma extensão de terceiros no Chrome e a um túnel da OpenAI (`tunnel-client.exe`).
+Na versão legada do **BROWSER MTS**, o usuário dispunha apenas de um binário estático (`BROWSER MTS.exe`) acoplado a um único processo e sujeito a quedas constantes de WebSocket.
 
-### Principais Dores Identificadas:
-1. **Desconexões Aleatórias**: Sem tratamento adequado de timeouts, queda silenciosa de sockets e incapacidade de reconectar automaticamente.
-2. **Ausência de Interface Moderna**: Apenas caixas de diálogo simples (`MessageBox`) sem status visual de saúde das conexões.
-3. **Escopo Limitado**: Focado unicamente na janela ativa do navegador, sem permitir que a IA realize tarefas diretamente no Windows ou automatize fluxos fora do browser.
-4. **Falta de Controle e Segurança**: Sem botão de pânico ou autorização granular para ações mais sensíveis.
+O **NAVEGADOR MTS v2.4.0** é uma plataforma desktop completa e universal para **Windows (Windows 10, Windows 11 e Windows Server 64-bit)** escrita em **Python 3.10+ (CustomTkinter + `aiohttp` + `websockets` + `ctypes`)** e **JavaScript ES Modules puro (Manifest V3)**, desenhada para que **múltiplos agentes de IA (ChatGPT, Claude Desktop/Code, Google Gemini/Antigravity, OpenCode, Cursor e Codex)** operem simultaneamente na mesma máquina.
+
+> 🧠 **Cérebro Completo para Agentes no Obsidian**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\00-INICIO-AQUI.md`
 
 ---
 
-## 2. A Nova Arquitetura Integrada
-
-O novo sistema unifica **Automação Web** e **Automação do Sistema Operacional (Computer Use)** em um único ecossistema modular e coeso:
+## 2. Diagrama da Arquitetura Integrada
 
 ```mermaid
 flowchart TD
-    subgraph IA["🤖 Agente de IA (Claude / ChatGPT / OpenAI)"]
-        AI_AGENT["Cliente MCP (SSE / Stdio / OpenAI Tunnel)"]
+    subgraph IA["🤖 Agentes de IA Simultâneos"]
+        STDIO_AGENTS["Claude / Gemini / Antigravity / Cursor / Codex\n(Stdio via NAVEGADOR_MTS_MCP.exe -> HubClient)"]
+        HTTP_AGENTS["OpenCode / Clientes HTTP Locais\n(Streamable HTTP POST :3457/mcp)"]
+        TUNNEL_AGENTS["ChatGPT Web / Agentes Remotos\n(MultiTunnelManager: OpenAI Tunnel & Cloudflared)"]
     end
 
-    subgraph DESKTOP["🖥️ BROWSER MTS Desktop App (Windows 11)"]
-        CORE["Núcleo Supervisor & Orquestrador"]
-        MCP_SERVER["Servidor MCP Unificado"]
-        WS_BRIDGE["WebSocket Bridge Local (Porta 3456)"]
+    subgraph DESKTOP["🖥️ NAVEGADOR MTS Desktop App (Windows 10 / 11 / Server)"]
+        MCP_HTTP["MCPHTTPServer (127.0.0.1:3457)"]
+        MCP_CORE["MCPServer + MCPToolRouter (Anti-Forja)"]
+        COORD["ExecutionCoordinator + SessionManager\n(Locks por Aba, HWND, Pasta e Input Físico)"]
+        WS_BRIDGE["WebSocketBridge Local (Portas 3456..3465, pulando 3457)"]
         
         subgraph SECURITY["🛡️ Módulo de Segurança"]
-            AUTH_GATE["Interruptor de Autorização do PC"]
-            KILL_SWITCH["Atalho de Emergência (Kill-Switch: 3x ESC)"]
+            AUTH_GATE["SafetyGate (Fail-Closed / Default-Deny)"]
+            KILL_SWITCH["EmergencyKillSwitch (3x ESC < 1,2s)"]
         end
         
-        subgraph OS_AUTOMATION["🖱️ Computer Use Engine"]
-            MOUSE["Controle de Mouse (Movimento/Clique/Arrasto)"]
-            KEYBOARD["Controle de Teclado (Texto/Atalhos)"]
-            SCREEN["Captura de Tela (Multi-Monitor/Coords)"]
+        subgraph OS_AUTOMATION["🖱️ Motor Nativo Computer Use (Win32 + UIA)"]
+            MOUSE_KB["Mouse & Teclado (Físico Bézier + Background por HWND)"]
+            UIA_WIN["Windows UI Automation (UIA) + Captura Multi-Monitor DPI"]
+            FOLDERS["Concessão de Pastas (LockedHandle Anti-Symlink)"]
         end
         
-        UI["Interface Fluent UI (Mica / Dark & Light Mode)"]
-        TRAY["Bandeja do Sistema (System Tray / Notificações)"]
+        UI["Interface Fluent Dual-Mode (Tema Claro & Escuro WCAG AAA)"]
+        TRAY["System Tray (pystray) + Notificações Toast + Auto-Updater"]
     end
 
-    subgraph BROWSER["🌐 Navegador (Google Chrome / Microsoft Edge)"]
-        subgraph EXTENSION["Extensão Browser MTS (Manifest V3)"]
-            BG_WORKER["Background Service Worker"]
-            POPUP["Popup Moderno da Extensão"]
-            CONTENT["Content Scripts injetados nas Páginas"]
-            DEVTOOLS["Chrome DevTools Protocol (CDP Bridge)"]
+    subgraph BROWSER["🌐 Navegadores Chromium Simultâneos (Chrome / Edge)"]
+        subgraph EXTENSION["Extensão NAVEGADOR MTS (Manifest V3)"]
+            BG_WORKER["Service Worker (Triplo Keep-Alive + Port Recovery)"]
+            TAB_ACCESS["tab_access.js (Auto-Seleção Inteligente + storage.session)"]
+            POPUP["Popup Fluent (Seleção de Abas e Vínculo por Agente)"]
+            CONTENT["Content Scripts + CDP Bridge (Zero Focus Stealing)"]
         end
     end
 
-    %% Conexões
-    AI_AGENT <==>|"MCP JSON-RPC"| MCP_SERVER
-    MCP_SERVER --> CORE
-    CORE --> OS_AUTOMATION
-    AUTH_GATE -.->|"Bloqueia/Permite"| OS_AUTOMATION
-    KILL_SWITCH -.->|"Interrompe Imediatamente"| OS_AUTOMATION
-    CORE <==>|"WebSocket Local Persistente"| WS_BRIDGE
-    WS_BRIDGE <==>|"JSON com Heartbeat"| BG_WORKER
+    STDIO_AGENTS <==>|"Hub WS :3456"| WS_BRIDGE
+    HTTP_AGENTS <==>|"HTTP :3457"| MCP_HTTP
+    TUNNEL_AGENTS <==>|"Loopback :3457"| MCP_HTTP
+    MCP_HTTP --> MCP_CORE
+    WS_BRIDGE --> MCP_CORE
+    MCP_CORE --> COORD
+    COORD -->|"computer_*"| AUTH_GATE
+    AUTH_GATE --> OS_AUTOMATION
+    KILL_SWITCH -.->|"Revoga e Solta Teclas"| AUTH_GATE
+    COORD <==>|"browser_*"| WS_BRIDGE
+    WS_BRIDGE <==>|"JSON + Heartbeat 4s"| BG_WORKER
+    BG_WORKER --> TAB_ACCESS
     BG_WORKER --> CONTENT
-    BG_WORKER --> DEVTOOLS
-    UI <--> CORE
-    TRAY <--> CORE
+    POPUP <--> TAB_ACCESS
+    UI <--> MCP_CORE
+    TRAY <--> MCP_CORE
 ```
 
 ---
 
-## 3. Os Quatro Pilares do Sistema
+## 3. Estrutura Modular Real do Repositório ($\le 150$ LOC por Arquivo)
 
-### A. Núcleo Supervisor do Desktop (Core Supervisor)
-- Inicializa e monitora continuamente os serviços (MCP Server, WebSocket Bridge e Túnel).
-- Se qualquer processo ou conexão cair, o supervisor restaura a integridade em menos de 5 segundos.
-- Mantém o estado global da aplicação e emite eventos para a interface visual e para a bandeja.
-
-### B. Módulo de Automação do Computador (Computer Use)
-- Concede ao agente a capacidade de "assumir o lugar do usuário" na máquina com visão completa de tela.
-- **Camada de Autorização Estrita**: Se o usuário não ligou o toggle no app, nenhuma chamada de mouse/teclado é repassada para o sistema operacional.
-- Suporta múltiplos monitores, escalonamento DPI do Windows e atalho físico de pânico.
-
-### C. Extensão de Navegador Própria (Manifest V3)
-- Conecta diretamente à ponte WebSocket local do desktop app.
-- Fornece ferramentas ricas de manipulação do DOM, controle de abas, digitação de alta fidelidade e captura de página.
-- Mantém reconexão ativa através de alarmes do Manifest V3 e ping/pong estruturado.
-
-### D. Servidor MCP Unificado
-- Fornece tanto as ferramentas do navegador (`browser_*`) quanto as ferramentas da máquina (`computer_*`).
-- Aceita comandos locais (Stdio) e remotos através do OpenAI Secure MCP Tunnel ou Cloudflare Tunnel.
-
----
-
-## 4. Estrutura Modular de Arquivos
-
-Para garantir que o código seja limpo, legível e nunca contenha arquivos gigantescos, o projeto segue a seguinte divisão estrutural:
+O código real do projeto é 100% **Python** no Desktop/MCP/Computer Use e **JavaScript puro** na extensão Manifest V3, respeitando rigorosamente o teto de **150 linhas por arquivo**:
 
 ```text
-browser-mcp-mts/
-├── docs/                               # Documentação completa em Português
+NAVEGADOR_MTS/
+├── entrypoint.py                           # Entrypoint principal GUI (NAVEGADOR_MTS.exe)
+├── stdio_entrypoint.py                     # Entrypoint console MCP Stdio (NAVEGADOR_MTS_MCP.exe)
+├── release_version.py                      # Sincronizador canônico de versão SemVer (v2.4.0)
+├── build_exe.py / build_installer.py       # Automação PyInstaller + Inno Setup 6 (ISCC.exe)
+├── COMPILAR_INSTALADOR.bat                 # Compilação completa em 1 clique
+├── installer/
+│   └── close_owned_processes.ps1           # Fecha apenas binários da pasta instalada no update
 ├── src/
-│   ├── common/                         # Constantes, tipos e utilitários compartilhados
-│   │   ├── types.ts                    # Definições de tipos TypeScript
-│   │   ├── constants.ts                # Portas padrão, timeouts e códigos de erro
-│   │   └── logger.ts                   # Logger formatado com mascaramento de segredos
-│   ├── core/                           # Núcleo da aplicação Desktop
-│   │   ├── supervisor.ts               # Supervisor de processos e auto-recuperação
-│   │   ├── config-store.ts             # Armazenamento seguro de configurações
-│   │   └── heartbeat.ts                # Lógica de ping/pong e detecção de quedas
-│   ├── mcp/                            # Servidor MCP unificado
-│   │   ├── mcp-server.ts               # Servidor JSON-RPC MCP
-│   │   ├── browser-tools.ts            # Registro das ferramentas de navegador
-│   │   └── computer-tools.ts           # Registro das ferramentas de computador
-│   ├── computer/                       # Módulo nativo de Computer Use
-│   │   ├── security-gate.ts            # Trava de autorização (Hardware/Software toggle)
-│   │   ├── kill-switch.ts              # Monitor do atalho de emergência (ESC 3x)
-│   │   ├── screen-capture.ts           # Captura de tela e resolução multi-monitor
-│   │   ├── mouse-controller.ts         # Movimento, cliques e arrastos do cursor
-│   │   └── keyboard-controller.ts      # Digitação e envio de atalhos de teclado
-│   ├── bridge/                         # Ponte de comunicação com a Extensão
-│   │   ├── ws-server.ts                # Servidor WebSocket local seguro
-│   │   └── message-router.ts           # Roteamento de comandos entre MCP e Extensão
-│   ├── extension/                      # Extensão Manifest V3 do Chrome/Edge
-│   │   ├── manifest.json               # Configuração da extensão Manifest V3
-│   │   ├── background/                 # Service worker em background
-│   │   │   ├── service-worker.ts       # Ciclo de vida e conexão WebSocket
-│   │   │   └── command-handler.ts      # Execução de comandos do navegador
-│   │   ├── content/                    # Scripts injetados nas páginas web
-│   │   │   ├── dom-extractor.ts        # Extração inteligente de acessibilidade e DOM
-│   │   │   └── interaction.ts          # Simulação de eventos e cliques
-│   │   └── popup/                      # Interface visual da extensão
-│   │       ├── popup.html              # Layout do popup
-│   │       ├── popup.css               # Estilos modernos Win11
-│   │       └── popup.ts                # Lógica do switch e status
-│   └── ui/                             # Interface Desktop moderna Windows 11
-│       ├── main-window.html            # Janela principal Fluent
-│       ├── styles/                     # Estilos Fluent UI (Mica, Dark/Light)
-│       ├── components/                 # Componentes visuais modulares
-│       └── tray.ts                     # Integração com a bandeja do sistema
-└── tests/                              # Suítes de testes automatizados de resiliência
+│   ├── app.py                              # Orquestrador DesktopApplication
+│   ├── version.py                          # Constante única APP_VERSION = "2.4.0"
+│   ├── core/                               # Supervisor, Resiliência, DPAPI, Multi-Túnel e Auto-Update
+│   │   ├── config.py                       # Portas (3456 WS, 3457 HTTP), diretórios e máscara de logs
+│   │   ├── security.py                     # Criptografia Windows DPAPI para segredos locais
+│   │   ├── supervisor.py / resilience.py   # Auto-cura de processos e reconexão <= 5s
+│   │   ├── heartbeat.py / message_buffer.py# Ping/pong e fila circular com TTL de 15s
+│   │   ├── multi_tunnel.py                 # MultiTunnelManager (múltiplos túneis simultâneos)
+│   │   ├── tunnel_service.py / health.py   # Ciclo de vida do tunnel-client.exe e cloudflared.exe
+│   │   ├── updater.py / update_network.py  # Auto-update via instalador .exe verificado por SHA-256
+│   │   └── update_web_fallback.py          # Fallback web público contra rate-limit HTTP 403 do GitHub
+│   ├── mcp/                                # Servidor MCP Multi-Transporte e Coordenação Multi-IA
+│   │   ├── server.py                       # Servidor JSON-RPC 2.0 MCP unificado
+│   │   ├── http_server.py                  # MCPHTTPServer Streamable HTTP (127.0.0.1:3457/mcp)
+│   │   ├── hub_client.py                   # Ponte que conecta processos Stdio ao Hub ativo (:3456)
+│   │   ├── router.py                       # Roteador browser_*/computer_* com defesa anti-forja
+│   │   ├── execution_coordinator.py        # Locks concorrentes por aba, janela (HWND) e input físico
+│   │   ├── session_manager.py              # Isolamento de sessões e posse de recursos por agente
+│   │   ├── ws_bridge.py                    # Servidor WebSocket (3456..3465 pulando 3457)
+│   │   ├── ws_session_registry.py          # Roteamento multi-navegador (Chrome + Edge simultâneos)
+│   │   └── schemas_browser*.py / computer.py # Contratos JSON Schema formais das ferramentas MCP
+│   ├── computer/                           # Automação Nativa do Windows (Win32 + UIA)
+│   │   ├── safety_gate.py                  # Trava de segurança Fail-Closed (Default-Deny)
+│   │   ├── kill_switch.py                  # Hook global WH_KEYBOARD_LL (3x ESC em < 1,2s)
+│   │   ├── mouse.py / mouse_background.py  # Mouse físico (Bézier) e virtual por HWND
+│   │   ├── keyboard.py / keyboard_background.py # Teclado físico Unicode e virtual por HWND
+│   │   ├── uia_semantic.py / window_*.py   # Windows UI Automation e concessão de janelas por agente
+│   │   └── folder_handles.py / actions.py  # Acesso confinado a pastas com bloqueio de symlinks
+│   ├── extension/                          # Extensão Chrome/Edge Manifest V3 (JavaScript Puro)
+│   │   ├── manifest.json                   # Manifesto MV3 sincronizado com APP_VERSION
+│   │   ├── background/                     # service_worker.js, ws_client.js, tab_access.js, cdp_*.js
+│   │   ├── content/                        # dom_extractor.js, interaction_simulator.js, virtual_cursor.js
+│   │   └── popup/                          # popup.html, popup.css, popup_ui.js, popup_tabs.js
+│   └── ui/                                 # Interface CustomTkinter Universal (Windows 10/11)
+│       ├── theme.py                        # FluentPalette Dual-Mode (Claro e Escuro WCAG AAA)
+│       ├── main_window.py / dashboard_panel.py # Janela principal e telemetria em tempo real
+│       ├── ai_connections_panel.py / mcp_copy_dialog.py # Conexões Multi-IA e Multi-Túneis
+│       ├── destinations_panel.py           # Atribuição visual de janelas e pastas por agente
+│       └── tray.py / notifications.py      # Bandeja do sistema e alertas nativos Toast
+└── tests/                                  # 444+ testes Pytest + 29+ suítes Node (.mjs)
 ```
-
----
-
-## 5. Próximos Passos na Leitura
-
-Para entender como solucionamos definitivamente as quedas e desconexões aleatórias da versão antiga, consulte o documento:
-👉 **[02. Resiliência e Reconexão](02-RESILIENCIA-E-RECONEXAO.md)**
-

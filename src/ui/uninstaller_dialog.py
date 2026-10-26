@@ -1,9 +1,11 @@
-"""Diálogo Modal de Confirmação de Desinstalação do BROWSER MTS.
+"""Diálogo Modal de Confirmação de Desinstalação do NAVEGADOR MTS.
 
 Responsabilidades:
 - Exibição de aviso com opção de confirmação ou cancelamento da desinstalação.
 - Acionamento do fluxo de encerramento do app e inicialização do desinstalador.
 """
+
+from __future__ import annotations
 
 from typing import Callable, Optional
 import customtkinter as ctk
@@ -12,15 +14,15 @@ from ..core.uninstaller import trigger_application_uninstall
 
 
 class UninstallDialog(ctk.CTkToplevel):
-    """Janela popup de confirmação para desinstalar o BROWSER MTS."""
+    """Janela popup de confirmação para desinstalar o NAVEGADOR MTS com tema Dual-Mode."""
 
     def __init__(
         self,
         master,
         on_shutdown: Optional[Callable[[], None]] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
-        super().__init__(master, **kwargs)
+        super().__init__(master, fg_color=PALETTE.bg_dual, **kwargs)
         self.on_shutdown = on_shutdown
         self._setup_window()
         self._build_ui()
@@ -37,13 +39,14 @@ class UninstallDialog(ctk.CTkToplevel):
         mx = self.master.winfo_x() + (self.master.winfo_width() - 480) // 2
         my = self.master.winfo_y() + (self.master.winfo_height() - 280) // 2
         self.geometry(f"480x280+{max(0, mx)}+{max(0, my)}")
-        apply_mica_theme(self, is_dark=True)
+        is_dark = ctk.get_appearance_mode().lower() == "dark"
+        apply_mica_theme(self, is_dark=is_dark)
 
     def _build_ui(self) -> None:
         """Monta os componentes visuais do diálogo de confirmação."""
         hdr = ctk.CTkFrame(self, fg_color="transparent")
         hdr.pack(fill="x", padx=24, pady=(20, 10))
-        ctk.CTkLabel(hdr, text="⚠️ Desinstalar NAVEGADOR MTS?", font=(PALETTE.font_family, 16, "bold"), text_color=PALETTE.error).pack(anchor="w")
+        ctk.CTkLabel(hdr, text="⚠️ Desinstalar NAVEGADOR MTS?", font=(PALETTE.font_family, 16, "bold"), text_color=PALETTE.error_dual).pack(anchor="w")
 
         body = ctk.CTkLabel(
             self,
@@ -52,6 +55,7 @@ class UninstallDialog(ctk.CTkToplevel):
                  "• Os atalhos da Área de Trabalho e do Menu Iniciar serão removidos.\n"
                  "• O assistente de desinstalação do Windows será iniciado.",
             font=(PALETTE.font_family_body, 12),
+            text_color=PALETTE.text_dual,
             justify="left",
             wraplength=430,
         )
@@ -60,15 +64,18 @@ class UninstallDialog(ctk.CTkToplevel):
         btn_box = ctk.CTkFrame(self, fg_color="transparent")
         btn_box.pack(fill="x", padx=24, pady=(16, 20))
 
-        ctk.CTkButton(
+        self.btn_cancel = ctk.CTkButton(
             btn_box, text="Cancelar", width=120, fg_color="transparent", border_width=1,
-            command=self.destroy
-        ).pack(side="left")
+            border_color=PALETTE.border_dual, text_color=PALETTE.text_dual, hover_color=PALETTE.ghost_hover_dual,
+            command=self.destroy,
+        )
+        self.btn_cancel.pack(side="left")
 
-        ctk.CTkButton(
-            btn_box, text="🗑️ Sim, Desinstalar", width=160, fg_color=PALETTE.error, hover_color="#A80000",
-            command=self._confirm_uninstall
-        ).pack(side="right")
+        self.btn_confirm = ctk.CTkButton(
+            btn_box, text="🗑️ Sim, Desinstalar", width=160, fg_color=PALETTE.error_dual, hover_color="#991B1B",
+            text_color="#FFFFFF", command=self._confirm_uninstall,
+        )
+        self.btn_confirm.pack(side="right")
 
     def _confirm_uninstall(self) -> None:
         """Dispara a desinstalação e fecha o diálogo."""
@@ -79,4 +86,3 @@ class UninstallDialog(ctk.CTkToplevel):
 def show_uninstall_dialog(master, on_shutdown: Optional[Callable[[], None]] = None) -> None:
     """Função utilitária para exibir o diálogo modal de desinstalação."""
     UninstallDialog(master, on_shutdown=on_shutdown)
-

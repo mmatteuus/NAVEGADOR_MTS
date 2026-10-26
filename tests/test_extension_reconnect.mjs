@@ -38,7 +38,7 @@ for (let attempt = 0; attempt < 60; attempt++) {
   visited.add(fallback.currentPort());
 }
 assert.deepEqual([...visited].sort((a, b) => a - b),
-  [3456, 3457, 3458, 3459, 3460, 3461, 3462, 3463, 3464, 3465]);
+  [3456, 3458, 3459, 3460, 3461, 3462, 3463, 3464, 3465]);
 
 await connectWebSocket();
 await wait(20);

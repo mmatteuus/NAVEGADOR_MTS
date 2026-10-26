@@ -1,31 +1,34 @@
-# 🌐 BROWSER MTS & COMPUTER USE — Documentação Oficial do Sistema
+# 🌐 NAVEGADOR MTS & COMPUTER USE (v2.4.0) — Documentação Oficial do Sistema
 
-> **Visão Geral**: Sistema unificado de automação para Agentes de IA com visual moderno nativo para Windows 11, combinando controle total do navegador via extensão Chrome/Edge e automação do computador (mouse, teclado e tela) protegida por chave de autorização do usuário e mecanismo de emergência (Kill Switch).
+> **Visão Geral**: Plataforma desktop universal para **Windows (Windows 10, Windows 11 e Windows Server 64-bit)** com design Fluent Dual-Mode (Tema Claro e Tema Escuro WCAG AAA), combinando automação de navegadores via extensão Chrome/Edge Manifest V3, suporte simultâneo **Multi-IA e Multi-Túneis**, e automação segura do computador (mouse, teclado, tela, janelas UIA e pastas) protegida por trava Fail-Closed (`SafetyGate`) e Kill-Switch de emergência (`3x ESC < 1,2s`).
+>
+> 🧠 **Cérebro Oficial para Agentes no Obsidian**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\00-INICIO-AQUI.md`
 
 ---
 
 ## 📚 Índice da Documentação
 
-Para facilitar a leitura, navegação e manutenção por qualquer desenvolvedor ou agente, a documentação está dividida em módulos temáticos objetivos:
-
 | Documento | Assunto Principal | Conteúdo Abordado |
 | :--- | :--- | :--- |
-| **[01. Visão Geral e Arquitetura](01-VISAO-GERAL-E-ARQUITETURA.md)** | Arquitetura do Sistema | Estrutura modular, diagrama de blocos, fluxo end-to-end e tecnologias adotadas. |
-| **[02. Resiliência e Reconexão](02-RESILIENCIA-E-RECONEXAO.md)** | Diagnóstico e Auto-Cura | Causa-raiz das desconexões da versão legada, protocolo de heartbeat e recuperação em ≤ 5s. |
-| **[03. Extensão do Navegador](03-EXTENSAO-NAVEGADOR.md)** | Extensão Manifest V3 | Service worker, popup com design moderno, injeção de scripts e ferramentas de automação web. |
-| **[04. Automação do Computador](04-CONTROLE-COMPUTADOR-COMPUTER-USE.md)** | Computer Use & Segurança | Controle de mouse, teclado e tela, Trava de Autorização física e Kill-Switch de pânico. |
-| **[05. Servidor MCP e Protocolo](05-SERVIDOR-MCP-E-TRANSPORTE.md)** | Protocolo MCP e Túneis | Catálogo unificado de ferramentas MCP, compatibilidade com OpenAI Tunnel, Claude e stdio. |
-| **[06. Interface Windows 11 e UX](06-INTERFACE-WINDOWS-11-UX.md)** | Experiência e UI Nativa | Design Fluent Win11, bandeja do sistema (System Tray), notificações nativas e temas claro/escuro. |
-| **[07. Guia de Código e Boas Práticas](07-GUIA-DE-MODULARIDADE-E-BOAS-PRATICAS.md)** | Padrões de Desenvolvimento | Regra de arquivos pequenos (< 150 linhas), modularidade cirúrgica e comentários didáticos. |
-| **[08. Armazenamento Local e Privacidade](08-ARMAZENAMENTO-LOCAL-E-PRIVACIDADE.md)** | Privacidade e Segurança | Política 100% Local-First, DPAPI e zero-telemetria para máxima adesão e confiança. |
+| **[01. Visão Geral e Arquitetura](01-VISAO-GERAL-E-ARQUITETURA.md)** | Arquitetura Real v2.4.0 | Estrutura modular em Python + JS MV3, fluxo Multi-IA e componentes. |
+| **[02. Resiliência e Reconexão](02-RESILIENCIA-E-RECONEXAO.md)** | Diagnóstico e Auto-Cura | Motor de resiliência de 5 camadas, heartbeat e recuperação em $\le 5\text{s}$. |
+| **[03. Extensão do Navegador](03-EXTENSAO-NAVEGADOR.md)** | Extensão Manifest V3 | Service worker, port-hopping (`3456..3465` pulando `3457`), auto-seleção de abas e `chrome.storage.session`. |
+| **[04. Automação do Computador](04-CONTROLE-COMPUTADOR-COMPUTER-USE.md)** | Computer Use & Segurança | Mouse/teclado físico e background por `HWND`, UIA, pastas e Kill-Switch. |
+| **[05. Servidor MCP e Transporte](05-SERVIDOR-MCP-E-TRANSPORTE.md)** | Multi-IA e Multi-Túneis | Transportes Stdio (`HubClient`), HTTP (`:3457`), WS (`:3456`), `ExecutionCoordinator` e `MultiTunnelManager`. |
+| **[06. Interface Windows e Temas](06-INTERFACE-WINDOWS-11-UX.md)** | UI Fluent Claro/Escuro | `FluentPalette` Dual-Mode WCAG AAA, painel Multi-IA, System Tray e suporte Windows 10/11. |
+| **[07. Guia de Modularidade e Boas Práticas](07-GUIA-DE-MODULARIDADE-E-BOAS-PRATICAS.md)** | Padrões de Engenharia | Regra inegociável de $\le 150$ linhas por arquivo (LOC), padrões Python/JS e release versionado. |
+| **[08. Armazenamento Local e Privacidade](08-ARMAZENAMENTO-LOCAL-E-PRIVACIDADE.md)** | Privacidade e DPAPI | Política 100% Local-First, criptografia Windows DPAPI e mascaramento de logs. |
+| **[09. Testes de Integração Windows](09-TESTES-INTEGRACAO-WINDOWS.md)** | Validação Integrada | Scripts e verificações de contrato no Windows. |
+| **[10. Atualização da Extensão e Abas](10-ATUALIZACAO-EXTENSAO.md)** | Ciclo MV3 e Concessões | Auto-reload coordenado da extensão, seleção inteligente e isolamento multi-navegador. |
+| **[11. Destinos por Agente](11-DESTINOS-POR-AGENTE.md)** | Isolamento Multi-Agente | Concessão de abas web, janelas Win32/UIA e pastas locais por sessão de IA. |
+| **[Atualizações e Releases](atualizacoes.md)** | Auto-Update e Build | Fluxo `release_version.py`, `COMPILAR_INSTALADOR.bat`, fallback web anti-403 e CI GitHub Actions. |
 
 ---
 
 ## 🎯 Princípios Fundamentais do Projeto
 
-1. **Arquitetura em Arquivos Pequenos**: Nada de arquivos monolíticos. Cada arquivo possui uma responsabilidade única, facilitando testes, entendimento e evolução.
-2. **Código Altamente Comentado**: Cada módulo é documentado internamente em português, explicando *o que faz*, *por que faz* e *quais cuidados tomar*.
-3. **Segurança em Primeiro Lugar**: O agente de IA nunca pode tomar o controle do sistema operacional sem que o usuário tenha ativado explicitamente o interruptor de autorização.
-4. **Resiliência Extrema**: Reconexão silenciosa e imediata para que nem o agente nem o usuário precisem reabrir programas caso ocorra oscilação na rede ou no navegador.
-5. **Pensar à Frente**: Tratamento preventivo de deadlocks, conflitos de portas, múltiplos monitores, suspensão do Windows e concorrência de eventos.
-
+1. **Arquitetura em Arquivos Pequenos ($\le 150$ LOC)**: Nenhum arquivo em `src/` ou `tests/` ultrapassa 150 linhas.
+2. **Operação Multi-IA Simultânea**: ChatGPT, Claude, Gemini/Antigravity, OpenCode, Cursor e Codex operam juntos sem conflito.
+3. **Segurança Fail-Closed (`SafetyGate`)**: O agente nunca controla o sistema operacional sem autorização explícita do usuário.
+4. **Compatibilidade Universal Windows**: Funciona perfeitamente no Windows 10, Windows 11 e Windows Server com Tema Claro e Tema Escuro.
+5. **Versionamento Estrito**: Toda melhoria gera uma nova versão sincronizada e um novo instalador `.exe`.

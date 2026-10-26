@@ -17,12 +17,18 @@ function Get-OwnedProcesses {
 }
 function Stop-OwnedProcess([object]$item, [bool]$Force) {
     $current = Get-CimInstance Win32_Process -Filter "ProcessId = $($item.ProcessId)"
+    if (!$current) { return }
     $currentPath = $current.ExecutablePath
-    if ($current -and $currentPath -and $current.CreationDate -eq $item.CreationDate -and
+    if ($currentPath -and $current.CreationDate -eq $item.CreationDate -and
         $currentPath.Equals($item.ExecutablePath, [StringComparison]::OrdinalIgnoreCase)) {
-        if ($Force) { Stop-Process -Id ([int]$current.ProcessId) -Force -ErrorAction Stop; return }
-        $process = Get-Process -Id ([int]$current.ProcessId) -ErrorAction SilentlyContinue
-        if ($process -and $process.MainWindowHandle -ne 0) { [void]$process.CloseMainWindow() }
+        try {
+            if ($Force) { Stop-Process -Id ([int]$current.ProcessId) -Force -ErrorAction Stop; return }
+            $process = Get-Process -Id ([int]$current.ProcessId) -ErrorAction Stop
+            if ($process.MainWindowHandle -ne 0) { [void]$process.CloseMainWindow() }
+        } catch {
+            $stillAlive = Get-CimInstance Win32_Process -Filter "ProcessId = $($item.ProcessId)"
+            if ($stillAlive) { throw }
+        }
     }
 }
 Get-OwnedProcesses | Where-Object { $_.ExecutablePath.Equals($paths[0], [StringComparison]::OrdinalIgnoreCase) } |
@@ -51,5 +57,5 @@ do {
     $helpers | ForEach-Object { Stop-OwnedProcess $_ $true }
     Start-Sleep -Milliseconds 250
 } while ((Get-Date) -lt $deadline)
-if (@(Get-OwnedProcesses)) { exit 1 }
-exit 0
+if (@(Get-OwnedProcesses).Count -eq 0) { exit 0 }
+exit 1

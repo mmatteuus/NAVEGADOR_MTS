@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Awaitable, Callable, Dict, Optional
+from .execution_coordinator import coordinate_execution
 from .session_manager import session_manager
 from .session_context import get_current_session_id
 from .response_formatter import format_mcp_result, format_mcp_error
@@ -58,7 +59,7 @@ class MCPToolRouter:
             if tool_name.startswith("browser_"):
                 return await self._dispatch_browser(tool_name, clean_args, trusted_sid)
             elif tool_name.startswith("computer_"):
-                return await self._dispatch_computer(tool_name, clean_args)
+                return await self._dispatch_computer(tool_name, clean_args, trusted_sid)
             return format_mcp_error(f"Ferramenta desconhecida: '{tool_name}'")
         except Exception as exc:
             logger.error(f"Erro ao executar {tool_name}: {exc}")
@@ -79,13 +80,15 @@ class MCPToolRouter:
             except (ValueError, TypeError):
                 pass
 
-        res = await self.ws_bridge.send_action(name, args, session_id=session_id)
+        sess = await session_manager.get_or_create_session(session_id) if session_id else None
+        async with coordinate_execution(sess, name, args):
+            res = await self.ws_bridge.send_action(name, args, session_id=session_id)
 
         if isinstance(res, dict) and res.get("success") is False:
+            if sess is not None:
+                sess.error_count += 1
             return format_mcp_error(str(res.get("error", "Falha na extensão")))
 
-        # Criação não concede posse: somente a atribuição humana no popup pode
-        # vincular a aba a uma sessão. Fechamento ainda limpa posse existente.
         if name == "browser_manage_tabs" and args.get("action") == "close":
             close_tid = args.get("tabId")
             if close_tid is not None:
@@ -98,8 +101,10 @@ class MCPToolRouter:
             return format_mcp_result(res["data"])
         return format_mcp_result(res)
 
-    async def _dispatch_computer(self, name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Despacha ferramentas de computador respeitando a trava de segurança."""
+    async def _dispatch_computer(
+        self, name: str, args: Dict[str, Any], session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Despacha ferramentas de computador respeitando a trava de segurança e coordenação."""
         if name == "computer_get_status":
             return format_mcp_result({
                 "authorized": self.is_computer_authorized(),
@@ -112,8 +117,13 @@ class MCPToolRouter:
         if not self.computer_executor:
             return format_mcp_error("Módulo de Computer Use não configurado ou indisponível.")
 
-        res = await self.computer_executor(name, args)
+        sess = await session_manager.get_or_create_session(session_id) if session_id else None
+        async with coordinate_execution(sess, name, args):
+            res = await self.computer_executor(name, args)
+
         if isinstance(res, dict) and res.get("success") is False:
+            if sess is not None:
+                sess.error_count += 1
             return format_mcp_error(str(res.get("error", "Falha no computador")))
         if isinstance(res, dict) and res.get("success") is True and "data" in res:
             return format_mcp_result(res["data"])

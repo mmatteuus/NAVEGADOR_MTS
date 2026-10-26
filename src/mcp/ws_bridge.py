@@ -69,7 +69,7 @@ class WebSocketBridge:
         self.registry.clear()
         if self.server:
             self.server.close()
-            await self.server.wait_closed()
+            await self.server.wait_closed(); await asyncio.sleep(0.01)
             self.server = None
 
     async def _handle_client(self, websocket: Any) -> None:

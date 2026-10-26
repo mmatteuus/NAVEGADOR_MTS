@@ -15,18 +15,21 @@ def _pe_stub():
     return bytes(data)
 
 
-def test_asset_without_pe_signature_is_rejected(tmp_path):
+def test_asset_without_pe_signature_is_rejected(tmp_path, monkeypatch):
     """Um arquivo que não é PE nunca deve ser iniciado."""
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
     source = tmp_path / "setup.exe"
     source.write_bytes(b"texto")
-    info = updater.UpdateInfo("2.4.0", "", str(source), source.name, True)
+    next_ver = updater.bump_version(updater.APP_VERSION)
+    info = updater.UpdateInfo(next_ver, "", str(source), source.name, True)
     with patch("subprocess.Popen") as launch:
         assert updater.download_and_launch_update(info) is False
     launch.assert_not_called()
 
 
-def test_asset_digest_is_checked(tmp_path):
+def test_asset_digest_is_checked(tmp_path, monkeypatch):
     """O digest informado pela release precisa coincidir com o download."""
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
     source = tmp_path / "setup.exe"
     source.write_bytes(_pe_stub())
     info = updater.UpdateInfo("2.1.4", "", str(source), source.name, True, sha256="0" * 64)
@@ -40,9 +43,11 @@ def test_asset_digest_is_checked(tmp_path):
 
 def test_frozen_update_targets_executable_directory(tmp_path, monkeypatch):
     """O instalador recebe a pasta do EXE, não o diretório _MEIPASS."""
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
     source = tmp_path / "setup.exe"
     source.write_bytes(_pe_stub())
-    info = updater.UpdateInfo("2.4.0", "", str(source), source.name, True)
+    next_ver = updater.bump_version(updater.APP_VERSION)
+    info = updater.UpdateInfo(next_ver, "", str(source), source.name, True)
     exe = tmp_path / "NAVEGADOR_MTS.exe"
     monkeypatch.setattr(updater.sys, "frozen", True, raising=False)
     monkeypatch.setattr(updater.sys, "executable", str(exe))
@@ -53,3 +58,5 @@ def test_frozen_update_targets_executable_directory(tmp_path, monkeypatch):
     assert "/CURRENTUSER" in command
     assert "/SILENT" in command
     assert "/SUPPRESSMSGBOXES" in command
+    assert "/CLOSEAPPLICATIONS" in command
+    assert "/FORCECLOSEAPPLICATIONS" in command

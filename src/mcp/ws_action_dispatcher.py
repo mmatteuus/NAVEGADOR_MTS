@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 from typing import Any, Callable, Dict, Optional, Tuple
+from .execution_coordinator import coordinate_execution
 from .session_manager import session_manager
 from .ws_protocol import handle_incoming_envelope
 
@@ -32,7 +33,7 @@ def resolve_pending_request(data: Dict[str, Any], pending_requests: Dict[str, as
 async def _handle_browser_action(
     act: str, clean_params: Dict[str, Any], session_id: Optional[str], send_action_cb: Callable[..., Any]
 ) -> Tuple[bool, Any, Optional[str]]:
-    """Processa ações de navegador com validação de abas e lock de sessão."""
+    """Processa ações de navegador com validação de abas e coordenação granular."""
     tab_id = clean_params.get("tabId")
     if tab_id is not None:
         try:
@@ -45,7 +46,7 @@ async def _handle_browser_action(
             pass
 
     sess = await session_manager.get_or_create_session(session_id)
-    async with sess.lock:
+    async with coordinate_execution(sess, act, clean_params):
         res = await send_action_cb(act, clean_params, session_id=session_id)
 
     if act == "browser_manage_tabs" and session_id and clean_params.get("action") == "close":
@@ -57,22 +58,30 @@ async def _handle_browser_action(
                 pass
 
     success = res.get("success", True) if isinstance(res, dict) else True
+    if not success and sess is not None:
+        sess.error_count += 1
     return success, res, None
 
 
-async def _handle_computer_action(act: str, clean_params: Dict[str, Any]) -> Tuple[bool, Any]:
-    """Processa ações de computador (GUI/desktop ou MCP) e retorna o resultado."""
+async def _handle_computer_action(
+    act: str, clean_params: Dict[str, Any], session_id: Optional[str] = None
+) -> Tuple[bool, Any]:
+    """Processa ações de computador (GUI/desktop ou MCP) sob coordenação granular."""
     comp_actions = (
         "computer_mouse_move", "computer_mouse_click", "computer_mouse_drag",
         "computer_mouse_scroll", "computer_keyboard_type", "computer_key_press",
     )
-    if act in comp_actions:
-        from ..computer import execute_computer_action
-        res = await asyncio.to_thread(execute_computer_action, act, clean_params)
-    else:
-        from .computer_dispatch import execute_mcp_computer
-        res = await execute_mcp_computer(act, clean_params)
+    sess = await session_manager.get_or_create_session(session_id) if session_id else None
+    async with coordinate_execution(sess, act, clean_params):
+        if act in comp_actions:
+            from ..computer import execute_computer_action
+            res = await asyncio.to_thread(execute_computer_action, act, clean_params)
+        else:
+            from .computer_dispatch import execute_mcp_computer
+            res = await execute_mcp_computer(act, clean_params)
     success = res.get("success", False) if isinstance(res, dict) else False
+    if not success and sess is not None:
+        sess.error_count += 1
     return success, res
 
 
@@ -117,7 +126,7 @@ async def dispatch_agent_action(
                 resp = {"id": call_id, "type": "agent_response", "success": success, "result": res}
             await websocket.send(json.dumps(resp))
         elif act.startswith("computer_"):
-            success, res = await _handle_computer_action(act, clean_params)
+            success, res = await _handle_computer_action(act, clean_params, session_id=session_id)
             await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": success, "result": res}))
         else:
             await websocket.send(json.dumps({"id": call_id, "type": "agent_response", "success": False, "error": f"Ação desconhecida: '{act}'"}))

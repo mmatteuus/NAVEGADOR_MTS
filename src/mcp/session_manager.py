@@ -5,9 +5,36 @@ import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 import uuid
-from .session_models import AgentSession
+import psutil
+from .session_models import AgentSession, classify_agent_family
 
 logger = logging.getLogger("BrowserMTS.SessionManager")
+
+
+class _ImmediateDone:
+    """Permite usar métodos síncronos tanto diretamente quanto com await."""
+    __slots__ = ("value",)
+
+    def __init__(self, value: Any = None) -> None:
+        self.value = value
+
+    def __await__(self):
+        if False:
+            yield None
+        return self.value
+
+
+def _release_session_grants(session_id: str) -> None:
+    """Libera janelas Win32 e diretórios concedidos quando a sessão encerra."""
+    for mod_name, obj_name, method in (
+        ("window_assignments", "window_assignments", "release"),
+        ("folder_assignments", "folder_grants", "revoke"),
+    ):
+        try:
+            mod = __import__(f"src.computer.{mod_name}", fromlist=[obj_name])
+            getattr(getattr(mod, obj_name), method)(session_id)
+        except Exception:
+            pass
 
 
 class SessionManager:
@@ -26,6 +53,9 @@ class SessionManager:
             if sid not in self._sessions:
                 self._sessions[sid] = AgentSession(session_id=sid, agent_id=agent_id)
                 logger.info(f"Nova sessão de agente criada: {sid} (agent={agent_id or 'default'})")
+            elif agent_id and not self._sessions[sid].agent_id:
+                self._sessions[sid].agent_id = agent_id
+                self._sessions[sid].agent_family = classify_agent_family(agent_id)
             return self._sessions[sid]
 
     def get_session(self, session_id: str) -> Optional[AgentSession]:
@@ -33,38 +63,41 @@ class SessionManager:
         return self._sessions.get(session_id)
 
     async def close_session(self, session_id: str) -> bool:
-        """Encerra uma sessão de agente e libera os recursos associados."""
+        """Encerra uma sessão de agente e libera janelas e pastas associadas."""
         async with self._registry_lock:
             sess = self._sessions.pop(session_id, None)
             if sess:
                 sess.status = "closed"
-                logger.info(f"Sessão de agente encerrada: {session_id}")
+                _release_session_grants(session_id)
                 return True
             return False
+
+    def prune_dead_sessions(self) -> List[str]:
+        """Remove sessões cujo processo local (PID) não existe mais e libera concessões."""
+        pruned: List[str] = []
+        for sid, sess in list(self._sessions.items()):
+            if sess.pid is not None and not psutil.pid_exists(sess.pid):
+                self._sessions.pop(sid, None)
+                sess.status = "closed"
+                _release_session_grants(sid)
+                pruned.append(sid)
+        return pruned
 
     def list_active_sessions(self) -> List[str]:
         """Lista identificadores de todas as sessões ativas no momento."""
         return [sid for sid, s in self._sessions.items() if s.status == "active"]
 
     def validate_tab_access(self, session_id: Optional[str], tab_id: Any) -> bool:
-        """Valida se a sessão solicitante tem permissão de acesso à aba alvo.
-
-        Chamadas anônimas (session_id is None ou vazio) ou de outras sessões têm
-        o acesso negado caso a aba pertença a qualquer sessão ativa registrada.
-        """
+        """Valida se a sessão solicitante tem permissão de acesso à aba alvo."""
         try:
             tid = int(tab_id)
         except (ValueError, TypeError):
             return False
-
         target_sid = session_id.strip() if session_id and session_id.strip() else None
-        for sid, sess in self._sessions.items():
-            if sess.status == "active" and sess.has_tab(tid) and sid != target_sid:
-                logger.warning(
-                    f"Acesso negado: aba {tid} pertence à sessão {sid} (solicitante: {target_sid or 'anônimo'})"
-                )
-                return False
-        return True
+        return not any(
+            s.status == "active" and s.has_tab(tid) and sid != target_sid
+            for sid, s in self._sessions.items()
+        )
 
     @staticmethod
     def extract_tab_id(response: Any) -> Optional[int]:
@@ -73,29 +106,21 @@ class SessionManager:
             return response
         if not isinstance(response, dict):
             return None
-        if response.get("tabId") is not None:
-            try:
-                return int(response["tabId"])
-            except (ValueError, TypeError):
-                pass
-        for key in ("data", "result", "payload"):
-            sub = response.get(key)
-            if isinstance(sub, dict) and sub.get("tabId") is not None:
+        for candidate in (response, *(response.get(k) for k in ("data", "result", "payload"))):
+            if isinstance(candidate, dict) and candidate.get("tabId") is not None:
                 try:
-                    return int(sub["tabId"])
+                    return int(candidate["tabId"])
                 except (ValueError, TypeError):
                     pass
-            elif isinstance(sub, int):
-                return sub
+            elif isinstance(candidate, int) and candidate is not response:
+                return candidate
         return None
 
-    def assign_tab_to_session(self, session_id: str, tab_id: int) -> None:
-        """Vincula a aba informada à sessão do agente proprietário."""
-        sess = self._sessions.get(session_id)
-        if not sess:
-            sess = AgentSession(session_id=session_id)
-            self._sessions[session_id] = sess
-        sess.assign_tab(tab_id)
+    def assign_tab_to_session(self, session_id: str, tab_id: int) -> _ImmediateDone:
+        """Vincula a aba informada à sessão do agente proprietário (compatível com sync e await)."""
+        sess = self._sessions.setdefault(session_id, AgentSession(session_id=session_id))
+        sess.assign_tab(int(tab_id))
+        return _ImmediateDone(None)
 
     def release_tab(self, tab_id: int) -> None:
         """Libera a associação de uma aba em todas as sessões registradas."""
@@ -108,5 +133,4 @@ class SessionManager:
 
 
 session_manager = SessionManager()
-
 __all__ = ["SessionManager", "session_manager"]

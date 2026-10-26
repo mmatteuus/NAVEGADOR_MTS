@@ -6,6 +6,8 @@ Responsabilidades:
 - Threading assíncrono para operação desacoplada do loop do CustomTkinter.
 """
 
+from __future__ import annotations
+
 import threading
 from typing import Callable, Optional
 from PIL import Image, ImageDraw
@@ -14,19 +16,16 @@ from ..computer.safety_gate import safety_gate
 
 
 def create_tray_icon_image(status_color: str = "#107C41", size: int = 64) -> Image.Image:
-    """Gera dinamicamente em memória um ícone Fluent para a bandeja do sistema."""
+    """Gera dinamicamente em memória um ícone moderno para a bandeja do sistema."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Base circular do ícone com borda suave
     margin = 4
     draw.ellipse([margin, margin, size - margin, size - margin], fill="#202020", outline="#3A3A3A", width=2)
 
-    # Indicador de estado (LED de status no centro)
     led_margin = 16
     draw.ellipse([led_margin, led_margin, size - led_margin, size - led_margin], fill=status_color)
 
-    # Letra 'M' sutil centralizada
     draw.text((size // 2 - 5, size // 2 - 8), "M", fill="#FFFFFF")
     return img
 
@@ -79,7 +78,7 @@ class SystemTrayManager:
                 self.on_quit_app()
 
         items = [
-                pystray.MenuItem("🌐 Abrir NAVEGADOR MTS", _action_show, default=True),
+            pystray.MenuItem("🌐 Abrir NAVEGADOR MTS", _action_show, default=True),
             pystray.MenuItem(auth_label, _action_toggle_safety),
             pystray.MenuItem("🔌 Alternar Servidor MCP", _action_toggle_mcp),
             pystray.Menu.SEPARATOR,
@@ -111,7 +110,7 @@ class SystemTrayManager:
             self._icon = pystray.Icon(
                 name="NavegadorMTS",
                 icon=create_tray_icon_image(self._status_color),
-                title="NAVEGADOR MTS - Windows 11",
+                title="NAVEGADOR MTS",
                 menu=self._build_menu(),
             )
             self._icon.run()

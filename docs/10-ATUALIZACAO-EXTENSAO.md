@@ -1,59 +1,42 @@
-# Atualização do conector e escolha de abas
+# 🔄 10. Atualização da Extensão, Auto-Seleção Inteligente e Isolamento de Abas (v2.4.0)
 
-O aplicativo consulta a release oficial ao iniciar e periodicamente. Ao aceitar
-a atualização no aplicativo, o instalador completo substitui também a pasta
-`extension` dentro da instalação. O navegador recebe uma solicitação de recarga
-quando a extensão anuncia uma versão anterior à do aplicativo.
+## 1. Carregamento Oficial e Atualização Automática da Extensão
 
-Carregue a extensão Chrome/Edge usando a pasta `extension` da instalação do
-NAVEGADOR MTS. O atalho “Pasta da Extensao Chrome” no menu Iniciar aponta para
-essa pasta. Uma cópia extraída em outro local não recebe os arquivos do instalador:
-nesse caso, carregue a pasta instalada uma vez para acompanhar as próximas versões.
+O aplicativo desktop consulta a release oficial ao iniciar e periodicamente. Ao instalar uma nova versão pelo instalador completo (`NAVEGADOR_MTS_Instalador_v2.4.0.exe`), a pasta `extension` dentro de `%LOCALAPPDATA%\Programs\Navegador MTS\extension` também é atualizada automaticamente.
 
-Depois de recarregar/atualizar a extensão ou reiniciar o navegador, abra seu popup,
-selecione as abas permitidas e salve. As concessões ficam apenas na sessão do
-navegador; não concedemos acesso permanente com base em IDs antigos.
+- **Regra Fundamental**: Carregue sempre a extensão no Google Chrome (`chrome://extensions`) e no Microsoft Edge (`edge://extensions`) apontando para a pasta instalada:
+  `C:\Users\MATEUS\AppData\Local\Programs\Navegador MTS\extension`
+  *(O atalho "Pasta da Extensão Chrome" no Menu Iniciar e na Área de Trabalho aponta diretamente para esse diretório).*
+- Quando o aplicativo desktop detecta no handshake WebSocket (`client_hello`) que a extensão está em uma versão anterior à `APP_VERSION` (`2.4.0`), ele envia um comando coordenado de recarga (`reload_extension`).
 
-Uma aba concedida pode ser associada a uma sessão de agente. Outra sessão não
-pode usá-la enquanto estiver associada. Com várias abas permitidas, informe
-`tabId` na ferramenta; com uma única aba disponível a escolha é inequívoca.
-Limpar ou desmarcar uma concessão revoga o acesso concedido pelo popup.
+---
 
-Ao usar Chrome e Edge ao mesmo tempo, selecione as abas no navegador desejado.
-Se a seleção permanecer ambígua, o conector solicita uma escolha em vez de
-encaminhar uma ação para outro navegador. A sessão permanece no navegador
-escolhido mesmo durante uma desconexão temporária.
+## 2. Seleção de Abas: Auto-Seleção Inteligente vs. Isolamento Multi-Agente
 
-Para diagnosticar um erro, copie a mensagem acima de “Contexto” no painel de
-erros da extensão. `common/logger.js:47` identifica o registro do erro, enquanto
-a mensagem contém sua causa (por exemplo, seleção ou autorização de aba).
+O módulo `src/extension/background/tab_access.js` opera em dois modos complementares:
 
-As garantias da API estão documentadas pelo Chrome em
-[runtime.reload](https://developer.chrome.com/docs/extensions/reference/api/runtime#method-reload)
-e [storage.session](https://developer.chrome.com/docs/extensions/reference/api/storage#property-session).
+### A. Auto-Seleção Inteligente (Zero Fricção para Fluxo Rápido)
+- Quando há apenas **1 aba atribuída à sessão** do agente ou **1 aba livre elegível (`http://` ou `https://`)** sem conflito com outros agentes, a extensão resolve e seleciona a aba automaticamente mesmo que o agente não informe `tabId`.
+- Isso elimina bloqueios desnecessários de `TAB_SELECTION_REQUIRED` quando o usuário está utilizando um único agente.
 
-## Recarga após atualização
+### B. Atribuição Explícita por Agente no Popup (Multi-IA Simultâneo)
+- Quando múltiplos agentes estão conectados simultaneamente (ex.: Claude Desktop + ChatGPT + OpenCode), você pode abrir o Popup da extensão, marcar as abas permitidas e associar cada aba a um agente específico (`sessionId`).
+- As concessões e vínculos de posse ficam salvos em **`chrome.storage.session`** (`browser_mts_session_tab_grants` e `browser_mts_popup_tab_owners`), sobrevivendo ao ciclo de suspensão do Service Worker MV3 durante toda a sessão do navegador.
+- Outra sessão de agente não pode interagir com uma aba atribuída a um agente diferente (`TAB_ACCESS_DENIED`).
+- Limpar ou desmarcar uma concessão no popup revoga o acesso imediatamente.
 
-O Service Worker guarda em `chrome.storage.local` o estado da atualização
-(`browser_mts_extension_update_state`). Para cada versão alvo, a recarga é
-solicitada uma única vez. Se houver comandos em execução, o pedido fica
-pendente até a fila sinalizar que está livre; isso evita invalidar um contexto
-de conteúdo no meio de uma ação.
+---
 
-Depois da recarga, o próximo `client_hello` deve confirmar a versão real do
-manifesto. Uma versão ainda antiga produz o estado `error` e aparece no popup
-para diagnóstico. Uma cópia carregada de outra pasta não recebe os arquivos do
-instalador: nesse caso o diagnóstico permanece explícito e não há loop de
-recargas. Para atualização automática, mantenha a extensão carregada da pasta
-`extension` da instalação do aplicativo.
+## 3. Uso Simultâneo de Múltiplos Navegadores (Chrome + Edge)
 
-### Evidência de QA
+- O `WSSessionRegistry` (`src/mcp/ws_session_registry.py`) permite que o Google Chrome e o Microsoft Edge estejam conectados ao mesmo tempo na porta `3456`.
+- Os comandos de cada sessão são roteados deterministicamente para o navegador onde a aba daquela sessão está aberta e concedida.
 
-No perfil Chromium descartável de QA, o modo de desenvolvedor foi habilitado
-somente nesse perfil por `chrome.developerPrivate.updateProfileConfiguration`.
-O E2E então substituiu a versão `2.2.0` pela versão do manifesto `2.3.2`,
-observou o novo Service Worker com `onInstalled: update`, e confirmou o fluxo
-de atribuição explícita: AgentA executou a ação, AgentB recebeu
-`TAB_ACCESS_DENIED`, e a revogação foi respeitada. Isso valida o mecanismo no
-perfil de teste; não declara que o navegador do usuário já está instalado ou
-atualizado.
+---
+
+## 4. Mecanismo Seguro de Recarga Pós-Atualização (`ws_update.js`)
+
+O Service Worker guarda em `chrome.storage.local` o estado da atualização (`browser_mts_extension_update_state`). Para cada versão alvo:
+1. A recarga (`chrome.runtime.reload()`) é solicitada uma única vez.
+2. Se houver comandos `browser_*` em execução na fila (`session_queues.js`), o pedido de recarga aguarda até a fila ficar ociosa (`getActiveQueueCount() === 0`), evitando interromper um clique ou extração de DOM pela metade.
+3. Após a recarga, o novo `client_hello` confirma a versão atualizada do `manifest.json`.

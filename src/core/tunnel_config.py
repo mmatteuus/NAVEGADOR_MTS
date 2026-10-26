@@ -1,12 +1,13 @@
-"""Módulo de Persistência e Identificação do Túnel do Agente."""
-
+"""Módulo de Persistência e Identificação de Túneis (Principal e Multi-Túnel)."""
 from __future__ import annotations
 
 import json
 import os
 from pathlib import Path
 import re
-from typing import Dict, Any
+from typing import Any, Dict, List, Optional
+
+SUPPORTED_TUNNEL_PROVIDERS = ("openai", "cloudflared", "custom")
 
 
 def _get_tunnel_file() -> Path:
@@ -64,9 +65,7 @@ def save_tunnel_id(value: str) -> None:
 def get_tunnel_name() -> str:
     """Lê o nome amigável do agente/túnel para identificação facilitada."""
     env_name = os.environ.get("BROWSER_MTS_TUNNEL_NAME", "").strip()
-    if env_name:
-        return env_name
-    return str(_read_tunnel_data().get("tunnel_name", "")).strip()
+    return env_name or str(_read_tunnel_data().get("tunnel_name", "")).strip()
 
 
 def save_tunnel_name(name: str) -> str:
@@ -80,13 +79,55 @@ def save_tunnel_name(name: str) -> str:
 
 def get_tunnel_display_label() -> str:
     """Retorna etiqueta descritiva do agente para exibição na UI."""
-    name = get_tunnel_name()
-    tid = get_tunnel_id()
+    name, tid = get_tunnel_name(), get_tunnel_id()
     if name and tid:
-        short = f"{tid[:11]}...{tid[-4:]}"
-        return f"{name} ({short})"
-    if name:
-        return name
-    if tid:
-        return f"{tid[:11]}...{tid[-4:]}"
-    return "Não configurado"
+        return f"{name} ({tid[:11]}...{tid[-4:]})"
+    return name or (f"{tid[:11]}...{tid[-4:]}" if tid else "Não configurado")
+
+
+def list_tunnel_profiles() -> List[Dict[str, Any]]:
+    """Lista todos os perfis de túneis configurados (OpenAI, Cloudflare, Custom)."""
+    raw_list = _read_tunnel_data().get("profiles", [])
+    return [dict(item) for item in raw_list if isinstance(item, dict)] if isinstance(raw_list, list) else []
+
+
+def save_tunnel_profile(profile: Optional[Dict[str, Any] | str] = None, **kwargs: Any) -> Dict[str, Any]:
+    """Cria ou atualiza um perfil de túnel suportando provedores openai, cloudflared e custom."""
+    raw: Dict[str, Any] = dict(profile) if isinstance(profile, dict) else ({"id": profile} if isinstance(profile, str) else {})
+    raw.update(kwargs)
+    provider = str(raw.get("provider", "openai")).strip().lower()
+    if provider not in SUPPORTED_TUNNEL_PROVIDERS:
+        raise ValueError(f"Provedor de túnel não suportado: '{provider}'")
+    tid = str(raw.get("tunnel_id", "")).strip()
+    if provider == "openai" and tid and not re.fullmatch(r"tunnel_[0-9a-f]{32}", tid):
+        raise ValueError("ID do túnel OpenAI inválido.")
+
+    data = _read_tunnel_data()
+    profiles = [p for p in data.get("profiles", []) if isinstance(p, dict)] if isinstance(data.get("profiles"), list) else []
+    pid = str(raw.get("id") or raw.get("profile_id") or f"{provider}_{len(profiles) + 1}").strip()
+    cmd = raw.get("command", [])
+    entry: Dict[str, Any] = {
+        "id": pid,
+        "name": str(raw.get("name") or pid).strip()[:80],
+        "provider": provider,
+        "tunnel_id": tid,
+        "token": str(raw.get("token", "")).strip(),
+        "command": [str(x) for x in cmd] if isinstance(cmd, list) else ([str(cmd)] if cmd else []),
+        "url": str(raw.get("url", "")).strip(),
+        "enabled": bool(raw.get("enabled", True)),
+    }
+    data["profiles"] = [p for p in profiles if p.get("id") != pid] + [entry]
+    _write_tunnel_data(data)
+    return entry
+
+
+def remove_tunnel_profile(profile_id: str) -> bool:
+    """Remove um perfil de túnel pelo ID e retorna True se existia."""
+    data = _read_tunnel_data()
+    profiles = [p for p in data.get("profiles", []) if isinstance(p, dict)] if isinstance(data.get("profiles"), list) else []
+    filtered = [p for p in profiles if p.get("id") != profile_id]
+    if len(filtered) == len(profiles):
+        return False
+    data["profiles"] = filtered
+    _write_tunnel_data(data)
+    return True

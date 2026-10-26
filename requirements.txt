@@ -1,4 +1,4 @@
-# Dependências do BROWSER MTS para Windows 11
+# Dependências do BROWSER MTS para Windows
 customtkinter>=5.2.0
 pywinstyles>=1.8.0
 pystray>=0.19.5

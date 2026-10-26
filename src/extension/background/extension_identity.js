@@ -4,6 +4,7 @@ const INSTANCE_KEY = 'browser_mts_extension_instance_id';
 const GRANTS_KEY = 'browser_mts_session_tab_grants';
 const OWNERS_KEY = 'browser_mts_popup_tab_owners';
 let instancePromise = null;
+let lastActivatedAt = Date.now();
 
 export async function getClientInstanceId() {
   if (instancePromise) return instancePromise;
@@ -25,6 +26,11 @@ async function resolveClientInstanceId() {
 export async function createClientHello(activeTabInfo = null) {
   const hello = buildClientHello(activeTabInfo);
   hello.payload.instanceId = await getClientInstanceId();
+  hello.payload.lastActivatedAt = lastActivatedAt;
+  try {
+    const tabs = typeof chrome !== 'undefined' && chrome.tabs?.query ? await chrome.tabs.query({}) : [];
+    hello.payload.openTabIds = Array.isArray(tabs) ? tabs.map(t => Number(t.id)).filter(id => Number.isInteger(id) && id > 0) : [];
+  } catch (_) { hello.payload.openTabIds = []; }
   try {
     const saved = await chrome.storage.session.get(GRANTS_KEY);
     hello.payload.grantedTabIds = Array.isArray(saved?.[GRANTS_KEY]) ? saved[GRANTS_KEY] : [];
@@ -42,4 +48,9 @@ export function installGrantSync(sendHello) {
       console.error('Erro na sincronização de concessões:', err);
     });
   });
+}
+
+if (typeof chrome !== 'undefined') {
+  chrome.tabs?.onActivated?.addListener(() => { lastActivatedAt = Date.now(); });
+  chrome.windows?.onFocusChanged?.addListener((wid) => { if (wid !== -1) lastActivatedAt = Date.now(); });
 }

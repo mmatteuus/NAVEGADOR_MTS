@@ -1,48 +1,50 @@
-# Atualizações do NAVEGADOR MTS
+# 📦 Atualizações, Versionamento e Releases do NAVEGADOR MTS (v2.4.0)
 
-O botão **Atualizações** consulta a release estável configurada e baixa somente
-o instalador `.exe` completo. O ZIP da branch e cópia de `src` não são canais
-de atualização do executável PyInstaller.
+## 1. Como Funciona o Atualizador Oficial (`src/core/updater.py`)
 
-Uma resposta HTTP 404, timeout, JSON inválido, release sem `.exe` ou download
-inválido aparece como falha no botão. Isso não significa que o aplicativo está
-atualizado. A versão só é aceita quando é numericamente maior que a instalada.
+O botão **Atualizações** (e a verificação automática periódica) consulta a release estável oficial no GitHub (`mmatteuus/NAVEGADOR_MTS`) e baixa exclusivamente o instalador completo `NAVEGADOR_MTS_Instalador_v<versão>.exe`.
 
-O instalador mantém o AppId e a pasta padrão:
-`%LOCALAPPDATA%\Programs\NAVEGADOR MTS`. A sobreposição substitui arquivos do
-programa e preserva `%APPDATA%\browser-mcp-mts`, onde ficam logs, credenciais
-protegidas e configuração do túnel.
+### Fallback Web Resiliente Contra Rate-Limit HTTP 403 (`src/core/update_web_fallback.py`)
+- Caso a API REST pública do GitHub (`api.github.com/repos/mmatteuus/NAVEGADOR_MTS/releases/latest`) retorne erro de limite de requisições sem token (**HTTP 403 Rate Limit**), o atualizador aciona automaticamente o fallback web via redirecionamento público (`https://github.com/mmatteuus/NAVEGADOR_MTS/releases/latest`).
+- O fallback identifica a tag estável mais recente, valida o hash `.sha256` quando publicado e baixa o instalador `.exe` correspondente.
+- Caso não haja conexão externa, o atualizador também verifica se existe um instalador mais novo já compilado localmente em `dist_installer\`.
 
-Para gerar uma versão local, execute `COMPILAR_INSTALADOR.bat` e confirme o
-arquivo `dist_installer\NAVEGADOR_MTS_Instalador_v<versão>.exe`. Antes de uma
-publicação, valide o tamanho, SHA-256, tag, asset e acesso HTTP da release.
+---
 
-Não publique tokens neste repositório. O instalador fecha somente processos
-com caminho completo dentro da pasta instalada: desktop, MCP e binários do
-túnel. Não há encerramento global por nome.
+## 2. Preservação de Dados e Fechamento Seguro de Processos
 
-## Fluxo de release e reparo
+- O instalador mantém o `AppId` oficial e instala os binários em:
+  `%LOCALAPPDATA%\Programs\Navegador MTS`
+- A pasta `%APPDATA%\browser-mcp-mts` (onde ficam logs, `tunnel.json` e credenciais criptografadas via DPAPI em `secrets\`) **é 100% preservada** durante qualquer atualização.
+- Antes de substituir os arquivos, o script `installer\close_owned_processes.ps1` fecha **exclusivamente** os processos cujo caminho absoluto pertença à pasta instalada (`NAVEGADOR_MTS.exe`, `NAVEGADOR_MTS_MCP.exe`, `tunnel-client.exe`, `cloudflared.exe`), nunca interferindo em processos de outros projetos.
 
-O canal principal usa o repositório público atual e cada push para `main`, após
-os testes, gera no CI uma versão `2.1.3.<run_number>` (a versão base pode ser
-alterada intencionalmente). Cada release precisa conter
-os quatro componentes da mesma versão: tag estável, instalador `.exe`,
-manifesto da extensão e executável desktop. O CI gera a versão do build no
-checkout efêmero, valida esses componentes e publica o asset com o nome
-canônico. O botão sempre pede consentimento no popup antes de baixar e iniciar
-o instalador. Além da verificação ao iniciar, a janela repete a consulta a
-cada hora enquanto o aplicativo permanece aberto; ela apenas exibe o popup e
-nunca baixa ou instala sem consentimento.
+---
 
-O nome antigo `mmatteuus/browser-mcp-mts` permanece como redirecionamento para
-`mmatteuus/NAVEGADOR_MTS`; por isso instalações 2.1.2 conseguem encontrar a
-primeira release depois que ela for publicada. Na verificação de 16/10/2026,
-ambos os endpoints `releases/latest` ainda retornavam 404 porque não havia uma
-release pública disponível; uma falha HTTP deve continuar visível como falha de
-consulta, nunca como aplicativo atualizado.
+## 3. Fluxo Padronizado de Versionamento e Build Local (`v2.4.0`)
 
-Para reparar a instalação atual, gere primeiro o instalador 2.1.3 corrigido,
-confirme hash e versão, e execute-o sobre `%LOCALAPPDATA%\Programs\NAVEGADOR
-MTS`. Depois valide o registro, o executável, a extensão e a preservação de
-`%APPDATA%\browser-mcp-mts`. Uma release futura só pode ser considerada pronta
-após esse ensaio e a revisão independente do artefato.
+Sempre que uma melhoria for implementada no código, gere uma nova versão seguindo estes passos:
+
+```powershell
+# 1. Sincronizar a versão em src/version.py, src/extension/manifest.json e installer.iss
+python release_version.py --set 2.4.0
+# (Ou usar --bump patch / --bump minor / --bump major)
+
+# 2. Executar as suítes de testes Python (444+ testes) e Node MV3
+python -m pytest -q
+node tests/run_extension_suite.mjs
+
+# 3. Compilar os executáveis PyInstaller e gerar o instalador Inno Setup 6
+.\COMPILAR_INSTALADOR.bat
+```
+
+O instalador final será gerado em:
+`dist_installer\NAVEGADOR_MTS_Instalador_v2.4.0.exe`
+
+---
+
+## 4. Pipeline de CI e Release Automática (`.github/workflows/windows-qa.yml`)
+
+No GitHub Actions, cada push na branch `main`:
+1. Executa a validação de sintaxe e a suíte da extensão em Linux (`sintaxe`).
+2. Executa os 444+ testes `pytest` e a suíte Node `.mjs` em Windows (`contratos`).
+3. No job `release`, executa `prepare_release.py` para estampar `<BASE_VERSION>.<GITHUB_RUN_NUMBER>`, compila o instalador via PyInstaller + Inno Setup, gera o arquivo `.sha256` e publica a release imutável via `publish_release.py`.

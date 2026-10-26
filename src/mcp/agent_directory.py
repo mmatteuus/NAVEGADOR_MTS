@@ -7,17 +7,34 @@ import logging
 import time
 
 from .session_manager import session_manager
+from .session_models import classify_agent_family
 
 logger = logging.getLogger("BrowserMTS.AgentDirectory")
 
 
 def agent_directory() -> list[dict]:
-    """Lista sessões inicializadas; o ID distingue clientes com o mesmo nome."""
-    return [{"sessionId": sid, "agentId": session.agent_id,
-             "lastActivity": session.metadata.get("lastActivity", session.connected_at),
-             "connected": True}
-            for sid in session_manager.list_active_sessions()
-            if (session := session_manager.get_session(sid)) is not None]
+    """Lista sessões inicializadas com telemetria enriquecida para o painel multi-IA."""
+    items: list[dict] = []
+    for sid in session_manager.list_active_sessions():
+        session = session_manager.get_session(sid)
+        if session is None:
+            continue
+        items.append({
+            "sessionId": sid,
+            "agentId": session.agent_id,
+            "agentFamily": session.agent_family or classify_agent_family(session.agent_id),
+            "transport": session.transport,
+            "status": session.status,
+            "connectedAt": session.connected_at,
+            "assignedTabs": sorted(list(session.assigned_tabs)),
+            "lastActivity": session.metadata.get("lastActivity", session.last_activity),
+            "lastCommand": session.last_command,
+            "activeCommand": session.active_command,
+            "callCount": session.call_count,
+            "errorCount": session.error_count,
+            "connected": True,
+        })
+    return items
 
 
 async def announce_agents(bridge) -> None:
@@ -42,7 +59,10 @@ async def register_agent(bridge, session_id: str, client_info=None) -> None:
     session = await session_manager.get_or_create_session(session_id, agent_id=name)
     if name:
         session.agent_id = name
-    session.metadata["lastActivity"] = time.time()
+        session.agent_family = classify_agent_family(name)
+    now = time.time()
+    session.last_activity = now
+    session.metadata["lastActivity"] = now
     if changed:
         await announce_agents(bridge)
 

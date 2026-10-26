@@ -8,7 +8,7 @@
 
 /** Endereço base e candidatos de portas para detecção e pulo automático */
 export const DEFAULT_PORT = 3456;
-export const PORT_CANDIDATES = [3456, 3457, 3458, 3459, 3460, 3461, 3462, 3463, 3464, 3465];
+export const PORT_CANDIDATES = [3456, 3458, 3459, 3460, 3461, 3462, 3463, 3464, 3465];
 export const WS_BASE_URL = 'ws://127.0.0.1';
 export const WS_URL = `${WS_BASE_URL}:${DEFAULT_PORT}`;
 
@@ -19,13 +19,13 @@ export const HEARTBEAT_INTERVAL_MS = 4000;
 export const HEARTBEAT_TIMEOUT_MS = 20000;
 
 /** Tentativas na mesma porta antes de buscar porta alternativa */
-export const MAX_RETRIES_BEFORE_PORT_HOP = 3;
+export const MAX_RETRIES_BEFORE_PORT_HOP = 5;
 
 /** Nome do alarme nativo para evitar suspensão de 30s do Service Worker MV3 */
 export const KEEP_ALIVE_ALARM_NAME = 'browser_mts_keep_alive';
 
-/** Período do alarme em minutos (mínimo de 1 minuto exigido pelo Chromium) */
-export const KEEP_ALIVE_PERIOD_MINUTES = 1.0;
+/** Período do alarme em minutos (24s para evitar suspensão de 30s do Service Worker MV3) */
+export const KEEP_ALIVE_PERIOD_MINUTES = 0.4;
 
 /** Etapas do Backoff Exponencial para reconexão ao Desktop App (em milissegundos) */
 export const RECONNECT_BACKOFF_STEPS_MS = [500, 1000, 2000, 4000];

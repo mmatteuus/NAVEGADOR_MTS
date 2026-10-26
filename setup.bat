@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================================
-:: BROWSER MTS -- Instalador e Configurador Autonomo para Windows 11
+:: BROWSER MTS -- Instalador e Configurador Autonomo para Windows
 :: ============================================================================
 
 echo ==============================================================================
@@ -77,7 +77,7 @@ echo.
 echo ==============================================================================
 echo                   INSTALACAO CONCLUIDA COM SUCESSO!
 echo ==============================================================================
-echo O BROWSER MTS esta pronto para uso no Windows 11.
+echo O BROWSER MTS esta pronto para uso no Windows.
 echo Atalho criado no Menu Iniciar: "BROWSER MTS"
 echo Local do projeto: "%PROJECT_DIR%"
 echo.

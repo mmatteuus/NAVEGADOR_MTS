@@ -32,10 +32,11 @@ def fetch_release_web_fallback(owner: str, repo: str, timeout: float = 6.0) -> t
             sha256_val = None
             try:
                 sha_req = urllib.request.Request(sha_url, headers={"User-Agent": f"NAVEGADOR-MTS/{APP_VERSION}"})
-                with urllib.request.urlopen(sha_req, timeout=3.0) as sha_resp:
-                    content = sha_resp.read().decode("ascii", errors="ignore").strip()
-                    if content:
-                        sha256_val = content.split()[0].lower()
+                with urllib.request.urlopen(sha_req, timeout=8.0) as sha_resp:
+                    raw = sha_resp.read()
+                    text = raw.decode("ascii", errors="ignore").strip() if isinstance(raw, (bytes, bytearray)) else ""
+                    if text and re.fullmatch(r"[0-9a-fA-F]{64}", text.split()[0]):
+                        sha256_val = text.split()[0].lower()
             except Exception:
                 pass
             payload = {

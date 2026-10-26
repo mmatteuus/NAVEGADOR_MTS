@@ -11,16 +11,13 @@ import { setAgentDirectory, clearAgentDirectory } from './agent_directory.js';
 
 let socket = null, reconnectAttempt = 0, reconnectTimer = null, messageDispatcherFn = null;
 let connectionInProgress = false, connectionTimer = null, connectionId = 0;
-const CONNECT_TIMEOUT_MS = 2000;
-const portRecovery = createPortRecovery();
+const CONNECT_TIMEOUT_MS = 2000, portRecovery = createPortRecovery();
 setUpdateIdleCheck(() => getActiveQueueCount() === 0); setQueueIdleCallback(notifyUpdateQueueIdle);
-const heartbeat = createHeartbeatManager(
-  () => { cleanupSocket(); scheduleReconnect(); },
-  (pingMsg) => sendMessage(pingMsg)
-);
+const heartbeat = createHeartbeatManager(() => { cleanupSocket(); scheduleReconnect(); }, (pingMsg) => sendMessage(pingMsg));
 
 export function setCommandDispatcher(dispatcher) { messageDispatcherFn = dispatcher; }
 export function getConnectionToken() { return socket; }
+export function isSocketConnected() { return !!(socket && socket.readyState === WebSocket.OPEN); }
 
 export async function connectWebSocket() {
   if (connectionInProgress || (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING))) return;
@@ -33,15 +30,13 @@ export async function connectWebSocket() {
     await portRecovery.load();
     const activePort = portRecovery.currentPort(), targetUrl = `${WS_BASE_URL}:${activePort}`;
     await updateConnectionStatus(CONNECTION_STATE.CONNECTING, 0);
-    const attemptId = ++connectionId;
-    const candidate = new WebSocket(targetUrl);
+    const attemptId = ++connectionId, candidate = new WebSocket(targetUrl);
     socket = candidate;
     connectionTimer = setTimeout(() => {
       const pending = candidate.readyState === 0 || candidate.readyState === WebSocket.CONNECTING;
       if (connectionId === attemptId && socket === candidate && pending) {
         logger.warn(`Tempo esgotado ao conectar em ${targetUrl}; testando recuperação.`);
-        portRecovery.advance(); cleanupSocket(); connectionInProgress = false;
-        scheduleReconnect(250);
+        portRecovery.advance(); cleanupSocket(); connectionInProgress = false; scheduleReconnect(250);
       }
     }, CONNECT_TIMEOUT_MS);
     candidate.onopen = async () => {
@@ -73,22 +68,17 @@ export async function connectWebSocket() {
       portRecovery.advance(); cleanupSocket(); scheduleReconnect();
     };
   } catch (err) {
-    connectionInProgress = false;
-    portRecovery.advance(); scheduleReconnect(250);
+    connectionInProgress = false; portRecovery.advance(); scheduleReconnect(250);
   }
 }
 
 function handleIncomingMessage(rawData) {
   try {
     const msg = JSON.parse(rawData);
-    if (msg.type === 'pong') {
-      const lat = heartbeat.handlePong(msg.ts);
-      updateConnectionStatus(CONNECTION_STATE.CONNECTED, lat); return;
-    }
+    if (msg.type === 'pong') { updateConnectionStatus(CONNECTION_STATE.CONNECTED, heartbeat.handlePong(msg.ts)); return; }
     if (msg.type === 'ping') {
       const { pongPayload, latencyMs } = heartbeat.handlePing(msg.ts);
-      updateConnectionStatus(CONNECTION_STATE.CONNECTED, latencyMs);
-      sendMessage(pongPayload); return;
+      updateConnectionStatus(CONNECTION_STATE.CONNECTED, latencyMs); sendMessage(pongPayload); return;
     }
     if (msg.type === 'server_hello') {
       setAgentDirectory(msg.payload?.agents);
@@ -130,14 +120,22 @@ function cleanupSocket() {
     socket = null;
   }
 }
+
+export function disconnectWebSocket() {
+  clearTimeout(reconnectTimer); reconnectTimer = null;
+  cleanupSocket(); updateConnectionStatus(CONNECTION_STATE.DISCONNECTED, 0);
+}
+
 export function ensureConnected() {
   if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) connectWebSocket();
 }
 
-installGrantSync(async () => {
+export async function syncClientHello() {
   try {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     const active = await getActiveTab();
     sendMessage(await createClientHello(active ? { id: active.id, url: active.url, title: active.title } : null));
   } catch (err) { console.error('Erro na sincronização de concessões no WebSocket:', err); }
-});
+}
+
+installGrantSync(syncClientHello);

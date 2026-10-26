@@ -17,11 +17,19 @@ def _key(version: tuple[int, ...]) -> tuple[int, int, int, int]:
     return tuple((version + (0, 0, 0, 0))[:4])
 
 
+def _is_lower_version(reported: tuple[int, ...], desktop: tuple[int, ...]) -> bool:
+    """Compara versões evitando falso positivo entre 3 (semver) e 4 (CI) componentes."""
+    if len(reported) >= 4 and len(desktop) >= 4:
+        return _key(reported) < _key(desktop)
+    return (reported + (0, 0, 0))[:3] < (desktop + (0, 0, 0))[:3]
+
+
 class ExtensionReloadPolicy:
     """Decide se o handshake deve pedir `chrome.runtime.reload()` à extensão."""
 
     def __init__(self, desktop_version: str) -> None:
-        self._desktop = _key(parse_version_tuple(desktop_version))
+        self._desktop_raw = parse_version_tuple(desktop_version)
+        self._desktop = _key(self._desktop_raw)
         self._requested: set[tuple[str, str]] = set()
 
     def should_reload(self, client_payload: Any) -> bool:
@@ -38,7 +46,7 @@ class ExtensionReloadPolicy:
         instance = client_payload.get("instanceId")
         identity = str(instance) if isinstance(instance, str) and instance else f"legacy:{reported}"
         request_key = (identity, reported)
-        if request_key in self._requested or _key(parse_version_tuple(reported)) >= self._desktop:
+        if request_key in self._requested or not _is_lower_version(parse_version_tuple(reported), self._desktop_raw):
             return False
         self._requested.add(request_key)
         return True
@@ -48,5 +56,8 @@ class ExtensionReloadPolicy:
         if not isinstance(client_payload, dict):
             return False
         reported = client_payload.get("version")
-        return isinstance(reported, str) and reported[:1].isdigit() and _key(parse_version_tuple(reported)) < self._desktop
-
+        return (
+            isinstance(reported, str)
+            and reported[:1].isdigit()
+            and _is_lower_version(parse_version_tuple(reported), self._desktop_raw)
+        )

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Script de Instalacao e Provisionamento Autonomo do BROWSER MTS no Windows 11.
+    Script de Instalacao e Provisionamento Autonomo do BROWSER MTS no Windows.
 
 .DESCRIPTION
     Configura o ambiente do BROWSER MTS em uma maquina Windows limpa:
@@ -62,7 +62,7 @@ function Write-ErrorMessage([string]$Message) {
 }
 
 Write-Host "==============================================================================" -ForegroundColor DarkCyan
-Write-Host "               BROWSER MTS -- Provisionamento para Windows 11                 " -ForegroundColor White
+Write-Host "               BROWSER MTS -- Provisionamento para Windows                    " -ForegroundColor White
 Write-Host "==============================================================================" -ForegroundColor DarkCyan
 Write-Host ""
 
@@ -155,7 +155,7 @@ if ($ShouldCreate) {
     }
     $Shortcut.Arguments = $ArgStr
     $Shortcut.WorkingDirectory = $ScriptDir
-    $Shortcut.Description = "BROWSER MTS - Automacao de Navegador e Computador para IA (Windows 11)"
+    $Shortcut.Description = "BROWSER MTS - Automacao de Navegador e Computador para IA (Windows)"
 
     if (Test-Path $IconPath) {
         $Shortcut.IconLocation = $IconPath

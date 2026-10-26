@@ -3,11 +3,9 @@
  * @description Mapeamento estrito e isolamento de abas e janelas por sessão de agente.
  */
 
-const tabToSession = new Map();
-const sessionToTabs = new Map();
-const winToSession = new Map();
-const sessionToWins = new Map();
-const tabSources = new Map();
+const tabToSession = new Map(), sessionToTabs = new Map();
+const winToSession = new Map(), sessionToWins = new Map();
+const tabSources = new Map(), lastSessionTab = new Map();
 
 export function assignTabToSession(sessionId, tabId) {
   if (!sessionId || tabId == null) return;
@@ -19,10 +17,19 @@ export function assignTabToSession(sessionId, tabId) {
   tabSources.set(tid, 'agent');
 }
 
+export function setLastTabForSession(sessionId, tabId) {
+  if (sessionId && tabId != null) lastSessionTab.set(String(sessionId), Number(tabId));
+}
+
+export function getLastTabForSession(sessionId) {
+  return sessionId ? (lastSessionTab.get(String(sessionId)) || null) : null;
+}
+
+export const hasAnySessionTabs = () => tabToSession.size > 0;
+export const hasAgentTabs = () => [...tabSources.values()].includes('agent');
+
 export function claimGrantedTab(sessionId, tabId) {
-  if (!sessionId || tabId == null) {
-    throw new Error('TAB_ACCESS_DENIED: Missing sessionId or tabId.');
-  }
+  if (!sessionId || tabId == null) throw new Error('TAB_ACCESS_DENIED: Missing sessionId or tabId.');
   const tid = Number(tabId), owner = getSessionForTab(tid);
   if (owner && owner !== String(sessionId)) {
     throw new Error('TAB_ACCESS_DENIED: The requested tab belongs to another agent session.');
@@ -53,28 +60,21 @@ export function releaseGrantedTab(tabId) {
 }
 
 export function isGrantedClaim(tabId) {
-  return tabSources.get(Number(tabId)) === 'popup';
+  const src = tabSources.get(Number(tabId));
+  return src === 'popup' || src === 'agent';
 }
 
 export function releaseTabFromSession(tabId) {
   const tid = Number(tabId), sid = tabToSession.get(tid);
   if (!sid) return;
-  tabToSession.delete(tid);
-  tabSources.delete(tid);
+  tabToSession.delete(tid); tabSources.delete(tid);
+  if (lastSessionTab.get(sid) === tid) lastSessionTab.delete(sid);
   const tabs = sessionToTabs.get(sid);
-  if (tabs) {
-    tabs.delete(tid);
-    if (tabs.size === 0) sessionToTabs.delete(sid);
-  }
+  if (tabs) { tabs.delete(tid); if (tabs.size === 0) sessionToTabs.delete(sid); }
 }
 
-export function getSessionForTab(tabId) {
-  return tabToSession.get(Number(tabId)) || null;
-}
-
-export function getTabsForSession(sessionId) {
-  return sessionId ? Array.from(sessionToTabs.get(String(sessionId)) || []) : [];
-}
+export const getSessionForTab = (tabId) => tabToSession.get(Number(tabId)) || null;
+export const getTabsForSession = (sessionId) => sessionId ? Array.from(sessionToTabs.get(String(sessionId)) || []) : [];
 
 export function assignWindowToSession(sessionId, winId) {
   if (!sessionId || winId == null) return;
@@ -90,32 +90,22 @@ export function releaseWindowFromSession(winId) {
   if (!sid) return;
   winToSession.delete(wid);
   const wins = sessionToWins.get(sid);
-  if (wins) {
-    wins.delete(wid);
-    if (wins.size === 0) sessionToWins.delete(sid);
-  }
+  if (wins) { wins.delete(wid); if (wins.size === 0) sessionToWins.delete(sid); }
 }
 
-export function getSessionForWindow(winId) {
-  return winToSession.get(Number(winId)) || null;
-}
-
-export function getWindowsForSession(sessionId) {
-  return sessionId ? Array.from(sessionToWins.get(String(sessionId)) || []) : [];
-}
+export const getSessionForWindow = (winId) => winToSession.get(Number(winId)) || null;
+export const getWindowsForSession = (sessionId) => sessionId ? Array.from(sessionToWins.get(String(sessionId)) || []) : [];
 
 export function isTabAllowedForSession(sessionId, tabId) {
   if (tabId == null) return true;
-  const tid = Number(tabId);
-  const owner = getSessionForTab(tid);
+  const tid = Number(tabId), owner = getSessionForTab(tid);
   if (owner) return owner === sessionId;
   return sessionId ? getTabsForSession(sessionId).includes(tid) : true;
 }
 
 export function validateTabAccess(sessionId, tabId) {
   if (tabId == null) return true;
-  const tid = Number(tabId);
-  const owner = getSessionForTab(tid);
+  const tid = Number(tabId), owner = getSessionForTab(tid);
   if (owner) {
     if (!sessionId) throw new Error('TAB_ACCESS_DENIED: Sessão do agente não identificada.');
     if (owner !== sessionId) throw new Error('TAB_ACCESS_DENIED: A aba solicitada pertence a outra sessão de agente.');
@@ -127,7 +117,7 @@ export function validateTabAccess(sessionId, tabId) {
 
 export function clearSessionRegistry() {
   tabToSession.clear(); sessionToTabs.clear(); winToSession.clear(); sessionToWins.clear();
-  tabSources.clear();
+  tabSources.clear(); lastSessionTab.clear();
 }
 
 if (typeof chrome !== 'undefined') {

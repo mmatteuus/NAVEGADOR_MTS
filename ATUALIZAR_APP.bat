@@ -18,12 +18,15 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-set "APP_EXE=%LOCALAPPDATA%\Programs\Navegador MTS\NAVEGADOR_MTS.exe"
+set "APP_EXE=%LOCALAPPDATA%\Programs\NAVEGADOR MTS\NAVEGADOR_MTS.exe"
 if not exist "%APP_EXE%" (
   echo [ERRO] Executavel nao encontrado apos instalacao: "%APP_EXE%"
   pause
   exit /b 1
 )
-start "" "%APP_EXE%"
+tasklist /FI "IMAGENAME eq NAVEGADOR_MTS.exe" 2>nul | find /I "NAVEGADOR_MTS.exe" >nul
+if errorlevel 1 (
+  start "" "%APP_EXE%"
+)
 echo [OK] Instalacao atualizada.
 pause

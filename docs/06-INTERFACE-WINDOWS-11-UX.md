@@ -1,84 +1,60 @@
-# 🎨 06. Interface Windows 11 e Experiência do Usuário (UX)
+# 🎨 06. Interface Gráfica Universal (Windows 10 / 11), Temas Claro/Escuro e UX (v2.4.0)
 
-## 1. Diretrizes de Design do Windows 11
+## 1. Compatibilidade Universal Windows e Design Fluent Dual-Mode
 
-O novo **BROWSER MTS** foi idealizado para ter a aparência e a sensação de um aplicativo nativo moderno do Windows 11, seguindo os princípios de design da Microsoft (**Fluent Design System**):
+O **NAVEGADOR MTS v2.4.0** funciona nativamente em **qualquer versão moderna do Windows 64-bit (Windows 10, Windows 11 e Windows Server)**, seguindo os princípios do **Microsoft Fluent Design System** através do `CustomTkinter` (`src/ui/theme.py`):
 
-- **Tipografia**: Uso da fonte padrão do sistema, `Segoe UI Variable`.
-- **Bordas e Cantos**: Cantos suavemente arredondados (`border-radius: 8px` a `12px`).
-- **Paleta de Cores e Temas**: Suporte total a **Tema Escuro (Dark Mode)** e **Tema Claro (Light Mode)** com adaptação automática ao tema do Windows.
-- **Efeito Visual**: Transparências sutis estilo Mica/Acrílico com elevação por sombras suaves.
+- **Paleta `FluentPalette` Dual-Mode WCAG AAA**:
+  - Suporte completo e instantâneo a **Tema Escuro (`dark`)**, **Tema Claro (`light`)** e **Automático do Sistema (`system`)**.
+  - Cores semânticas de alto contraste:
+    - **Fundo Principal**: `#141416` (Escuro) / `#F3F3F5` (Claro)
+    - **Cartões Elevados**: `#1E1E22` (Escuro) / `#FFFFFF` (Claro)
+    - **Bordas**: `#2B2B33` (Escuro) / `#E5E5EB` (Claro)
+    - **Texto Principal**: `#FFFFFF` (Escuro) / `#1A1A1A` (Claro) — contraste WCAG AAA.
+- **Efeito Mica Defensivo**: No Windows 11, aplica o backdrop Mica (`DwmSetWindowAttribute` atributo 38 / `pywinstyles`). No Windows 10 ou Windows Server, utiliza fallback sólido elegante sem qualquer erro ou perda de funcionalidade.
 
 ---
 
-## 2. Layout do Painel Principal (Dashboard)
+## 2. Layout Moderno com Barra Lateral e Painel Multi-IA
 
-A tela principal do aplicativo é limpa, intuitiva e focada na observabilidade em tempo real:
+A janela principal (`src/ui/main_window.py`) conta com barra lateral de navegação dividida em 4 áreas principais e seletor rápido de Tema (Claro / Escuro / Sistema):
 
 ```text
-+------------------------------------------------------------------------+
-| 🌐 BROWSER MTS & COMPUTER USE                       [⚙️ Config] [—] [X] |
-+------------------------------------------------------------------------+
-|                                                                        |
-|  [ 🟢 SISTEMA OPERACIONAL & ONLINE ]                  Versão: 2.0.0    |
-|                                                                        |
-|  +------------------------+  +------------------------+                |
-|  | 🔌 Servidor MCP        |  | 🌐 Extensão Chrome     |                |
-|  | Status: Conectado      |  | Status: Conectada      |                |
-|  | Túnel: OpenAI Secure   |  | Aba: github.com/mateus |                |
-|  | Latência: 24ms         |  | Porta: 3456            |                |
-|  +------------------------+  +------------------------+                |
-|                                                                        |
-|  +------------------------------------------------------------------+  |
-|  | 🛡️ CONTROLE DO COMPUTADOR (COMPUTER USE)                         |  |
-|  |                                                                  |  |
-|  | Permissão de mouse, teclado e tela: [  LIGADO (ON)  ]  (Toggle)  |  |
-|  |                                                                  |  |
-|  | Status: 🟢 O Agente PODE interagir com o computador               |  |
-|  | 🚨 Kill-Switch de Emergência: Pressione ESC 3x para interromper  |  |
-|  +------------------------------------------------------------------+  |
-|                                                                        |
-|  +------------------------------------------------------------------+  |
-|  | 📋 Registro de Atividades em Tempo Real (Logs de Diagnóstico)     |  |
-|  | [12:04:12] Conexão WebSocket estabelecida com extensão Chrome     |  |
-|  | [12:04:15] Ferramenta executada: browser_navigate (sucesso)       |  |
-|  | [12:04:18] Heartbeat OK (latência: 12ms)                          |  |
-|  |                                               [Limpar] [Copiar]  |  |
-|  +------------------------------------------------------------------+  |
-|                                                                        |
-+------------------------------------------------------------------------+
++------------------------------------------------------------------------------------+
+| 🌐 NAVEGADOR MTS v2.4.0                        [🌓 Tema: Escuro/Claro] [—] [□] [X] |
++----------------------+-------------------------------------------------------------+
+| 🧭 NAVEGAÇÃO         | 📊 DASHBOARD EM TEMPO REAL                                  |
+|                      |                                                             |
+| [ 📊 Dashboard     ] |  +---------------------------+ +--------------------------+ |
+| [ 🤖 Conexões IA   ] |  | 🔌 Servidor MCP & HTTP    | | 🌐 Extensão Chrome/Edge  | |
+| [ 🎯 Destinos      ] |  | WS: 3456 | HTTP: 3457     | | Status: Conectada        | |
+| [ ⚙️ Configurações ] |  | Túneis Ativos: Prontos    | | Latência: 12ms           | |
+|                      |  +---------------------------+ +--------------------------+ |
+|                      |                                                             |
+|                      |  +--------------------------------------------------------+ |
+|                      |  | 🛡️ CONTROLE DO COMPUTADOR (SAFETY GATE FAIL-CLOSED)    | |
+|                      |  | Permissão de mouse, teclado e janelas: [ LIGADO (ON) ] | |
+|                      |  | 🚨 Kill-Switch Físico: Pressione ESC 3x (< 1,2s)       | |
+|                      |  +--------------------------------------------------------+ |
+|                      |                                                             |
+| [ 🔄 Atualizações  ] |  +--------------------------------------------------------+ |
+|                      |  | 📋 Console de Eventos e Diagnóstico                    | |
++----------------------+-------------------------------------------------------------+
 ```
+
+### Painéis Especializados da UI (`src/ui/`):
+1. **`DashboardPanel` (`dashboard_panel.py`)**: Telemetria em tempo real (status do MCP, porta WebSocket ativa, latência, status dos túneis, chave mestra do `SafetyGate` e console de logs sanitizados).
+2. **`AIConnectionsPanel` / `MCPCopyDialog` (`ai_connections_panel.py` / `mcp_copy_dialog.py`)**: Central de **Conexões Multi-IA** para copiar em 1 clique a configuração de **ChatGPT, Claude Desktop, Claude Code, Google Gemini / Antigravity, OpenCode, Cursor e Codex**, além de controlar múltiplos túneis simultâneos.
+3. **`DestinationsPanel` (`destinations_panel.py`, `window_assignment_panel.py`, `folder_assignment_panel.py`)**: Permite atribuir ou revogar janelas (`HWND`) e pastas locais para cada sessão de agente conectada.
+4. **`SettingsPanel` (`settings_panel.py`)**: Gerenciamento seguro de credenciais DPAPI, inicialização automática com o Windows (`autostart.py`) e diagnóstico.
 
 ---
 
 ## 3. Integração com a Bandeja do Sistema (System Tray)
 
-Para garantir uso prático no dia a dia ("zero cliques"), o aplicativo roda em segundo plano sem poluir a barra de tarefas:
-
-1. **O botão 'X' apenas oculta a janela (Segundo Plano Permanente)**: Ao clicar no botão 'X' superior, a janela é ocultada imediatamente, mas todo o processamento de segundo plano (servidor MCP, ponte WebSocket com a extensão e listeners de segurança) continua 100% ativo e operacional.
-2. **Encerramento Exclusivo pela Bandeja**: Para fechar e desativar o aplicativo por completo, o usuário deve obrigatoriamente clicar com o botão direito no ícone da bandeja do sistema (junto ao relógio do Windows) e escolher a opção **'❌ Sair do Aplicativo'**.
-3. **Ícone Dinâmico de Status**:
-   - 🟢 **Verde**: Todos os serviços ativos, extensão conectada e operacional.
-   - 🟡 **Amarelo**: Tentando reconectar extensão ou aguardando conexão.
-   - 🔴 **Vermelho**: Serviços pausados ou erro de rede.
-4. **Menu de Contexto com Botão Direito**:
-   - 🌐 Abrir BROWSER MTS (ou duplo-clique no ícone para restaurar a janela)
-   - 🛡️ Alternar Trava Computer Use (Ativado / Desativado)
-   - 🔌 Alternar Servidor MCP
-   - ❌ Sair do Aplicativo (Encerramento real)
-
----
-
-## 4. Notificações Nativas do Windows (Toast Notifications)
-
-O sistema utiliza notificações nativas do Windows para comunicar eventos cruciais de forma discreta:
-- **Alerta de Emergência**: Quando o Kill-Switch é pressionado, uma notificação imediata confirma a revogação do controle.
-- **Queda e Restauração de Conexão**: Se a internet ou o navegador oscilar, o usuário é notificado apenas se a queda persistir por mais de 10 segundos, evitando avisos falsos durante reconexões normais de 1 segundo.
-
----
-
-## 5. Próximo Documento
-
-Para conhecer as regras de código limpo, arquitetura em arquivos pequenos e padrões de modularidade:
-👉 **[07. Guia de Código e Boas Práticas](07-GUIA-DE-MODULARIDADE-E-BOAS-PRATICAS.md)**
-
+1. **Segundo Plano Permanente ao Clicar no 'X'**: Fechar a janela principal apenas a oculta para a bandeja do sistema (`pystray`), mantendo o servidor MCP, os túneis e a ponte WebSocket 100% operacionais.
+2. **Encerramento Explícito**: Para encerrar completamente o aplicativo, utilize a opção **"❌ Sair do Aplicativo"** no menu de contexto do ícone na bandeja do Windows.
+3. **Semáforo Visual no Ícone da Bandeja**:
+   - 🟢 **Verde (`#107C41`)**: Extensão conectada e serviços ativos.
+   - 🟠 **Laranja (`#D83B01`)**: Aguardando conexão da extensão do navegador.
+   - 🔴 **Vermelho (`#D13438`)**: Serviços pausados ou erro.

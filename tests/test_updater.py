@@ -41,11 +41,11 @@ def test_parse_version_tuple_variants():
 def test_check_for_updates_newer_version_detected():
     """Valida a identificação correta de uma versão mais nova disponível."""
     mock_payload = {
-        "tag_name": "v2.4.0",
+        "tag_name": "v2.5.0",
         "body": "Nova versão com auto-update in-place e melhorias.",
         "assets": [
             {
-                "name": "NAVEGADOR_MTS_Instalador_v2.4.0.exe",
+                "name": "NAVEGADOR_MTS_Instalador_v2.5.0.exe",
                 "browser_download_url": "https://github.com/mock/installer.exe",
             }
         ],
@@ -60,7 +60,7 @@ def test_check_for_updates_newer_version_detected():
         info = check_for_updates("https://mock.api/latest")
 
     assert info is not None
-    assert info.version == "v2.4.0"
+    assert info.version == "v2.5.0"
     assert info.is_newer is True
     assert info.download_url == "https://github.com/mock/installer.exe"
     assert "auto-update" in info.release_notes
@@ -98,7 +98,7 @@ def test_check_for_updates_network_failure_is_visible():
 def test_download_and_launch_update_flow(tmp_path):
     """Valida o ciclo completo de download em chunks e acionamento do instalador."""
     info = UpdateInfo(
-        version="v2.4.0",
+        version="v2.5.0",
         release_notes="Notas",
         download_url="https://mock.api/download.exe",
         asset_name="Instalador_Teste.exe",
@@ -136,7 +136,7 @@ def test_download_and_launch_update_local_file(tmp_path):
     """Valida cópia e lançamento do instalador quando download_url é local."""
     installer = tmp_path / "Instalador_Local.exe"
     installer.write_bytes(_pe_stub(52))
-    info = UpdateInfo("2.4.0", "Notas", str(installer), "Instalador_Local.exe", True)
+    info = UpdateInfo("2.5.0", "Notas", str(installer), "Instalador_Local.exe", True)
 
     reports = []
     with patch("subprocess.Popen") as mock_popen, \

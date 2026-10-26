@@ -1,98 +1,66 @@
-# 🧩 03. Extensão do Navegador (Chrome & Edge Manifest V3)
+# 🧩 03. Extensão do Navegador (Chrome & Edge Manifest V3 — v2.4.0)
 
 ## 1. Visão Geral da Extensão
 
-A **Extensão Browser MTS** é construída sob a especificação **Manifest V3**, compatível com Google Chrome, Microsoft Edge, Brave e outros navegadores Chromium. Ela funciona como a "ponte ocular e motora" do Agente de IA dentro das páginas web.
+A **Extensão NAVEGADOR MTS** (`src/extension/`) é construída em **JavaScript ES Modules puro** sob a especificação **Manifest V3**, compatível com Google Chrome, Microsoft Edge, Brave e outros navegadores Chromium em **Windows 10, Windows 11 e Windows Server**.
 
-Diferente de extensões genéricas de terceiros, ela foi projetada especificamente para:
-1. **Comunicação Direta com o App Desktop**: Liga-se via WebSocket local seguro (`127.0.0.1:3456`).
-2. **Reconexão Indestrutível**: Nunca fica dormindo quando necessária graças aos alarmes nativos do Chromium.
-3. **Privacidade e Controle**: O usuário visualiza exatamente qual aba está sendo controlada e pode pausar a automação em um clique no Popup.
+Principais diferenciais arquiteturais:
+1. **Descoberta Resiliente de Portas (`3456..3465` pulando `3457`)**: Conecta-se à ponte WebSocket local (`ws://127.0.0.1:3456`) e realiza port-hopping inteligente pulando a porta `3457` (reservada ao servidor HTTP MCP).
+2. **Triplo Keep-Alive**: Combina alarmes nativos (`chrome.alarms`), heartbeat ping/pong a cada 4 segundos e reconexão exponencial para nunca adormecer durante sessões de IA.
+3. **Auto-Seleção Inteligente de Abas + Isolamento Multi-Agente**: Resolve automaticamente a aba HTTP/HTTPS elegível quando não há conflito entre agentes, e garante isolamento estrito por `sessionId` em `chrome.storage.session` quando abas são atribuídas no Popup.
+4. **Suporte Multi-Navegador Simultâneo**: Permite usar Chrome e Edge ao mesmo tempo conectados ao mesmo Hub Desktop.
 
 ---
 
-## 2. Estrutura e Ciclo de Vida da Extensão
+## 2. Ciclo de Vida e Comunicação WebSocket
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Usuario as 👤 Usuário
-    participant Popup as 🎛️ Popup da Extensão
-    participant Worker as ⚙️ Background Service Worker
-    participant WS as 🔌 WebSocket Local (Desktop App)
-    participant Pagina as 📄 Página Web Ativa (Content Script)
+    actor Usuario as 👤 Usuário / Agente
+    participant Popup as 🎛️ Popup (popup_ui.js)
+    participant Worker as ⚙️ Service Worker (ws_client.js + tab_access.js)
+    participant WS as 🔌 WebSocketBridge (Portas 3456..3465)
+    participant Pagina as 📄 Página Web (content_bridge.js / CDP)
 
-    Usuario->>Popup: Abre o Popup e clica em "Conectar"
-    Popup->>Worker: Envia mensagem 'CONECTAR_DESKTOP'
-    Worker->>WS: Abre conexão ws://127.0.0.1:3456
-    WS-->>Worker: Handshake aceito (Status: CONECTADO)
-    Worker-->>Popup: Atualiza crachá para verde ("Conectado")
+    Worker->>WS: Conecta ws://127.0.0.1:3456 e envia client_hello (versão, abas, donos)
+    WS-->>Worker: Responde server_hello (desktopVersion, lista de agentes conectados)
     
-    loop A cada 3 segundos (Heartbeat)
+    loop A cada 4 segundos (Heartbeat)
         WS->>Worker: Ping
-        Worker-->>WS: Pong
+        Worker-->>WS: Pong (atualiza latência em ms)
     end
 
-    Note over WS,Pagina: Fluxo de Execução de Comandos do Agente
-    WS->>Worker: Comando {"action": "click", "selector": "#botao-enviar"}
-    Worker->>Pagina: Injeta script ou despacha evento para Content Script
-    Pagina-->>Worker: Resultado {"success": true, "durationMs": 45}
-    Worker-->>WS: Resposta enviada ao Servidor MCP
+    Usuario->>Popup: (Opcional) Seleciona abas ou vincula aba a um Agente específico
+    Popup->>Worker: Salva concessões em chrome.storage.session e sincroniza com Desktop
+
+    Note over WS,Pagina: Execução de Ferramenta MCP (browser_*)
+    WS->>Worker: execute_action {"action": "browser_click", "sessionId": "sess_1", "payload": {...}}
+    Worker->>Worker: tab_access.js valida ou auto-seleciona a aba elegível da sessão
+    Worker->>Pagina: Despacha evento na fila da sessão (sem roubar foco do usuário)
+    Pagina-->>Worker: Resultado estruturado
+    Worker-->>WS: action_result enviado de volta ao agente solicitante
 ```
 
 ---
 
-## 3. Componentes da Extensão
+## 3. Módulos Reais da Extensão (`src/extension/`)
 
-### A. `manifest.json` (Manifest V3)
-Declara as permissões estritamente necessárias para a automação:
-- `"tabs"`: Para listar, criar, alternar e fechar abas solicitadas pelo agente.
-- `"activeTab"` e `"scripting"`: Para ler o DOM e interagir com elementos visíveis.
-- `"alarms"`: Para manter o service worker acordado e gerenciar o heartbeat.
-- `"storage"`: Para memorizar preferências do usuário (ex: última aba conectada, tema).
-- `"host_permissions": ["<all_urls>"]`: Permite que o agente atue em qualquer site visitado.
+### A. `manifest.json`
+Declara as permissões necessárias (`tabs`, `activeTab`, `scripting`, `debugger`, `alarms`, `storage`, `cookies`, `<all_urls>`) e mantém a versão sincronizada com `src/version.py` (`2.4.0`).
 
-### B. `background/service-worker.ts`
-O cérebro da extensão em segundo plano:
-- Gerencia a conexão com o servidor WebSocket local do desktop app.
-- Despacha comandos para o Content Script da aba ativa ou executa ações através da API `chrome.tabs`.
-- Fornece fallback via Chrome DevTools Protocol (`chrome.debugger`) para capturas de tela em alta definição e digitação em campos complexos (ex: canvas, web components).
+### B. `background/` (Service Worker Modular)
+- `service_worker.js`: Ponto de entrada do Service Worker MV3, ciclo de vida e roteador de mensagens internas.
+- `ws_client.js` & `port_recovery.js`: Gerenciam o socket WebSocket, handshake `client_hello`/`server_hello` e salto de portas `3456..3465` (pulando `3457`).
+- `tab_access.js` & `tab_assignment_persistence.js`: Governam as concessões de abas em `chrome.storage.session` (`browser_mts_session_tab_grants` e `browser_mts_popup_tab_owners`), auto-seleção inteligente de abas e revogação automática ao fechar abas.
+- `session_queues.js` & `session_registry.js`: Filas de execução isoladas por sessão, permitindo que o Agente A opere na Aba 1 enquanto o Agente B opera na Aba 2 em paralelo real.
+- `cdp_controller.js` & `cdp_actions.js`: Automação avançada via Chrome DevTools Protocol (`chrome.debugger`) para cliques, teclas e capturas sem exigir foco na aba.
+- `cookie_isolator.js`: Particionamento opcional de cookies entre sessões de agentes distintos.
+- `ws_update.js`: Coordena o `chrome.runtime.reload()` automático quando o Desktop App é atualizado para uma nova versão, aguardando as filas ficarem ociosas.
 
-### C. `content/dom-extractor.ts` & `interaction.ts`
-Scripts injetados nas páginas:
-- **Extração Semântica**: Transforma a árvore do DOM em uma lista limpa de elementos interativos com identificadores visuais simples, reduzindo o consumo de tokens do modelo de IA.
-- **Interação Natural**: Dispara eventos nativos (`pointerdown`, `mousedown`, `click`, `input`, `change`) para que sites modernos (React, Vue, Angular) reconheçam as ações como humanas.
+### C. `content/` (Scripts de Página)
+- `dom_extractor.js` & `element_finder.js`: Extração semântica enxuta do DOM/ARIA para economizar tokens do modelo de IA.
+- `interaction_simulator.js`, `virtual_cursor.js` & `virtual_key_press.js`: Simulação fiel de eventos (`pointerdown`, `mousedown`, `click`, `input`, `change`) compatível com React, Vue e Angular sem mover o cursor físico do Windows.
 
-### D. `popup/popup.html` & `popup.ts`
-Interface moderna no padrão Windows 11 Fluent UI:
-- **Botão Toggle Principal**: "Ligar / Desligar Automação".
-- **Indicador de Status**:
-  - 🟢 **Conectado ao Desktop App** (Pronto para uso).
-  - 🟡 **Tentando Reconectar** (Com contador de tentativas).
-  - 🔴 **Desconectado** (Desktop App fechado ou pausado).
-- **Badge Informativo do Computador**: Mostra se o controle do Windows (Computer Use) também está liberado na máquina, mantendo o usuário informado em um só lugar.
-
----
-
-## 4. Catálogo de Ações de Navegador (Browser Actions)
-
-| Ação | Parâmetros | Descrição |
-| :--- | :--- | :--- |
-| `navigate` | `url: string` | Carrega uma URL na aba ativa e aguarda o carregamento completo do DOM. |
-| `click` | `selector?: string, x?: number, y?: number` | Clica em um elemento específico por seletor CSS ou por coordenadas relativas. |
-| `type` | `selector: string, text: string, clearFirst?: boolean` | Digita texto em inputs, textareas ou campos de busca, simulando toques de teclado. |
-| `get_dom` | `clean?: boolean, maxDepth?: number` | Retorna o conteúdo da página estruturado e simplificado para leitura do modelo. |
-| `screenshot_tab` | `format?: 'png' \| 'jpeg', quality?: number` | Captura a imagem visual da aba ativa em formato base64. |
-| `list_tabs` | *(Nenhum)* | Retorna lista de abas abertas com `id`, `title` e `url`. |
-| `switch_tab` | `tabId: number` | Muda o foco do navegador para a aba com o ID informado. |
-| `new_tab` | `url?: string` | Cria uma nova aba e a torna ativa. |
-| `close_tab` | `tabId: number` | Fecha a aba especificada. |
-| `evaluate_js` | `script: string` | Executa código JavaScript na página e devolve o valor de retorno. |
-
----
-
-## 5. Próximo Documento
-
-Para entender o módulo de controle nativo do computador (mouse, teclado e tela) e as travas de segurança:
-👉 **[04. Automação do Computador (Computer Use)](04-CONTROLE-COMPUTADOR-COMPUTER-USE.md)**
-
+### D. `popup/` (Interface Fluent)
+- `popup.html`, `popup.css`, `popup.js`, `popup_ui.js`, `popup_tabs.js`: Exibe status da conexão, latência, botão de reconexão e lista de abas abertas para concessão rápida ou vínculo por agente.

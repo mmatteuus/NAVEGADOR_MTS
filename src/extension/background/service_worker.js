@@ -9,7 +9,7 @@
 import { logger } from '../common/logger.js';
 import { STORAGE_KEYS, CONNECTION_STATE } from '../common/constants.js';
 import { initKeepAlive } from './keep_alive.js';
-import { connectWebSocket, ensureConnected, setCommandDispatcher } from './ws_client.js';
+import { connectWebSocket, disconnectWebSocket, ensureConnected, isSocketConnected, setCommandDispatcher } from './ws_client.js';
 import { dispatchIncomingCommand } from './command_dispatcher.js';
 import { isAutomationEnabled, setAutomationEnabled } from './state_storage.js';
 import { grantFromPopup, assignFromPopup, clearGrants, popupGrantState, openGrantedTab } from './tab_access.js';
@@ -51,6 +51,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!isPopup(sender)) { sendResponse({ success: false, error: 'GRANT_FORBIDDEN' }); return false; }
     chrome.storage.local.get(null).then(async (data) => {
       const automationEnabled = await isAutomationEnabled();
+      if (automationEnabled && !isSocketConnected()) ensureConnected();
       const tabGrants = await popupGrantState(), updateState = await getExtensionUpdateState();
       sendResponse({
         success: true,
@@ -61,12 +62,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           computerUseAllowed: !!data[STORAGE_KEYS.COMPUTER_USE_ALLOWED],
           totalCommands: data[STORAGE_KEYS.TOTAL_COMMANDS] || 0,
           activePort: data[STORAGE_KEYS.ACTIVE_PORT] || 3456,
-          tabGrants
-          ,agents: getAgentDirectory(), updateState
+          tabGrants,
+          agents: getAgentDirectory(),
+          updateState
         }
       });
     });
-    return true; // Retorno assíncrono para chrome.runtime.onMessage
+    return true;
   }
 
   if (message.type === 'GET_TAB_GRANTS') {
@@ -112,6 +114,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     setAutomationEnabled(nextState).then(() => {
       if (nextState) {
         connectWebSocket();
+      } else {
+        disconnectWebSocket();
       }
       sendResponse({ success: true, enabled: nextState });
     }).catch(error => sendResponse({ success: false, enabled: false, error: error.message }));

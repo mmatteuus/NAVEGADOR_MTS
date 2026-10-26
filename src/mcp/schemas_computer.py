@@ -1,7 +1,7 @@
 """Módulo de Schemas das Ferramentas de Computador (Computer Use MCP).
 
 Define os esquemas formais JSON Schema para todas as ferramentas
-de controle e observação do sistema operacional Windows 11.
+de controle e observação do sistema operacional Windows.
 Todas as ferramentas de computador operam sob a Trava de Segurança (Safety Gate).
 """
 

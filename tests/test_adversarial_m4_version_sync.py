@@ -11,6 +11,8 @@ from pathlib import Path
 import re
 import pytest
 
+import release_version
+from src.mcp.extension_sync import ExtensionReloadPolicy
 from src.version import APP_VERSION
 
 
@@ -30,10 +32,11 @@ def test_extension_manifest_version_sync() -> None:
         f"Versão no manifest ({ext_version}) diverge de src/version.py ({APP_VERSION})"
     )
     assert manifest_data.get("manifest_version") == 3, "Manifest deve ser MV3"
+    assert "Windows 11" not in manifest_data.get("description", "")
 
 
 def test_inno_setup_script_version_sync() -> None:
-    """Valida que o script Inno Setup installer.iss define MyAppVersion como 2.3.0."""
+    """Valida que o script Inno Setup installer.iss define MyAppVersion igual a APP_VERSION."""
     iss_path = Path("installer.iss")
     assert iss_path.is_file(), "Arquivo installer.iss não encontrado"
 
@@ -44,6 +47,23 @@ def test_inno_setup_script_version_sync() -> None:
     assert iss_version == APP_VERSION, (
         f"Versão em installer.iss ({iss_version}) diverge de src/version.py ({APP_VERSION})"
     )
+
+
+def test_release_version_helper_sync() -> None:
+    """Valida que o utilitário release_version enxerga os três arquivos sincronizados."""
+    ok, msg = release_version.check_sync(check_remote=False)
+    assert ok is True, msg
+    versions = release_version.read_versions()
+    assert set(versions.values()) == {APP_VERSION}
+
+
+def test_extension_reload_policy_ignores_3_vs_4_component_same_semver() -> None:
+    """Evita falso erro de extensão desatualizada entre versão semver (3) e build CI (4)."""
+    policy_ci = ExtensionReloadPolicy("2.4.0.236")
+    assert policy_ci.is_outdated({"version": "2.4.0"}) is False
+    assert policy_ci.should_reload({"version": "2.4.0"}) is False
+    assert policy_ci.is_outdated({"version": "2.3.3"}) is True
+    assert policy_ci.should_reload({"version": "2.3.3"}) is True
 
 
 def test_packaged_dist_and_installer_consistency() -> None:

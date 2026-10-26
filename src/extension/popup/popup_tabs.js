@@ -27,7 +27,8 @@
         const select = document.createElement('select'); select.className = 'tab-agent-select';
         select.dataset.tabId = String(tab.id); select.setAttribute('aria-label', `Agente da aba ${title.textContent}`);
         select.dataset.expectedSessionId = tab.sessionId || '';
-        if (!tab.sessionId) { const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Escolha o agente'; empty.selected = true; select.append(empty); }
+        const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Qualquer agente / Automático';
+        empty.selected = !tab.sessionId; select.append(empty);
         agents.forEach(agent => {
           const option = document.createElement('option'); option.value = agent.sessionId;
           option.textContent = agent.agentId ? `${agent.agentId} (${agent.sessionId.slice(0, 8)})` : agent.sessionId;
@@ -53,16 +54,26 @@
     const tabIds = [...list.querySelectorAll('input:checked')].map(input => Number(input.value));
     const selects = [...list.querySelectorAll('.tab-agent-select')];
     const assignments = selects
-      .filter(select => tabIds.includes(Number(select.dataset.tabId)))
-      .map(select => ({ tabId: Number(select.dataset.tabId), sessionId: select.value,
-        expectedSessionId: select.dataset.expectedSessionId || '' }));
+      .filter(select => tabIds.includes(Number(select.dataset.tabId)) && Boolean(select.value))
+      .map(select => ({
+        tabId: Number(select.dataset.tabId),
+        sessionId: select.value,
+        expectedSessionId: select.dataset.expectedSessionId || ''
+      }));
     const revocations = [...list.querySelectorAll('.tab-access-item')]
       .filter(row => !row.querySelector('input')?.checked)
       .map(row => row.querySelector('.tab-agent-select'))
-      .filter(Boolean).map(select => ({ tabId: Number(select.dataset.tabId), expectedSessionId: select.dataset.expectedSessionId }))
+      .filter(Boolean)
+      .map(select => ({ tabId: Number(select.dataset.tabId), expectedSessionId: select.dataset.expectedSessionId }))
       .filter(item => item.expectedSessionId);
-    const response = await send(agents.length ? 'ASSIGN_TAB_GRANTS' : 'SAVE_TAB_GRANTS',
-      agents.length ? { assignments, revocations } : { tabIds });
+    if (agents.length && (assignments.length || revocations.length)) {
+      const assignRes = await send('ASSIGN_TAB_GRANTS', { assignments, revocations });
+      if (!assignRes.success) {
+        message.textContent = assignRes.error || 'Falha ao atribuir agente.';
+        return;
+      }
+    }
+    const response = await send('SAVE_TAB_GRANTS', { tabIds });
     message.textContent = response.success ? 'Seleção salva.' : (response.error || 'Falha ao salvar.');
     if (response.success) render(response.data || []);
   });

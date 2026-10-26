@@ -2,7 +2,7 @@
 
 Responsabilidades:
 - Inicialização unificada dos serviços de segundo plano (WebSocket Bridge, Kill-Switch).
-- Orquestração da Interface Gráfica Windows 11 Fluent e do System Tray.
+- Orquestração da Interface Gráfica Windows Fluent e do System Tray.
 - Suporte a inicialização silenciosa na bandeja (--minimized) e encerramento limpo.
 """
 
@@ -125,7 +125,7 @@ class DesktopApplication:
         self.window.mainloop()
 def main() -> None:
     """Função principal de entrada CLI do aplicativo."""
-    parser = argparse.ArgumentParser(description="NAVEGADOR MTS - Aplicativo Desktop Windows 11")
+    parser = argparse.ArgumentParser(description="NAVEGADOR MTS - Aplicativo Desktop Windows")
     parser.add_argument("--minimized", action="store_true", help="Iniciar silenciosamente na bandeja")
     parser.add_argument("--stdio", action="store_true", help="Modo Servidor MCP Stdio para ChatGPT, Claude e túneis")
     args = parser.parse_args()
