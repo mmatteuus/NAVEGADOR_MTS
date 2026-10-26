@@ -3,7 +3,7 @@
 
 #define MyAppName "NAVEGADOR MTS"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.4.0"
+  #define MyAppVersion "2.4.1"
 #endif
 #define MyAppPublisher "MTS Automacao & IA"
 #define MyAppExeName "NAVEGADOR_MTS.exe"

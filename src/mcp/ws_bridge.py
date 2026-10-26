@@ -34,6 +34,8 @@ class WebSocketBridge:
     def is_connected(self) -> bool: return self.registry.is_connected
 
     async def reload_extension(self) -> bool:
+        from ..core.extension_file_sync import sync_extension_files
+        sync_extension_files()
         sock = self.registry.get_active_extension()
         if sock:
             try:

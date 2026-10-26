@@ -131,5 +131,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Reconexão ativa e instantânea em foco ou troca de aba
+if (typeof chrome !== 'undefined') {
+  chrome.tabs?.onActivated?.addListener(() => ensureConnected());
+  chrome.windows?.onFocusChanged?.addListener(() => ensureConnected());
+}
+
 // Inicialização imediata ao carregar o script
 connectWebSocket();

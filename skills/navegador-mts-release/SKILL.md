@@ -59,8 +59,8 @@ node tests/run_extension_suite.mjs
 ### Passo 3: Sincronizar a Nova Versão SemVer
 A versão deve ser idêntica em `src/version.py`, `src/extension/manifest.json` e `installer.iss`:
 ```powershell
-# Definir versão específica (ex.: 2.4.0) ou incrementar patch:
-python release_version.py --set 2.4.0
+# Definir versão específica (ex.: 2.4.1) ou incrementar patch:
+python release_version.py --set 2.4.1
 # ou:
 python release_version.py --bump patch
 ```

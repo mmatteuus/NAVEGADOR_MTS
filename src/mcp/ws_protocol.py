@@ -26,6 +26,9 @@ async def handle_incoming_envelope(data: Dict[str, Any], websocket: Any, bridge:
         info = raw_info if isinstance(raw_info, dict) else {}
         bridge.registry.register_extension(websocket, info)
         outdated = bridge._reload_policy.is_outdated(info)
+        if outdated:
+            from ..core.extension_file_sync import sync_extension_files
+            sync_extension_files()
         reply = {"type": "server_hello", "payload": {
             "status": "connected", "desktopVersion": APP_VERSION, "heartbeatIntervalMs": 4000,
             "agents": agent_directory(),

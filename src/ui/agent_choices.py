@@ -3,18 +3,24 @@ from __future__ import annotations
 
 from ..mcp.session_manager import session_manager
 
+TUNNEL_DEFAULT_SESSION = "tunnel_default"
+TUNNEL_DEFAULT_LABEL = "🌐 Agente do Navegador / Túnel (Chat Web)"
+
 
 def choices() -> dict[str, str]:
-    result = {}
+    result = {TUNNEL_DEFAULT_LABEL: TUNNEL_DEFAULT_SESSION}
     for sid in session_manager.list_active_sessions():
         item = session_manager.get_session(sid)
-        if item is not None:
+        if item is not None and sid != TUNNEL_DEFAULT_SESSION:
             result[f"{item.agent_id or 'Agente'} ({sid})"] = sid
     return result
 
 
 def require_active(session_id: str) -> None:
-    item = session_manager.get_session(session_id)
+    sid = str(session_id or "").strip()
+    if sid == TUNNEL_DEFAULT_SESSION:
+        return
+    item = session_manager.get_session(sid)
     if item is None or item.status != "active":
         raise ValueError("Selecione um agente conectado e atualize a lista")
 
@@ -24,5 +30,8 @@ def refresh_choices(widget) -> dict[str, str]:
     values = list(mapping) or ["(nenhuma sessão)"]
     previous = widget.get()
     widget.configure(values=values, state="readonly")
-    widget.set(previous if previous in mapping else values[0])
+    if previous in mapping:
+        widget.set(previous)
+    else:
+        widget.set(TUNNEL_DEFAULT_LABEL if TUNNEL_DEFAULT_LABEL in mapping else values[0])
     return mapping

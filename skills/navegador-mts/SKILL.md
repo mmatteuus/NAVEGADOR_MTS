@@ -14,7 +14,7 @@ Use esta skill sempre que precisar **operar, conectar, configurar ou diagnostica
 Antes de responder dúvidas arquiteturais ou intervir no ecossistema do `NAVEGADOR_MTS`, consulte o cérebro exclusivo do projeto no Obsidian:
 
 - **Ponto de Entrada**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\00-INICIO-AQUI.md`
-- **Handoff Vivo (v2.4.0)**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\01-HANDOFF-VIVO.md`
+- **Handoff Vivo (v2.4.1)**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\01-HANDOFF-VIVO.md`
 - **Conexões Multi-IA e Túneis**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\04-CONEXOES-MULTI-IA-E-TUNEIS.md`
 - **Mapa Forense Discos C: e D:**: `D:\MATEUS\Documentos\GitHub\Obsidian\Vault\02-PROJECTS\NAVEGADOR_MTS\08-MAPA-COMPLETO-DISCOS-C-E-D.md`
 - **Consulta rápida via CLI**:
@@ -30,7 +30,7 @@ Antes de responder dúvidas arquiteturais ou intervir no ecossistema do `NAVEGAD
 
 | Item | Caminho Canônico |
 | :--- | :--- |
-| **Repositório Fonte (v2.4.0)** | `D:\MATEUS\Documentos\GitHub\NAVEGADOR_MTS` |
+| **Repositório Fonte (v2.4.1)** | `D:\MATEUS\Documentos\GitHub\NAVEGADOR_MTS` |
 | **App Desktop Instalado** | `C:\Users\MATEUS\AppData\Local\Programs\Navegador MTS\NAVEGADOR_MTS.exe` |
 | **Servidor MCP Stdio Instalado** | `C:\Users\MATEUS\AppData\Local\Programs\Navegador MTS\mcp_stdio\NAVEGADOR_MTS_MCP.exe` |
 | **Pasta da Extensão Chrome/Edge** | `C:\Users\MATEUS\AppData\Local\Programs\Navegador MTS\extension` |

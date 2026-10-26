@@ -99,8 +99,12 @@ export const getWindowsForSession = (sessionId) => sessionId ? Array.from(sessio
 export function isTabAllowedForSession(sessionId, tabId) {
   if (tabId == null) return true;
   const tid = Number(tabId), owner = getSessionForTab(tid);
-  if (owner) return owner === sessionId;
-  return sessionId ? getTabsForSession(sessionId).includes(tid) : true;
+  if (owner) {
+    if (owner === sessionId) return true;
+    if (owner === 'tunnel_default' && (String(sessionId).startsWith('sess_') || sessionId === 'tunnel_default')) return true;
+    return false;
+  }
+  return sessionId ? (getTabsForSession(sessionId).includes(tid) || (String(sessionId).startsWith('sess_') && getTabsForSession('tunnel_default').includes(tid))) : true;
 }
 
 export function validateTabAccess(sessionId, tabId) {
@@ -108,8 +112,10 @@ export function validateTabAccess(sessionId, tabId) {
   const tid = Number(tabId), owner = getSessionForTab(tid);
   if (owner) {
     if (!sessionId) throw new Error('TAB_ACCESS_DENIED: Sessão do agente não identificada.');
-    if (owner !== sessionId) throw new Error('TAB_ACCESS_DENIED: A aba solicitada pertence a outra sessão de agente.');
-  } else if (sessionId && !getTabsForSession(sessionId).includes(tid)) {
+    if (owner !== sessionId && !(owner === 'tunnel_default' && (String(sessionId).startsWith('sess_') || sessionId === 'tunnel_default'))) {
+      throw new Error('TAB_ACCESS_DENIED: A aba solicitada pertence a outra sessão de agente.');
+    }
+  } else if (sessionId && !getTabsForSession(sessionId).includes(tid) && !(String(sessionId).startsWith('sess_') && getTabsForSession('tunnel_default').includes(tid))) {
     throw new Error('TAB_ACCESS_DENIED: A aba solicitada não pertence à sessão do agente.');
   }
   return true;

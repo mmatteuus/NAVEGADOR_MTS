@@ -8,6 +8,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from .folder_paths import local_absolute, relative_target, root_identity
 
+TUNNEL_DEFAULT = "tunnel_default"
+
+
+def _is_http_session(sid: str) -> bool:
+    try:
+        from ..mcp.session_manager import session_manager
+        s = session_manager.get_session(sid)
+        return s is not None and getattr(s, "transport", "") in ("http", "sse", "streamable_http")
+    except Exception:
+        return False
+
 
 @dataclass(frozen=True)
 class FolderGrant:
@@ -36,26 +47,33 @@ class FolderGrantRegistry:
             self._by_session[sid] = grant
             return grant
 
+    def _resolve_grant(self, session_id):
+        sid = str(session_id or "").strip()
+        grant = self._by_session.get(sid)
+        if grant is None and (sid == TUNNEL_DEFAULT or sid.startswith("sess_") or _is_http_session(sid)):
+            grant = self._by_session.get(TUNNEL_DEFAULT)
+        return grant
+
     def get(self, session_id):
         with self._lock:
-            return self._by_session.get(session_id)
+            return self._resolve_grant(session_id)
 
     def revoke(self, session_id):
         with self._lock:
-            self._by_session.pop(session_id, None)
+            self._by_session.pop(str(session_id or "").strip(), None)
 
     def resolve(self, session_id, relative, root_id):
         with self._lock:
-            grant = self._by_session.get(session_id)
+            grant = self._resolve_grant(session_id)
             if grant is None or root_id != grant.root_id:
                 raise ValueError("FOLDER_NOT_ASSIGNED: escolha uma pasta na aplicação")
             return grant, relative_target(grant.root, relative)
 
     @contextmanager
     def commit(self, grant):
-        """Revogação e efeito final têm uma ordem única; concessões antigas expiram."""
         with self._lock:
-            if self._by_session.get(grant.session_id) != grant:
+            current = self._resolve_grant(grant.session_id)
+            if current != grant:
                 raise ValueError("FOLDER_REVOKED")
             yield
 

@@ -13,6 +13,7 @@ user32 = ctypes.windll.user32
 user32.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
 user32.GetAncestor.restype = wintypes.HWND
 GA_ROOT = 2
+TUNNEL_DEFAULT = "tunnel_default"
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,15 @@ def window_identity(hwnd: int) -> tuple[int, int]:
     if not thread or not pid.value:
         raise ValueError("TARGET_INVALID: janela sem processo válido")
     return thread, int(pid.value)
+
+
+def _is_http_session(sid: str) -> bool:
+    try:
+        from ..mcp.session_manager import session_manager
+        s = session_manager.get_session(sid)
+        return s is not None and getattr(s, "transport", "") in ("http", "sse", "streamable_http")
+    except Exception:
+        return False
 
 
 class WindowAssignmentRegistry:
@@ -70,24 +80,28 @@ class WindowAssignmentRegistry:
             self._by_session[sid] = result
             return result
 
+    def _resolve_item(self, sid: str) -> Optional[WindowAssignment]:
+        item = self._by_session.get(sid)
+        if item is None and (sid == TUNNEL_DEFAULT or sid.startswith("sess_") or _is_http_session(sid)):
+            item = self._by_session.get(TUNNEL_DEFAULT)
+        return item
+
     def can_mouse(self, session_id: Optional[str]) -> bool:
-        """Verifica se a sessão tem permissão de mouse para sua janela atribuída."""
         if not session_id: return True
         with self._lock:
-            item = self._by_session.get(str(session_id).strip())
+            item = self._resolve_item(str(session_id).strip())
             return item.allow_mouse if item else True
 
     def can_keyboard(self, session_id: Optional[str]) -> bool:
-        """Verifica se a sessão tem permissão de teclado para sua janela atribuída."""
         if not session_id: return True
         with self._lock:
-            item = self._by_session.get(str(session_id).strip())
+            item = self._resolve_item(str(session_id).strip())
             return item.allow_keyboard if item else True
 
     def resolve(self, session_id: Optional[str], hwnd: Optional[int] = None) -> int:
         sid = str(session_id or "").strip()
         with self._lock:
-            item = self._by_session.get(sid)
+            item = self._resolve_item(sid)
             if item is None:
                 raise ValueError("TARGET_NOT_ASSIGNED: atribuição humana necessária")
             target = int(hwnd) if hwnd is not None else item.hwnd
@@ -99,7 +113,7 @@ class WindowAssignmentRegistry:
 
     def validate(self, assignment: WindowAssignment) -> int:
         with self._lock:
-            current = self._by_session.get(assignment.session_id)
+            current = self._resolve_item(assignment.session_id)
             if current != assignment:
                 raise ValueError("TARGET_REVOKED: atribuição foi revogada ou substituída")
         return self.resolve(assignment.session_id, assignment.hwnd)
@@ -118,7 +132,7 @@ class WindowAssignmentRegistry:
 
     def get(self, session_id: str) -> Optional[WindowAssignment]:
         with self._lock:
-            return self._by_session.get(str(session_id or "").strip())
+            return self._resolve_item(str(session_id or "").strip())
 
     def clear(self) -> None:
         with self._lock:

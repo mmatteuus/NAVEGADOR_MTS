@@ -115,7 +115,9 @@ export async function targetId(requested, sessionId = null) {
       return id;
     }
     if (sessionId) {
-      const sTabs = getTabsForSession(sessionId), last = getLastTabForSession(sessionId);
+      let sTabs = getTabsForSession(sessionId);
+      if (sTabs.length === 0 && String(sessionId).startsWith('sess_')) sTabs = getTabsForSession('tunnel_default');
+      const last = getLastTabForSession(sessionId) || getLastTabForSession('tunnel_default');
       if (sTabs.length === 1) return sTabs[0];
       if (sTabs.length > 1) { if (last && sTabs.includes(last)) return last; throw new Error('TAB_SELECTION_REQUIRED'); }
       const free = ids.filter(id => !getSessionForTab(id));
