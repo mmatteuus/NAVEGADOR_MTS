@@ -10,7 +10,7 @@ from .theme import PALETTE
 from ..computer.safety_gate import safety_gate
 from ..computer.mouse import get_cursor_position
 from ..core.tunnel_service import tunnel_service
-from ..core.config import current_config, get_tunnel_id
+from ..core.config import current_config, get_tunnel_id, get_tunnel_name
 
 MCP_PROMPT_TEMPLATE = (
     "Você é meu assistente de IA com acesso ao NAVEGADOR MTS. "
@@ -61,7 +61,8 @@ class MCPConnectDialog(ctk.CTkToplevel):
         card_t = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius)
         card_t.pack(fill="x", padx=20, pady=4)
         status_txt, status_color = tunnel_status_display(tunnel_service.is_active, tunnel_service.is_ready)
-        ctk.CTkLabel(card_t, text=f"1. ChatGPT (Aba 'Túnel') — {status_txt}", font=(PALETTE.font_family, 12, "bold"), text_color=status_color).pack(anchor="w", padx=12, pady=(6, 2))
+        t_tag = f" «{get_tunnel_name()}»" if get_tunnel_name() else ""
+        ctk.CTkLabel(card_t, text=f"1. ChatGPT (Aba 'Túnel'{t_tag}) — {status_txt}", font=(PALETTE.font_family, 12, "bold"), text_color=status_color).pack(anchor="w", padx=12, pady=(6, 2))
         f_t = ctk.CTkFrame(card_t, fg_color="transparent")
         f_t.pack(fill="x", padx=12, pady=(2, 6))
         self.ent_tunnel = ctk.CTkEntry(f_t, width=300)

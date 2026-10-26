@@ -11,6 +11,28 @@ import os
 from pathlib import Path
 import sys
 
+from .tunnel_config import (
+    get_tunnel_id,
+    save_tunnel_id,
+    get_tunnel_name,
+    save_tunnel_name,
+    get_tunnel_display_label,
+)
+
+__all__ = [
+    "AppConfig",
+    "load_config",
+    "current_config",
+    "get_tunnel_id",
+    "save_tunnel_id",
+    "get_tunnel_name",
+    "save_tunnel_name",
+    "get_tunnel_display_label",
+    "DEFAULT_HOST",
+    "DEFAULT_DEV_PORT",
+    "DEFAULT_MCP_PORT",
+]
+
 # Definições padronizadas de rede
 DEFAULT_HOST: str = "127.0.0.1"
 DEFAULT_DEV_PORT: int = 3456
@@ -95,45 +117,14 @@ def load_config() -> AppConfig:
     except ValueError:
         mcp_port = DEFAULT_MCP_PORT
 
-    config = AppConfig(
+    return AppConfig(
         host=host,
         port=port,
         mcp_port=mcp_port,
         tunnel_id=tunnel_id,
         dev_mode=dev_mode,
     )
-    return config
 
 
 # Instância global pré-carregada para uso nos módulos
 current_config: AppConfig = load_config()
-
-
-# IDs não são segredos; configuração do usuário persiste fora do repositório.
-def get_tunnel_id() -> str:
-    """Lê o ID efetivo com override por ambiente e persistência local."""
-    import json
-    candidate = os.environ.get("BROWSER_MTS_TUNNEL_ID", "").strip()
-    if not candidate:
-        try:
-            file = current_config.app_data_dir / "tunnel.json"
-            candidate = str(json.loads(file.read_text(encoding="utf-8"))["tunnel_id"])
-        except (OSError, ValueError, KeyError, TypeError):
-            candidate = current_config.tunnel_id
-    import re
-    candidate = candidate.strip()
-    return candidate if re.fullmatch(r"tunnel_[0-9a-f]{32}", candidate) else ""
-
-
-def save_tunnel_id(value: str) -> None:
-    """Valida e grava somente o identificador do túnel, atomicamente."""
-    import json
-    import re
-    identifier = value.strip()
-    if not re.fullmatch(r"tunnel_[0-9a-f]{32}", identifier):
-        raise ValueError("ID do túnel deve ter prefixo tunnel_ e 32 dígitos hexadecimais.")
-    current_config.ensure_directories()
-    destination = current_config.app_data_dir / "tunnel.json"
-    temp = destination.with_suffix(".tmp")
-    temp.write_text(json.dumps({"tunnel_id": identifier}), encoding="utf-8")
-    os.replace(temp, destination)

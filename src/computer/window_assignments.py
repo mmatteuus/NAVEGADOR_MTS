@@ -1,4 +1,4 @@
-"""Atribuição humana de janelas Win32 a sessões de agentes."""
+"""Atribuição humana de janelas Win32 a sessões de agentes com controle por dispositivo."""
 
 from __future__ import annotations
 
@@ -24,6 +24,8 @@ class WindowAssignment:
     root_hwnd: int
     generation: int = 0
     allow_focus: bool = False
+    allow_mouse: bool = True
+    allow_keyboard: bool = True
 
 
 def window_root(hwnd: int) -> int:
@@ -46,7 +48,10 @@ class WindowAssignmentRegistry:
         self._by_session: Dict[str, WindowAssignment] = {}
         self._generation = 0
 
-    def assign(self, session_id: str, hwnd: int, *, allow_focus: bool = False) -> WindowAssignment:
+    def assign(
+        self, session_id: str, hwnd: int, *,
+        allow_focus: bool = False, allow_mouse: bool = True, allow_keyboard: bool = True
+    ) -> WindowAssignment:
         sid = str(session_id or "").strip()
         target = int(hwnd or 0)
         if not sid or not target or not user32.IsWindow(wintypes.HWND(target)):
@@ -58,9 +63,26 @@ class WindowAssignmentRegistry:
                 if other_sid != sid and (item.hwnd == target or item.root_hwnd == root):
                     raise ValueError("TARGET_IN_USE: janela já atribuída a outra sessão")
             self._generation += 1
-            result = WindowAssignment(sid, target, thread, pid, root, self._generation, bool(allow_focus))
+            result = WindowAssignment(
+                sid, target, thread, pid, root, self._generation,
+                bool(allow_focus), bool(allow_mouse), bool(allow_keyboard)
+            )
             self._by_session[sid] = result
             return result
+
+    def can_mouse(self, session_id: Optional[str]) -> bool:
+        """Verifica se a sessão tem permissão de mouse para sua janela atribuída."""
+        if not session_id: return True
+        with self._lock:
+            item = self._by_session.get(str(session_id).strip())
+            return item.allow_mouse if item else True
+
+    def can_keyboard(self, session_id: Optional[str]) -> bool:
+        """Verifica se a sessão tem permissão de teclado para sua janela atribuída."""
+        if not session_id: return True
+        with self._lock:
+            item = self._by_session.get(str(session_id).strip())
+            return item.allow_keyboard if item else True
 
     def resolve(self, session_id: Optional[str], hwnd: Optional[int] = None) -> int:
         sid = str(session_id or "").strip()
@@ -76,7 +98,6 @@ class WindowAssignmentRegistry:
             return target
 
     def validate(self, assignment: WindowAssignment) -> int:
-        """Valida uma concessão capturada antes de cada efeito externo."""
         with self._lock:
             current = self._by_session.get(assignment.session_id)
             if current != assignment:
@@ -89,7 +110,6 @@ class WindowAssignmentRegistry:
 
     @contextmanager
     def effect(self, assignment: WindowAssignment):
-        """Ordena efeito e revogação; ao revogar, nenhuma operação nova é admitida."""
         with self._lock:
             self.validate(assignment)
             from .safety_gate import safety_gate

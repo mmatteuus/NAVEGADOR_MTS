@@ -1,14 +1,13 @@
 from __future__ import annotations
 import ctypes
 from ctypes import wintypes
-import threading
-import time
+import threading, time
 from typing import Any, Dict, Optional, Tuple
 from .safety_gate import safety_gate
 from .window_finder import resolve_target_window
-from .window_assignments import window_assignments
-from .window_assignments import window_identity
+from .window_assignments import window_assignments, window_identity
 from .mouse_drag import run_drag
+
 user32 = ctypes.windll.user32
 user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
 user32.PostMessageW.restype = wintypes.BOOL
@@ -19,19 +18,24 @@ WM_MOUSEWHEEL, WM_MOUSEHWHEEL, MK_LBUTTON, MK_RBUTTON, MK_MBUTTON = 0x020A, 0x02
 _cursor_lock = threading.Lock()
 _agent_cursors: Dict[str, Dict[str, int]] = {}
 
+
 def _lease(session_id: Optional[str], hwnd: int):
     if not session_id or str(session_id).strip() == "":
         return None
     lease = window_assignments.get(session_id)
     if lease is None:
         raise ValueError("TARGET_REVOKED: sessão sem atribuição de janela")
+    if not getattr(lease, "allow_mouse", True):
+        raise ValueError("DEVICE_DISABLED: controle de mouse desativado pelo usuário para esta janela")
     if lease.hwnd != int(hwnd):
         raise ValueError("TARGET_REVOKED: atribuição ausente durante a ação")
     window_assignments.validate(lease)
     return lease
 
+
 def _makelparam(x: int, y: int) -> int:
     return ((int(y) & 0xFFFF) << 16) | (int(x) & 0xFFFF)
+
 
 def _validate_target(hwnd: int, lease, identity) -> None:
     if window_identity(hwnd) != identity:
@@ -50,17 +54,13 @@ def _set_cursor(x: int, y: int, hwnd: int, session_id: Optional[str] = None) -> 
 
 
 def get_agent_cursor_position(session_id: Optional[str] = None) -> Tuple[int, int]:
-    """Retorna as coordenadas virtuais (x, y) do cursor exclusivo do agente na sessão."""
     sid = _get_sid(session_id)
     with _cursor_lock:
         cur = _agent_cursors.get(sid)
         return (cur["x"], cur["y"]) if cur else (0, 0)
 
 
-def post_mouse_move(
-    x: int, y: int, hwnd: Optional[int] = None, session_id: Optional[str] = None
-) -> Dict[str, Any]:
-    """Despacha movimento de mouse em segundo plano para a janela alvo."""
+def post_mouse_move(x: int, y: int, hwnd: Optional[int] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
     safety_gate.check_authorization("move_mouse")
     target_hwnd, cx, cy = resolve_target_window(x, y, hwnd)
     _lease(session_id, target_hwnd)
@@ -75,7 +75,6 @@ def post_mouse_click(
     x: Optional[int] = None, y: Optional[int] = None, hwnd: Optional[int] = None,
     session_id: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Despacha clique simples ou duplo em background para a janela alvo."""
     safety_gate.check_authorization("click_mouse")
     sid = _get_sid(session_id)
     with _cursor_lock:
@@ -110,7 +109,6 @@ def post_mouse_drag(
     start_x: int, start_y: int, end_x: int, end_y: int, steps: int = 10,
     hwnd: Optional[int] = None, session_id: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Arrasta suavemente o cursor virtual de início ao fim em segundo plano."""
     safety_gate.check_authorization("drag_mouse")
     target_hwnd, _, _ = resolve_target_window(start_x, start_y, hwnd)
     lease = _lease(session_id, target_hwnd)
@@ -125,7 +123,6 @@ def post_mouse_scroll(
     delta_y: int = 0, delta_x: int = 0, x: Optional[int] = None, y: Optional[int] = None,
     hwnd: Optional[int] = None, session_id: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Emite rotação na roda do mouse via mensagem Win32 em background."""
     safety_gate.check_authorization("scroll_mouse")
     sid = _get_sid(session_id)
     with _cursor_lock:
@@ -135,16 +132,13 @@ def post_mouse_scroll(
     target_hwnd, _, _ = resolve_target_window(tx, ty, hwnd)
     _lease(session_id, target_hwnd)
     hw, lp = wintypes.HWND(target_hwnd), _makelparam(tx, ty)
-    if delta_y != 0:
-        if not user32.PostMessageW(hw, WM_MOUSEWHEEL, (int(delta_y) << 16) & 0xFFFFFFFF, lp):
-            raise RuntimeError("MOUSE_POST_FAILED: roda vertical não entrou na fila")
-    if delta_x != 0:
-        if not user32.PostMessageW(hw, WM_MOUSEHWHEEL, (int(delta_x) << 16) & 0xFFFFFFFF, lp):
-            raise RuntimeError("MOUSE_POST_FAILED: roda horizontal não entrou na fila")
+    if delta_y != 0 and not user32.PostMessageW(hw, WM_MOUSEWHEEL, (int(delta_y) << 16) & 0xFFFFFFFF, lp):
+        raise RuntimeError("MOUSE_POST_FAILED: roda vertical não entrou na fila")
+    if delta_x != 0 and not user32.PostMessageW(hw, WM_MOUSEHWHEEL, (int(delta_x) << 16) & 0xFFFFFFFF, lp):
+        raise RuntimeError("MOUSE_POST_FAILED: roda horizontal não entrou na fila")
     return {"scrolled": True, "deltaY": delta_y, "deltaX": delta_x, "background": True}
 
 
 def reset_agent_cursors() -> None:
-    """Limpa todas as posições virtuais de cursores de agentes em memória."""
     with _cursor_lock:
         _agent_cursors.clear()
