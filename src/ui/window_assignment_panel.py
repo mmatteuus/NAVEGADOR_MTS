@@ -35,43 +35,43 @@ class WindowAssignmentPanel(ctk.CTkFrame):
     def _build_controls(self) -> None:
         self.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(self, text="🎯 Janelas para Agentes de IA", font=(PALETTE.font_family, 15, "bold")).grid(
-            row=0, column=0, padx=14, pady=(12, 2), sticky="w"
+            row=0, column=0, padx=16, pady=(12, 2), sticky="w"
         )
         ctk.CTkLabel(self, text="Vincule janelas aos agentes e selecione quais dispositivos permitir.", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dark).grid(
-            row=1, column=0, padx=14, pady=(0, 6), sticky="w"
+            row=1, column=0, padx=16, pady=(0, 6), sticky="w"
         )
 
-        self.sessions = ctk.CTkComboBox(self, values=["(nenhuma sessão)"])
-        self.sessions.grid(row=2, column=0, padx=14, pady=3, sticky="ew")
-        self.windows = ctk.CTkComboBox(self, values=["(atualizar janelas)"])
-        self.windows.grid(row=3, column=0, padx=14, pady=3, sticky="ew")
+        self.sessions = ctk.CTkComboBox(self, values=["(nenhuma sessão)"], corner_radius=8)
+        self.sessions.grid(row=2, column=0, padx=16, pady=3, sticky="ew")
+        self.windows = ctk.CTkComboBox(self, values=["(atualizar janelas)"], corner_radius=8)
+        self.windows.grid(row=3, column=0, padx=16, pady=3, sticky="ew")
 
         # Campos de seleção por janela: Mouse e Teclado
         f_checks = ctk.CTkFrame(self, fg_color="transparent")
-        f_checks.grid(row=4, column=0, padx=14, pady=6, sticky="w")
-        self.chk_mouse = ctk.CTkCheckBox(f_checks, text="🖱️ Permitir Mouse", font=(PALETTE.font_family_body, 12))
+        f_checks.grid(row=4, column=0, padx=16, pady=6, sticky="w")
+        self.chk_mouse = ctk.CTkCheckBox(f_checks, text="🖱️ Permitir Mouse", font=(PALETTE.font_family_body, 12), corner_radius=6)
         self.chk_mouse.select()
-        self.chk_mouse.pack(side="left", padx=(0, 14))
+        self.chk_mouse.pack(side="left", padx=(0, 16))
 
-        self.chk_keyboard = ctk.CTkCheckBox(f_checks, text="⌨️ Permitir Teclado", font=(PALETTE.font_family_body, 12))
+        self.chk_keyboard = ctk.CTkCheckBox(f_checks, text="⌨️ Permitir Teclado", font=(PALETTE.font_family_body, 12), corner_radius=6)
         self.chk_keyboard.select()
-        self.chk_keyboard.pack(side="left", padx=(0, 14))
+        self.chk_keyboard.pack(side="left", padx=(0, 16))
 
-        self.chk_focus = ctk.CTkCheckBox(f_checks, text="🔍 Permitir Foco", font=(PALETTE.font_family_body, 12))
+        self.chk_focus = ctk.CTkCheckBox(f_checks, text="🔍 Permitir Foco", font=(PALETTE.font_family_body, 12), corner_radius=6)
         self.chk_focus.pack(side="left")
 
         # Botões de Ação
         buttons = ctk.CTkFrame(self, fg_color="transparent")
-        buttons.grid(row=5, column=0, padx=14, pady=6, sticky="w")
-        ctk.CTkButton(buttons, text="🔄 Atualizar", width=95, command=self.refresh).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(buttons, text="✅ Atribuir Janela", fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, width=130, command=self.assign).pack(side="left", padx=6)
-        ctk.CTkButton(buttons, text="🚫 Revogar", fg_color=PALETTE.error, hover_color="#A80000", width=95, command=self.release).pack(side="left", padx=6)
+        buttons.grid(row=5, column=0, padx=16, pady=6, sticky="w")
+        ctk.CTkButton(buttons, text="🔄 Atualizar", width=100, height=30, corner_radius=8, command=self.refresh).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(buttons, text="✅ Atribuir Janela", fg_color=PALETTE.accent, hover_color=PALETTE.accent_hover, width=135, height=30, corner_radius=8, command=self.assign).pack(side="left", padx=6)
+        ctk.CTkButton(buttons, text="🚫 Revogar", fg_color=PALETTE.error, hover_color="#A80000", width=95, height=30, corner_radius=8, command=self.release).pack(side="left", padx=6)
 
         # Cartão de Status e Permissões Ativas
         self.card_status = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, border_width=1, border_color=PALETTE.card_border_dark)
-        self.card_status.grid(row=6, column=0, padx=14, pady=(8, 12), sticky="ew")
+        self.card_status.grid(row=6, column=0, padx=16, pady=(8, 12), sticky="ew")
         self.lbl_status = ctk.CTkLabel(self.card_status, text="Status: Nenhuma atribuição ativa", font=(PALETTE.font_family_body, 12), anchor="w")
-        self.lbl_status.pack(anchor="w", padx=12, pady=6)
+        self.lbl_status.pack(anchor="w", padx=14, pady=8)
 
     def refresh(self) -> None:
         self._windows = list_windows()

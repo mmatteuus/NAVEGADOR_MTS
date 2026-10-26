@@ -11,7 +11,6 @@ import sys
 from typing import Any
 import customtkinter as ctk
 
-# Tentativa segura de carregar pywinstyles para efeito Mica nativo do Windows 11
 try:
     import pywinstyles
     _PYWINSTYLES_AVAILABLE = True
@@ -24,17 +23,17 @@ class FluentPalette:
     """Paleta de cores alinhada às diretrizes do Windows 11 Fluent Design."""
 
     # Cores de fundo e cartões
-    bg_dark: str = "#1E1E1E"
-    bg_light: str = "#F8F9FA"
-    card_dark: str = "#2B2B2B"
+    bg_dark: str = "#141416"
+    bg_light: str = "#F3F3F5"
+    card_dark: str = "#1E1E22"
     card_light: str = "#FFFFFF"
-    card_border_dark: str = "#333333"
-    card_border_light: str = "#E0E0E0"
+    card_border_dark: str = "#2B2B33"
+    card_border_light: str = "#E5E5EB"
 
     # Cores de destaque e estados
     accent: str = "#0078D4"
-    accent_hover: str = "#106EBE"
-    accent_dark: str = "#60CDFF"
+    accent_hover: str = "#1084E3"
+    accent_dark: str = "#4CC2FF"
     success: str = "#107C41"
     warning: str = "#D83B01"
     error: str = "#D13438"
@@ -42,17 +41,16 @@ class FluentPalette:
     # Cores de texto
     text_dark: str = "#FFFFFF"
     text_light: str = "#1A1A1A"
-    subtext_dark: str = "#A0A0A0"
-    subtext_light: str = "#5C5C5C"
+    subtext_dark: str = "#9E9EA6"
+    subtext_light: str = "#606066"
 
     # Tipografia e dimensões
     font_family: str = "Segoe UI Variable Display"
     font_family_body: str = "Segoe UI Variable Text"
-    corner_radius: int = 10
-    card_corner_radius: int = 8
+    corner_radius: int = 12
+    card_corner_radius: int = 10
 
 
-# Instância global da paleta Fluent
 PALETTE = FluentPalette()
 
 
@@ -64,35 +62,26 @@ def configure_app_theme(mode: str = "dark") -> None:
 
 
 def apply_mica_theme(window: Any, is_dark: bool = True) -> bool:
-    """Aplica o efeito Mica ou Acrylic nativo na janela no Windows 11.
-
-    Retorna True se o efeito visual foi aplicado com sucesso; False caso contrário.
-    """
+    """Aplica o efeito Mica ou Acrylic nativo na janela no Windows 11."""
     if sys.platform != "win32":
         return False
 
-    # 1. Tentativa via biblioteca pywinstyles
     if _PYWINSTYLES_AVAILABLE and hasattr(window, "winfo_id"):
         try:
-            style = "mica" if is_dark else "mica"
-            pywinstyles.apply_style(window, style)
+            pywinstyles.apply_style(window, "mica")
             return True
         except Exception:
             pass
 
-    # 2. Fallback direto via DwmSetWindowAttribute Win32 API
     try:
         import ctypes
         hwnd = window.winfo_id()
-        # DWMWA_SYSTEMBACKDROP_TYPE = 38 (Windows 11 Build 22621+)
-        # Valor 2 = DWMSBT_MAINWINDOW (Efeito Mica)
         backdrop_type = ctypes.c_int(2)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(
             hwnd, 38, ctypes.byref(backdrop_type), ctypes.sizeof(backdrop_type)
         )
         return True
     except Exception:
-        # Fallback gracioso: a janela mantém a renderização sólida normal do CustomTkinter
         return False
 
 
