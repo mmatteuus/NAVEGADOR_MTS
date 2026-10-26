@@ -10,8 +10,14 @@ import { getTabsForSession } from './session_registry.js';
 const sessionCookies = new Map(), sessionLocalStorage = new Map(), sessionStores = new Map();
 const normDom = u => {
   if (!u) return '';
-  try { if (u.includes('://')) return new URL(u).hostname; } catch (_) {}
-  return u.replace(/^\./, '').split('/')[0];
+  // Evita criar objeto URL ou bloco try/catch desnecessário para domínios sem protocolo
+  if (u.includes('://')) {
+    try { return new URL(u).hostname; } catch (_) {}
+  }
+  // Normalização rápida de domínio sem instanciar RegExp ou arrays temporários
+  const s = u.charCodeAt(0) === 46 ? u.slice(1) : u;
+  const idx = s.indexOf('/');
+  return idx === -1 ? s : s.slice(0, idx);
 };
 
 export const bindSessionStore = (sid, stId) => sid && stId && sessionStores.set(String(sid), String(stId));
