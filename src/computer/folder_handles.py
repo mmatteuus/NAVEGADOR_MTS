@@ -3,12 +3,22 @@ from __future__ import annotations
 
 import ctypes
 import hashlib
-import msvcrt
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
 import os
 from ctypes import wintypes as w
 from pathlib import Path
 
-k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+WinDLL = getattr(ctypes, "WinDLL", ctypes.CDLL)
+try:
+    k32 = WinDLL("kernel32", use_last_error=True)
+except Exception:
+    class _DummyK32:
+        def __getattr__(self, name: str):
+            return lambda *args, **kwargs: 0
+    k32 = _DummyK32()
 k32.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, w.LPVOID, w.DWORD, w.DWORD, w.HANDLE]
 k32.CreateFileW.restype = w.HANDLE
 k32.CloseHandle.argtypes = [w.HANDLE]

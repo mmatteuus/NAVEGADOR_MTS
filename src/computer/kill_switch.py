@@ -28,6 +28,9 @@ class KBDLLHOOKSTRUCT(ctypes.Structure):
         ("dwExtraInfo", ULONG_PTR),
     ]
 
+if not hasattr(ctypes, "WINFUNCTYPE"):
+    ctypes.WINFUNCTYPE = ctypes.CFUNCTYPE
+
 HOOKPROC = ctypes.WINFUNCTYPE(ctypes.c_longlong, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM)
 
 class EmergencyKillSwitch:
