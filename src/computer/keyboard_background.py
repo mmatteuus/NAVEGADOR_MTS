@@ -6,15 +6,13 @@ sem roubar o foco ativo da janela em que o usuário está trabalhando.
 
 from __future__ import annotations
 
-import ctypes
-import functools
-import threading
+import ctypes, functools, threading, time
 from ctypes import wintypes
-import time
 from typing import Any, Dict, List, Optional
 from .safety_gate import safety_gate
 from .keyboard_target import keyboard_target_identity, resolve_keyboard_target, revalidate_keyboard_target
 from .window_assignments import window_assignments
+
 _lock_guard = threading.Lock()
 _keyboard_locks: Dict[str, threading.RLock] = {}
 

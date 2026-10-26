@@ -6,10 +6,7 @@ Testa empiricamente estresse extremo de concorrência multissessão:
 3. Tentativas simultâneas de invasão/fechamento indevido durante rajadas.
 """
 from __future__ import annotations
-import asyncio
-import json
-import random
-import pytest
+import asyncio, json, random, pytest
 from src.mcp import MCPToolRouter, WebSocketBridge
 from src.mcp.session_manager import session_manager
 

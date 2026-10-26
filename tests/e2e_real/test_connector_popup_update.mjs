@@ -94,8 +94,7 @@ const line = await new Promise((resolve, reject) => {
 const info = JSON.parse(line);
 const sourceManifest = JSON.parse(await readFile(path.resolve('src/extension/manifest.json'), 'utf8'));
 const currentVersion = sourceManifest.version;
-const agentA = new MCPAgentClient(info.mcpUrl, 'connector-a');
-const agentB = new MCPAgentClient(info.mcpUrl, 'connector-b');
+const agentA = new MCPAgentClient(info.mcpUrl, 'connector-a'), agentB = new MCPAgentClient(info.mcpUrl, 'connector-b');
 await agentA.initialize(); await agentB.initialize();
 const ctx = await launchVersioned(info.wsPort, '2.2.0');
 let currentWorker = ctx.worker;

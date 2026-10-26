@@ -4,7 +4,6 @@
  * 1. Bloqueio preventivo de screenshot em URLs restritas (chrome://, edge://).
  * 2. Prevenção de fechamento da janela ao fechar a última aba restante.
  * 3. Enfileiramento e serialização sob burst de 30 comandos concorrentes.
- * 4. Rejeição imediata quando automação estiver desabilitada no storage.
  */
 
 import assert from 'node:assert';

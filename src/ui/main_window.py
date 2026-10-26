@@ -79,15 +79,12 @@ class MainWindow(ctk.CTk):
         show_mcp_dialog(self)
 
     def show_dashboard(self) -> None:
-        """Abre o painel principal."""
         show_panel(self, "dashboard")
 
     def show_settings(self) -> None:
-        """Abre as configurações."""
         show_panel(self, "settings")
 
     def show_windows(self) -> None:
-        """Abre e atualiza destinos atribuídos aos agentes."""
         show_panel(self, "windows")
 
     def toggle_theme(self) -> None:

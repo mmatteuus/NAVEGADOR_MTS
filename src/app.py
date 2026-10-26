@@ -42,8 +42,7 @@ class DesktopApplication:
             self.ws_loop.run_until_complete(self.ws_bridge.start())
             try:
                 self.ws_loop.run_until_complete(self.http_mcp.start())
-                threading.Thread(target=tunnel_service.start, daemon=True,
-                                 name="TunnelStarter").start()
+                threading.Thread(target=tunnel_service.start, daemon=True, name="TunnelStarter").start()
             except OSError as exc:
                 self.http_error = str(exc)
             self.ws_loop.run_forever()
