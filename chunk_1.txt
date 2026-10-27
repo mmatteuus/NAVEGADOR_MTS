@@ -1,0 +1,15 @@
+"""Módulo do Painel Principal (Dashboard em Tempo Real).
+
+Visualização de status, Trava de Segurança e console de logs sanitizados com tema Dual-Mode.
+"""
+
+from __future__ import annotations
+
+import time
+from typing import Optional
+import weakref
+import customtkinter as ctk
+from .theme import PALETTE, get_status_color
+from ..computer.safety_gate import safety_gate
+from ..core.updater import APP_VERSION
+from ..core.config import get_tunnel_display_label

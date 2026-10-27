@@ -1,0 +1,30 @@
+"""Módulo do Painel Principal (Dashboard em Tempo Real).
+
+Visualização de status, Trava de Segurança e console de logs sanitizados com tema Dual-Mode.
+"""
+
+from __future__ import annotations
+
+import time
+from typing import Optional
+import weakref
+import customtkinter as ctk
+from .theme import PALETTE, get_status_color
+from ..computer.safety_gate import safety_gate
+from ..core.updater import APP_VERSION
+from ..core.config import get_tunnel_display_label
+
+
+class DashboardPanel(ctk.CTkFrame):
+    """Painel de controle visual com métricas e status em tempo real."""
+
+    def __init__(self, master, **kwargs) -> None:
+        super().__init__(master, corner_radius=PALETTE.corner_radius, fg_color="transparent", **kwargs)
+        self._setup_ui()
+        ref = weakref.ref(self)
+        safety_gate.add_listener(lambda auth, r: (p := ref()) and p._on_safety_gate_change(auth, r))
+
+    def _setup_ui(self) -> None:
+        self.grid_columnconfigure((0, 1), weight=1)
+
+        # Cabeçalho Principal (Hero Header)

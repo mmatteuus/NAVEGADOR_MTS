@@ -1,0 +1,14 @@
+        self.lbl_ext_port.pack(anchor="w", padx=14, pady=(2, 12))
+
+        # Cartão 3: Trava de Controle do Computador (Computer Use)
+        self.card_safety = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        self.card_safety.grid(row=2, column=0, columnspan=2, sticky="ew", padx=8, pady=6)
+        ctk.CTkLabel(self.card_safety, text="🛡️ CONTROLE DO COMPUTADOR (COMPUTER USE)", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(10, 4))
+        self.switch_safety = ctk.CTkSwitch(
+            self.card_safety, text="Permitir controle de mouse, teclado e tela",
+            command=self._on_switch_toggled, font=(PALETTE.font_family_body, 12), text_color=PALETTE.text_dual,
+        )
+        self.switch_safety.pack(anchor="w", padx=14, pady=4)
+        self.lbl_safety_desc = ctk.CTkLabel(self.card_safety, text="Status: 🔴 Desautorizado pelo usuário", anchor="w", font=(PALETTE.font_family_body, 11), text_color=PALETTE.text_dual)
+        self.lbl_safety_desc.pack(anchor="w", padx=14, pady=2)
+        ctk.CTkLabel(self.card_safety, text="🚨 Kill-Switch de Emergência: Pressione ESC 3x para interromper", text_color=PALETTE.warning_dual, font=(PALETTE.font_family_body, 11)).pack(anchor="w", padx=14, pady=(2, 10))
