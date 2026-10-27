@@ -3,6 +3,7 @@
 Cenários cobertos:
 - Localização dinâmica do executável unins000.exe.
 - Limpeza segura de atalhos e chaves de registro sem gerar exceções.
+- Tratamento de exceções ao interagir com winreg e remoção de atalhos.
 - Disparo do desinstalador oficial e invocação do callback de encerramento.
 """
 
@@ -33,13 +34,43 @@ def test_find_uninstaller_binary_not_found():
         assert found is None
 
 
-def test_clean_shortcuts_and_registry_safe_execution():
-    """Garante que a limpeza de atalhos e registro executa com segurança."""
-    with patch("os.path.isfile", return_value=True), \
+def test_clean_shortcuts_and_registry_winreg_exception():
+    """Valida resiliência quando remoção no registro lança exceção em win32."""
+    mock_winreg = MagicMock()
+    mock_winreg.OpenKey.side_effect = RuntimeError("Falha de permissão no Registro")
+
+    with patch("sys.platform", "win32"), \
+         patch.dict("sys.modules", {"winreg": mock_winreg}), \
+         patch("os.path.isfile", return_value=False):
+        clean_shortcuts_and_registry()
+        mock_winreg.OpenKey.assert_called_once()
+
+
+def test_clean_shortcuts_and_registry_win32_success():
+    """Valida remoção com sucesso no registro e atalhos em ambiente win32."""
+    mock_winreg = MagicMock()
+    mock_key = MagicMock()
+    mock_winreg.OpenKey.return_value.__enter__.return_value = mock_key
+
+    with patch("sys.platform", "win32"), \
+         patch.dict("sys.modules", {"winreg": mock_winreg}), \
+         patch("os.path.isfile", return_value=True), \
          patch("os.remove") as mock_remove:
         clean_shortcuts_and_registry()
-        # Se os atalhos existirem, tenta remover
-        assert mock_remove.call_count >= 0
+
+        mock_winreg.DeleteValue.assert_called_once_with(mock_key, "NavegadorMTS")
+        assert mock_remove.call_count == 2
+
+
+def test_clean_shortcuts_and_registry_shortcut_remove_exception():
+    """Valida resiliência quando a remoção de atalhos lança exceção."""
+    mock_winreg = MagicMock()
+
+    with patch("sys.platform", "win32"), \
+         patch.dict("sys.modules", {"winreg": mock_winreg}), \
+         patch("os.path.isfile", return_value=True), \
+         patch("os.remove", side_effect=OSError("Permissão negada")):
+        clean_shortcuts_and_registry()
 
 
 def test_trigger_application_uninstall_with_binary():
@@ -68,4 +99,3 @@ def test_trigger_application_uninstall_without_binary():
 
     assert result is False
     assert len(shutdown_called) == 1
-
