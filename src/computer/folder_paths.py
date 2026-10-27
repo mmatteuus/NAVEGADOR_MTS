@@ -8,6 +8,7 @@ from pathlib import Path
 from .folder_handles import LockedHandle
 
 RESERVED = re.compile(r"^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$", re.I)
+INVALID_CHARS = re.compile(r'[\x00-\x1f:<>"|?*]')
 
 
 def local_absolute(value):
@@ -26,7 +27,8 @@ def relative_target(root, value):
     for part in rel.parts:
         if part == ".." or part.endswith((" ", ".")) or RESERVED.match(part):
             raise ValueError("FOLDER_PATH_INVALID")
-        if any(ord(char) < 32 or char in ':<>"|?*' for char in part):
+        # Validação otimizada via regex de caracteres inválidos (evita loop e generator comprehension)
+        if INVALID_CHARS.search(part):
             raise ValueError("FOLDER_PATH_INVALID")
     return root / rel
 
