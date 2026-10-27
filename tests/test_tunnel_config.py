@@ -1,10 +1,12 @@
-"""Regressões de configuração distribuível e precedência do Tunnel ID."""
+"""Regressões de configuração distribuível, precedência do Tunnel ID e exibições."""
 from __future__ import annotations
 
 import json
 from types import SimpleNamespace
 
-from src.core import config
+import pytest
+
+from src.core import config, tunnel_config
 
 
 def test_distributed_config_has_no_personal_tunnel_id(monkeypatch) -> None:
@@ -25,3 +27,27 @@ def test_tunnel_id_precedence_env_then_local_then_empty(monkeypatch, tmp_path) -
     assert config.get_tunnel_id() == local
     monkeypatch.setenv("BROWSER_MTS_TUNNEL_ID", env_id)
     assert config.get_tunnel_id() == env_id
+
+
+@pytest.mark.parametrize(
+    ("name", "tid", "expected"),
+    [
+        (
+            "Agente Alfa",
+            "tunnel_12345678901234567890123456789012",
+            "Agente Alfa (tunnel_1234...9012)",
+        ),
+        ("Agente Beta", "", "Agente Beta"),
+        (
+            "",
+            "tunnel_12345678901234567890123456789012",
+            "tunnel_1234...9012",
+        ),
+        ("", "", "Não configurado"),
+    ],
+)
+def test_get_tunnel_display_label_scenarios(monkeypatch, name: str, tid: str, expected: str) -> None:
+    """Valida formato do rótulo para combinações de nome e ID do túnel."""
+    monkeypatch.setattr(tunnel_config, "get_tunnel_name", lambda: name)
+    monkeypatch.setattr(tunnel_config, "get_tunnel_id", lambda: tid)
+    assert tunnel_config.get_tunnel_display_label() == expected
