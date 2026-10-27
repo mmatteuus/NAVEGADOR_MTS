@@ -1,8 +1,4 @@
-"""Suíte de Testes Unitários dos Componentes do Motor de Resiliência.
-
-Testa MessageBuffer (TTL 15s e rotação circular), HeartbeatManager (3s ping / 2s timeout),
-ExponentialBackoff (0.5s a 5s teto), SO_REUSEADDR e ProcessSupervisor (psutil e restart <= 500ms).
-"""
+"""Suíte de Testes Unitários dos Componentes do Motor de Resiliência."""
 
 from __future__ import annotations
 
@@ -27,15 +23,13 @@ class TestResilienceEngine(unittest.TestCase):
     def test_message_buffer_fifo_and_ttl(self) -> None:
         """Valida que o buffer circular respeita ordem FIFO e expiração de TTL."""
         buffer = MessageBuffer(max_capacity=5, default_ttl=0.1)
-        m1 = buffer.push({"cmd": "click_1"})
-        m2 = buffer.push({"cmd": "click_2"})
+        m1, m2 = buffer.push({"cmd": "click_1"}), buffer.push({"cmd": "click_2"})
         self.assertEqual(len(buffer), 2)
         popped = buffer.pop()
         self.assertIsNotNone(popped)
         self.assertEqual(popped.payload["cmd"], "click_1")
         time.sleep(0.12)
-        expired_count = buffer.cleanup_expired()
-        self.assertEqual(expired_count, 1)
+        self.assertEqual(buffer.cleanup_expired(), 1)
         self.assertTrue(buffer.is_empty())
 
     def test_message_buffer_circular_capacity(self) -> None:
@@ -88,15 +82,33 @@ class TestResilienceEngine(unittest.TestCase):
         self.assertFalse(saudavel)
         self.assertEqual(len(falhas_detectadas), 1)
 
+    def test_heartbeat_reset_restores_initial_state(self) -> None:
+        """Garante que reset() reinicia todos os contadores e restaura o estado inicial."""
+        manager = HeartbeatManager()
+        manager.create_ping_payload()
+        manager.record_pong()
+        manager._missed_pings = 3
+        manager._is_healthy = False
+        manager._waiting_pong = True
+
+        self.assertFalse(manager.is_healthy)
+        self.assertEqual(manager.missed_count, 3)
+        self.assertGreater(manager.latency_ms, 0.0)
+
+        manager.reset()
+
+        self.assertEqual(manager._last_ping_sent, 0.0)
+        self.assertEqual(manager._last_pong_received, 0.0)
+        self.assertFalse(manager._waiting_pong)
+        self.assertEqual(manager.missed_count, 0)
+        self.assertEqual(manager.latency_ms, 0.0)
+        self.assertTrue(manager.is_healthy)
+
     def test_exponential_backoff_progression_and_ceiling(self) -> None:
         """Valida que o recuo exponencial respeita a escala (0.5s -> 5s teto)."""
         backoff = ExponentialBackoff(initial=0.5, multiplier=2.0, max_delay=5.0, jitter_factor=0.0)
         delays = [backoff.next_delay() for _ in range(5)]
-        self.assertEqual(delays[0], 0.5)
-        self.assertEqual(delays[1], 1.0)
-        self.assertEqual(delays[2], 2.0)
-        self.assertEqual(delays[3], 4.0)
-        self.assertEqual(delays[4], 5.0)
+        self.assertEqual(delays, [0.5, 1.0, 2.0, 4.0, 5.0])
         delays_extras = [backoff.next_delay() for _ in range(5)]
         for d in delays_extras:
             self.assertLessEqual(d, 5.0)
