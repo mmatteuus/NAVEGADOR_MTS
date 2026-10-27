@@ -39,19 +39,30 @@ def _status_is_healthy(payload: object, expected_id: str, mcp_url: str) -> bool:
     if payload.get("control_plane_tunnel_id") != expected_id or payload.get("mcp_server_url") != mcp_url:
         return False
     channels = payload.get("channels")
-    channel = next((item for item in channels or [] if isinstance(item, dict) and item.get("name") == "main"), None)
-    if not isinstance(channel, dict) or not all(
-        channel.get(key) == value for key, value in (
-            ("enabled", True), ("server_kind", "external"),
-            ("transport_kind", "http-streamable"), ("probe_status", "ok"),
-        )
+    if not isinstance(channels, list):
+        return False
+    # Evita geradores e múltiplas chamadas .get() iterativas para maximizar o desempenho.
+    channel = None
+    for item in channels:
+        if isinstance(item, dict) and item.get("name") == "main":
+            channel = item
+            break
+    if not isinstance(channel, dict):
+        return False
+    if not (
+        channel.get("enabled") is True
+        and channel.get("server_kind") == "external"
+        and channel.get("transport_kind") == "http-streamable"
+        and channel.get("probe_status") == "ok"
     ):
         return False
     details = channel.get("details")
-    return isinstance(details, list) and any(
-        item.get("key") == "address" and item.get("value") == mcp_url
-        for item in details if isinstance(item, dict)
-    )
+    if not isinstance(details, list):
+        return False
+    for item in details:
+        if isinstance(item, dict) and item.get("key") == "address" and item.get("value") == mcp_url:
+            return True
+    return False
 
 
 def _polling_is_recent(body: bytes, now: float) -> bool:
