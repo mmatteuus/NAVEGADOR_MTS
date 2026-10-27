@@ -130,7 +130,7 @@ class WSSessionRegistry:
     def unregister(self, websocket: Any) -> None:
         if websocket in self._extension_sockets: self._extension_sockets.remove(websocket)
         self._agent_sockets.discard(websocket); self._client_info.pop(websocket, None)
-        for s in [s for s, sock in self._session_sockets.items() if sock == websocket]: self._session_sockets.pop(s, None)
+        self._session_sockets = {s: sock for s, sock in self._session_sockets.items() if sock != websocket}
         if self._active_socket == websocket: self._active_socket = self.get_active_extension()
 
     def get_info(self, websocket: Optional[Any] = None) -> Dict[str, Any]:
