@@ -1,0 +1,4 @@
+    def copy_logs(self) -> None:
+        content = self.txt_logs.get("1.0", "end-1c")
+        self.clipboard_clear()
+        self.clipboard_append(content)

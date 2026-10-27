@@ -1,0 +1,15 @@
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=8, pady=(4, 10))
+        f_title = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        f_title.pack(side="left")
+        ctk.CTkLabel(f_title, text="Visão Geral do Sistema", font=(PALETTE.font_family, 18, "bold"), text_color=PALETTE.text_dual).pack(anchor="w")
+        self.lbl_system_status = ctk.CTkLabel(f_title, text="● SISTEMA OPERACIONAL & ONLINE", font=(PALETTE.font_family_body, 11, "bold"), text_color=PALETTE.success_dual)
+        self.lbl_system_status.pack(anchor="w")
+        self.lbl_version = ctk.CTkLabel(self.header_frame, text=f"Versão {APP_VERSION}", text_color=PALETTE.subtext_dual, font=(PALETTE.font_family_body, 11))
+        self.lbl_version.pack(side="right", anchor="n")
+
+        # Cartão 1: Servidor MCP e Agente
+        self.card_mcp = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        self.card_mcp.grid(row=1, column=0, sticky="nsew", padx=(8, 6), pady=4)
+        ctk.CTkLabel(self.card_mcp, text="🔌 Servidor MCP & Agentes (Multi-IA)", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(12, 4))
+        self.lbl_mcp_status = ctk.CTkLabel(self.card_mcp, text="Status: Ativo (Porta 3456)", anchor="w", font=(PALETTE.font_family_body, 12), text_color=PALETTE.text_dual)

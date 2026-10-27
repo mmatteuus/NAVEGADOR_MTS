@@ -1,0 +1,15 @@
+        self.lbl_mcp_status.pack(anchor="w", padx=14, pady=2)
+        self.lbl_mcp_tunnel = ctk.CTkLabel(self.card_mcp, text=f"Agente: {get_tunnel_display_label()}", anchor="w", text_color=PALETTE.subtext_dual, font=(PALETTE.font_family_body, 11))
+        self.lbl_mcp_tunnel.pack(anchor="w", padx=14, pady=2)
+        self.lbl_mcp_latency = ctk.CTkLabel(self.card_mcp, text="Latência: -- ms", anchor="w", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dual)
+        self.lbl_mcp_latency.pack(anchor="w", padx=14, pady=(2, 12))
+
+        # Cartão 2: Extensão do Navegador
+        self.card_ext = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        self.card_ext.grid(row=1, column=1, sticky="nsew", padx=(6, 8), pady=4)
+        ctk.CTkLabel(self.card_ext, text="🌐 Extensão Chrome / Edge", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(12, 4))
+        self.lbl_ext_status = ctk.CTkLabel(self.card_ext, text="Status: Aguardando...", anchor="w", font=(PALETTE.font_family_body, 12), text_color=PALETTE.text_dual)
+        self.lbl_ext_status.pack(anchor="w", padx=14, pady=2)
+        self.lbl_ext_tab = ctk.CTkLabel(self.card_ext, text="Aba Ativa: Nenhuma", anchor="w", text_color=PALETTE.subtext_dual, font=(PALETTE.font_family_body, 11))
+        self.lbl_ext_tab.pack(anchor="w", padx=14, pady=2)
+        self.lbl_ext_port = ctk.CTkLabel(self.card_ext, text="Ponte: ws://127.0.0.1:3456", anchor="w", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dual)

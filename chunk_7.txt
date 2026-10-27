@@ -1,0 +1,15 @@
+        else: safety_gate.revoke("Desativado pelo usuário no painel")
+
+    def _on_safety_gate_change(self, authorized: bool, reason: str) -> None:
+        def _update():
+            if authorized:
+                self.switch_safety.select()
+                self.lbl_safety_desc.configure(text="Status: 🟢 O Agente PODE interagir com o computador", text_color=PALETTE.success_dual)
+            else:
+                self.switch_safety.deselect()
+                self.lbl_safety_desc.configure(text=f"Status: 🔴 Desautorizado ({reason})", text_color=PALETTE.error_dual)
+            self.append_log(f"Trava de segurança: {'Autorizado' if authorized else 'Revogado'} ({reason})")
+        self.after(0, _update)
+
+    def update_mcp_status(self, status: str, latency_ms: Optional[float] = None, port: Optional[int] = None) -> None:
+        color = get_status_color(status)

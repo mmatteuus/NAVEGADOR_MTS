@@ -1,0 +1,14 @@
+            self.lbl_ext_status.configure(text="Status: 🔴 Desconectada", text_color=PALETTE.error_dual)
+            self.lbl_ext_tab.configure(text="Aba: Nenhuma")
+
+    def append_log(self, text: str) -> None:
+        stamp = time.strftime("[%H:%M:%S] ")
+        self.txt_logs.configure(state="normal")
+        self.txt_logs.insert("end", f"{stamp}{text}\n")
+        self.txt_logs.see("end")
+        self.txt_logs.configure(state="disabled")
+
+    def clear_logs(self) -> None:
+        self.txt_logs.configure(state="normal")
+        self.txt_logs.delete("1.0", "end")
+        self.txt_logs.configure(state="disabled")

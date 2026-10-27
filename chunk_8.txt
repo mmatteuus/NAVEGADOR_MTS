@@ -1,0 +1,15 @@
+        port_txt = f" (Porta {port})" if port else ""
+        self.lbl_mcp_status.configure(text=f"Status: {status}{port_txt}", text_color=color)
+        self.lbl_mcp_tunnel.configure(text=f"Agente: {get_tunnel_display_label()}")
+        if port: self.lbl_ext_port.configure(text=f"Ponte: ws://127.0.0.1:{port}")
+        if latency_ms is not None: self.lbl_mcp_latency.configure(text=f"Latência: {latency_ms:.1f} ms")
+
+    def update_multi_agent_summary(self, count: int, names: str = "") -> None:
+        suffix = f" ({names})" if names else ""
+        self.lbl_mcp_tunnel.configure(text=f"Agentes Ativos: {count}{suffix} | Túnel: {get_tunnel_display_label()}")
+
+    def update_extension_status(self, connected: bool, active_tab: str = "") -> None:
+        if connected:
+            self.lbl_ext_status.configure(text="Status: 🟢 Conectada", text_color=PALETTE.success_dual)
+            self.lbl_ext_tab.configure(text=f"Aba: {active_tab or 'Detectada'}")
+        else:
