@@ -25,3 +25,24 @@ def test_tunnel_id_precedence_env_then_local_then_empty(monkeypatch, tmp_path) -
     assert config.get_tunnel_id() == local
     monkeypatch.setenv("BROWSER_MTS_TUNNEL_ID", env_id)
     assert config.get_tunnel_id() == env_id
+
+
+def test_get_tunnel_file_fallback_on_config_error(monkeypatch) -> None:
+    """Valida o fallback para APPDATA e home em caso de falha no config."""
+    from pathlib import Path
+    from src.core.tunnel_config import _get_tunnel_file
+
+    class FaultyConfig:
+        @property
+        def app_data_dir(self) -> str:
+            raise RuntimeError("Erro ao acessar app_data_dir")
+
+    monkeypatch.setattr("src.core.config.current_config", FaultyConfig())
+
+    # Cenário 1: APPDATA definido no ambiente
+    monkeypatch.setenv("APPDATA", "/custom/appdata")
+    assert _get_tunnel_file() == Path("/custom/appdata/browser-mcp-mts/tunnel.json")
+
+    # Cenário 2: APPDATA não definido nas variáveis de ambiente
+    monkeypatch.delenv("APPDATA", raising=False)
+    assert _get_tunnel_file() == Path.home() / "browser-mcp-mts" / "tunnel.json"
