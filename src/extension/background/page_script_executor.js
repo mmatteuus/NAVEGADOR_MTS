@@ -14,14 +14,23 @@ async function runInPage(source) {
     return value;
   }
 
-  const doc = typeof document !== 'undefined' ? document : null;
-  const win = typeof window !== 'undefined' ? window : globalThis;
-
-  if (!doc || typeof doc.createElement !== 'function') {
-    return { success: false, error: 'Documento da página indisponível para avaliação de script.' };
+  function buildScriptPayload(src, eventName) {
+    const evtNameStr = JSON.stringify(eventName);
+    const serializeStr = serializeFn.toString();
+    return `(async () => {
+      const serialize = ${serializeStr};
+      try {
+        const raw = await (async () => { ${src} })();
+        const detail = { success: true, result: serialize(raw), type: typeof raw };
+        window.dispatchEvent(new CustomEvent(${evtNameStr}, { detail }));
+      } catch (err) {
+        const detail = { success: false, error: err?.message || String(err), stack: err?.stack || null };
+        window.dispatchEvent(new CustomEvent(${evtNameStr}, { detail }));
+      }
+    })();`;
   }
 
-  return new Promise((resolve) => {
+  function injectAndListen(doc, win, src, resolve) {
     const eventName = '__mcp_eval_' + Math.random().toString(36).slice(2);
     const script = doc.createElement('script');
     let timer = null;
@@ -55,20 +64,7 @@ async function runInPage(source) {
       win.addEventListener('error', errorHandler);
     }
 
-    const evtNameStr = JSON.stringify(eventName);
-    const serializeStr = serializeFn.toString();
-
-    script.textContent = `(async () => {
-      const serialize = ${serializeStr};
-      try {
-        const raw = await (async () => { ${source} })();
-        const detail = { success: true, result: serialize(raw), type: typeof raw };
-        window.dispatchEvent(new CustomEvent(${evtNameStr}, { detail }));
-      } catch (err) {
-        const detail = { success: false, error: err?.message || String(err), stack: err?.stack || null };
-        window.dispatchEvent(new CustomEvent(${evtNameStr}, { detail }));
-      }
-    })();`;
+    script.textContent = buildScriptPayload(src, eventName);
 
     const target = doc.head || doc.documentElement || doc.body;
     if (target) {
@@ -77,7 +73,16 @@ async function runInPage(source) {
     }
     cleanup();
     resolve({ success: false, error: 'Documento da página indisponível para avaliação de script.' });
-  });
+  }
+
+  const doc = typeof document !== 'undefined' ? document : null;
+  const win = typeof window !== 'undefined' ? window : globalThis;
+
+  if (!doc || typeof doc.createElement !== 'function') {
+    return { success: false, error: 'Documento da página indisponível para avaliação de script.' };
+  }
+
+  return new Promise((resolve) => injectAndListen(doc, win, source, resolve));
 }
 
 export async function evaluatePageScript(tabId, source) {
