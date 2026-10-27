@@ -35,11 +35,21 @@ def test_find_uninstaller_binary_not_found():
 
 def test_clean_shortcuts_and_registry_safe_execution():
     """Garante que a limpeza de atalhos e registro executa com segurança."""
-    with patch("os.path.isfile", return_value=True), \
+    with patch("sys.platform", "win32"), \
+         patch("os.path.isfile", return_value=True), \
          patch("os.remove") as mock_remove:
         clean_shortcuts_and_registry()
         # Se os atalhos existirem, tenta remover
-        assert mock_remove.call_count >= 0
+        assert mock_remove.call_count == 2
+
+
+def test_clean_shortcuts_and_registry_shortcut_removal_error():
+    """Garante que falhas ao remover atalhos (ex: OSError) são tratadas silenciosamente sem exceção."""
+    with patch("sys.platform", "win32"), \
+         patch("os.path.isfile", return_value=True), \
+         patch("os.remove", side_effect=OSError("Permission denied")) as mock_remove:
+        clean_shortcuts_and_registry()
+        assert mock_remove.call_count == 2
 
 
 def test_trigger_application_uninstall_with_binary():
