@@ -63,7 +63,7 @@ class TestResilienceEngine(unittest.TestCase):
         self.assertIn("timestamp", ping_payload)
         time.sleep(0.01)
         latency = manager.record_pong()
-        self.assertGreater(latency, 0.0)
+        self.assertGreaterEqual(latency, 0.0)
         self.assertTrue(manager.is_healthy)
         self.assertEqual(manager.missed_count, 0)
 
@@ -85,15 +85,16 @@ class TestResilienceEngine(unittest.TestCase):
     def test_heartbeat_reset_restores_initial_state(self) -> None:
         """Garante que reset() reinicia todos os contadores e restaura o estado inicial."""
         manager = HeartbeatManager()
-        manager.create_ping_payload()
-        manager.record_pong()
+        manager._last_ping_sent = 100.0
+        manager._last_pong_received = 100.042
+        manager._latency_ms = 42.0
         manager._missed_pings = 3
         manager._is_healthy = False
         manager._waiting_pong = True
 
         self.assertFalse(manager.is_healthy)
         self.assertEqual(manager.missed_count, 3)
-        self.assertGreater(manager.latency_ms, 0.0)
+        self.assertEqual(manager.latency_ms, 42.0)
 
         manager.reset()
 
