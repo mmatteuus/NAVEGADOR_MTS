@@ -72,7 +72,11 @@ class ProcessSupervisor:
         if self._psutil_proc is None:
             return
         try:
-            all_procs = self._psutil_proc.children(recursive=True) + [self._psutil_proc]
+            # Otimização O(1): evita a dupla iteração e alocação desnecessária
+            # provocadas pela concatenação de listas (children() + [proc]), usando append in-place.
+            all_procs = self._psutil_proc.children(recursive=True)
+            all_procs.append(self._psutil_proc)
+
             for proc in all_procs:
                 self._safe_proc_call(proc.terminate)
 
