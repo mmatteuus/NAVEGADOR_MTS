@@ -98,6 +98,4 @@ window.__BrowserMTS__ = window.__BrowserMTS__ || {};
         throw new Error(`Ação de content script não suportada: '${action}'.`);
     }
   }
-
-  console.log('[BrowserMTS] Content script carregado e pronto para comandos.');
 })();
