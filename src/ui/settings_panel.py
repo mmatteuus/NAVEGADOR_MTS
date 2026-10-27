@@ -40,29 +40,33 @@ class SettingsPanel(ctk.CTkFrame):
     def _setup_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
         ent_kw = dict(corner_radius=8, fg_color=PALETTE.card_alt_dual, text_color=PALETTE.text_dual, border_color=PALETTE.border_dual)
+        self._build_api_section(ent_kw)
+        self._build_network_section(ent_kw)
+        self._build_system_section()
+        self._build_action_section()
 
-        # Seção 1: Credenciais de API
-        sec_api = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
-        sec_api.grid(row=0, column=0, sticky="ew", padx=16, pady=(10, 4))
-        ctk.CTkLabel(sec_api, text="🔑 Runtime API Key (OpenAI Secure Tunnel)", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 2))
-        self.entry_key = ctk.CTkEntry(sec_api, placeholder_text="Cole a nova chave sk-...", width=400, **ent_kw)
+    def _build_api_section(self, ent_kw: dict) -> None:
+        sec = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        sec.grid(row=0, column=0, sticky="ew", padx=16, pady=(10, 4))
+        ctk.CTkLabel(sec, text="🔑 Runtime API Key (OpenAI Secure Tunnel)", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 2))
+        self.entry_key = ctk.CTkEntry(sec, placeholder_text="Cole a nova chave sk-...", width=400, **ent_kw)
         self.entry_key.insert(0, mask_credential(self._raw_api_key))
         self.entry_key.pack(fill="x", padx=14, pady=3)
-        ctk.CTkLabel(sec_api, text="Protegido via DPAPI do Windows. Nunca exibida em texto puro.", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dual).pack(anchor="w", padx=14, pady=(0, 6))
+        ctk.CTkLabel(sec, text="Protegido via DPAPI do Windows. Nunca exibida em texto puro.", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dual).pack(anchor="w", padx=14, pady=(0, 6))
 
-        # Seção 2: Túnel e Parâmetros de Rede
-        sec_net = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
-        sec_net.grid(row=1, column=0, sticky="ew", padx=16, pady=4)
-        ctk.CTkLabel(sec_net, text="🌐 Identificação do Agente e Túnel Seguro", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 4))
+    def _build_network_section(self, ent_kw: dict) -> None:
+        sec = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        sec.grid(row=1, column=0, sticky="ew", padx=16, pady=4)
+        ctk.CTkLabel(sec, text="🌐 Identificação do Agente e Túnel Seguro", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 4))
 
-        f_name = ctk.CTkFrame(sec_net, fg_color="transparent")
+        f_name = ctk.CTkFrame(sec, fg_color="transparent")
         f_name.pack(fill="x", padx=14, pady=2)
         ctk.CTkLabel(f_name, text="Nome do Túnel / Agente:", width=160, anchor="w", text_color=PALETTE.text_dual).pack(side="left")
         self.entry_tunnel_name = ctk.CTkEntry(f_name, placeholder_text="Ex: Claude Desktop, Agente Suporte...", width=280, **ent_kw)
         self.entry_tunnel_name.insert(0, get_tunnel_name())
         self.entry_tunnel_name.pack(side="left")
 
-        f_id = ctk.CTkFrame(sec_net, fg_color="transparent")
+        f_id = ctk.CTkFrame(sec, fg_color="transparent")
         f_id.pack(fill="x", padx=14, pady=2)
         ctk.CTkLabel(f_id, text="ID do Túnel (tunnel_...):", width=160, anchor="w", text_color=PALETTE.text_dual).pack(side="left")
         self.entry_tunnel = ctk.CTkEntry(f_id, width=280, **ent_kw)
@@ -76,21 +80,22 @@ class SettingsPanel(ctk.CTkFrame):
         self.btn_toggle_tunnel.pack(side="left", padx=(8, 0))
         self.update_tunnel_button()
 
-        f_port = ctk.CTkFrame(sec_net, fg_color="transparent")
+        f_port = ctk.CTkFrame(sec, fg_color="transparent")
         f_port.pack(fill="x", padx=14, pady=(2, 6))
         ctk.CTkLabel(f_port, text="Porta WebSocket Local:", width=160, anchor="w", text_color=PALETTE.text_dual).pack(side="left")
         self.entry_port = ctk.CTkEntry(f_port, width=80, **ent_kw)
         self.entry_port.insert(0, str(current_config.port))
         self.entry_port.pack(side="left")
 
-        # Seção 3: Sistema e Inicialização
-        sec_sys = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
-        sec_sys.grid(row=2, column=0, sticky="ew", padx=16, pady=4)
-        ctk.CTkLabel(sec_sys, text="⚙️ Inicialização do Sistema", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 2))
-        self.switch_autostart = ctk.CTkSwitch(sec_sys, text="Iniciar silenciosamente com o Windows (Bandeja)", text_color=PALETTE.text_dual)
+    def _build_system_section(self) -> None:
+        sec = ctk.CTkFrame(self, corner_radius=PALETTE.card_corner_radius, fg_color=PALETTE.card_dual, border_width=1, border_color=PALETTE.border_dual)
+        sec.grid(row=2, column=0, sticky="ew", padx=16, pady=4)
+        ctk.CTkLabel(sec, text="⚙️ Inicialização do Sistema", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 2))
+        self.switch_autostart = ctk.CTkSwitch(sec, text="Iniciar silenciosamente com o Windows (Bandeja)", text_color=PALETTE.text_dual)
         if is_autostart_enabled(): self.switch_autostart.select()
         self.switch_autostart.pack(anchor="w", padx=14, pady=(2, 6))
 
+    def _build_action_section(self) -> None:
         self.lbl_feedback = ctk.CTkLabel(self, text="", text_color=PALETTE.success_dual)
         self.lbl_feedback.grid(row=3, column=0, pady=1)
 
