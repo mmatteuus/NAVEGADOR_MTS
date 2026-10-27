@@ -1,6 +1,4 @@
 """Endpoint MCP Streamable HTTP local para conexão pelo túnel."""
-from __future__ import annotations
-
 import uuid
 from aiohttp import web
 from .server import MCPServer
