@@ -104,3 +104,8 @@ Desktop.ini
 tests/*.vbs
 tests/generate_xlsx.py
 tests/planilha_teste.csv
+
+# Anti-pollution rule for absolute Windows paths
+"D:\*"
+"D:/*"
+D:*
