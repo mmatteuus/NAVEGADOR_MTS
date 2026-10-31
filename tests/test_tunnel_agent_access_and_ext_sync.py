@@ -97,3 +97,46 @@ def test_sync_extension_files_operational():
     assert isinstance(synced, list)
     for p in synced:
         assert (p / "manifest.json").is_file()
+
+def test_sync_extension_files_oserror_on_copy(tmp_path, monkeypatch):
+    """Valida se a rotina de auto-sincronização trata OSErrors durante a cópia."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "manifest.json").touch()
+
+    dst = tmp_path / "dst"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+
+    import src.core.extension_file_sync as sync_module
+    monkeypatch.setattr(sync_module, "get_source_extension_dir", lambda: src)
+    monkeypatch.setattr(sync_module, "get_known_extension_targets", lambda: [dst])
+
+    def mock_copy2(*args, **kwargs):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr(sync_module.shutil, "copy2", mock_copy2)
+
+    synced = sync_module.sync_extension_files()
+    assert dst in synced
+
+
+def test_sync_extension_files_exception_on_sync(tmp_path, monkeypatch):
+    """Valida se a rotina de auto-sincronização trata Exceptions gerais durante a sincronização de um alvo."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "manifest.json").touch()
+
+    dst = tmp_path / "dst"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+
+    import src.core.extension_file_sync as sync_module
+    monkeypatch.setattr(sync_module, "get_source_extension_dir", lambda: src)
+    monkeypatch.setattr(sync_module, "get_known_extension_targets", lambda: [dst])
+
+    def mock_walk(*args, **kwargs):
+        raise Exception("Unexpected error")
+
+    monkeypatch.setattr(sync_module.os, "walk", mock_walk)
+
+    synced = sync_module.sync_extension_files()
+    assert dst not in synced
