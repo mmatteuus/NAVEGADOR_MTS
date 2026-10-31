@@ -41,6 +41,14 @@ def _send_key_event(vk: int, flags: int = 0, scan: int = 0) -> None:
     inp.union.ki.dwExtraInfo = 0
     user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
 
+def _send_key_events_batch(inputs: List[INPUT]) -> None:
+    """Emite múltiplos eventos de entrada de teclado em lote para a user32."""
+    if not inputs:
+        return
+    array_type = INPUT * len(inputs)
+    inp_array = array_type(*inputs)
+    user32.SendInput(len(inputs), ctypes.byref(inp_array), ctypes.sizeof(INPUT))
+
 def release_all_keys() -> None:
     """Rotina de pânico que força a soltura de todas as teclas modificadoras."""
     teclas_modificadoras = [
@@ -86,9 +94,14 @@ def press_key(key: str, modifiers: Optional[List[str]] = None) -> Dict[str, Any]
         raise ValueError(f"Tecla desconhecida: '{key}'")
 
     try:
-        # Pressiona os modificadores em sequência
-        for m_vk in mod_vks:
-            _send_key_event(m_vk, 0)
+        # Pressiona os modificadores agrupados
+        if mod_vks:
+            inputs = []
+            for m_vk in mod_vks:
+                inp = INPUT(type=INPUT_KEYBOARD)
+                inp.union.ki.wVk = m_vk
+                inputs.append(inp)
+            _send_key_events_batch(inputs)
             time.sleep(0.01)
 
         # Pressiona e solta a tecla principal
@@ -96,9 +109,15 @@ def press_key(key: str, modifiers: Optional[List[str]] = None) -> Dict[str, Any]
         time.sleep(0.03)
         _send_key_event(target_vk, KEYEVENTF_KEYUP)
     finally:
-        # Solta modificadores na ordem reversa obrigatoriamente
-        for m_vk in reversed(mod_vks):
-            _send_key_event(m_vk, KEYEVENTF_KEYUP)
+        # Solta modificadores agrupados na ordem reversa obrigatoriamente
+        if mod_vks:
+            inputs = []
+            for m_vk in reversed(mod_vks):
+                inp = INPUT(type=INPUT_KEYBOARD)
+                inp.union.ki.wVk = m_vk
+                inp.union.ki.dwFlags = KEYEVENTF_KEYUP
+                inputs.append(inp)
+            _send_key_events_batch(inputs)
             time.sleep(0.01)
 
     return {"executedKey": key, "modifiers": modifiers or []}
