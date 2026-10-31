@@ -27,15 +27,18 @@ class SettingsPanel(ctk.CTkFrame):
     def __init__(self, master, on_status_message: Optional[Any] = None, on_shutdown_app: Optional[Any] = None, **kwargs) -> None:
         super().__init__(master, corner_radius=PALETTE.corner_radius, fg_color="transparent", **kwargs)
         self.on_status_message, self.on_shutdown_app = on_status_message, on_shutdown_app
-        self._raw_api_key: Optional[str] = None
+        self._masked_api_key: Optional[str] = None
         self._load_saved_credentials()
         self._setup_ui()
 
     def _load_saved_credentials(self) -> None:
         cred = current_config.credentials_file
         if cred.exists():
-            try: self._raw_api_key = decrypt_dpapi(cred.read_text(encoding="utf-8").strip())
-            except Exception: self._raw_api_key = None
+            try:
+                raw_key = decrypt_dpapi(cred.read_text(encoding="utf-8").strip())
+                self._masked_api_key = mask_credential(raw_key)
+            except Exception:
+                self._masked_api_key = None
 
     def _setup_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
@@ -46,7 +49,7 @@ class SettingsPanel(ctk.CTkFrame):
         sec_api.grid(row=0, column=0, sticky="ew", padx=16, pady=(10, 4))
         ctk.CTkLabel(sec_api, text="🔑 Runtime API Key (OpenAI Secure Tunnel)", font=(PALETTE.font_family, 13, "bold"), text_color=PALETTE.text_dual).pack(anchor="w", padx=14, pady=(8, 2))
         self.entry_key = ctk.CTkEntry(sec_api, placeholder_text="Cole a nova chave sk-...", width=400, **ent_kw)
-        self.entry_key.insert(0, mask_credential(self._raw_api_key))
+        self.entry_key.insert(0, self._masked_api_key or mask_credential(None))
         self.entry_key.pack(fill="x", padx=14, pady=3)
         ctk.CTkLabel(sec_api, text="Protegido via DPAPI do Windows. Nunca exibida em texto puro.", font=(PALETTE.font_family_body, 11), text_color=PALETTE.subtext_dual).pack(anchor="w", padx=14, pady=(0, 6))
 
@@ -105,9 +108,9 @@ class SettingsPanel(ctk.CTkFrame):
             try:
                 current_config.ensure_directories()
                 current_config.credentials_file.write_text(encrypt_dpapi(new_key), encoding="utf-8")
-                self._raw_api_key = new_key
+                self._masked_api_key = mask_credential(new_key)
                 self.entry_key.delete(0, "end")
-                self.entry_key.insert(0, mask_credential(new_key))
+                self.entry_key.insert(0, self._masked_api_key)
             except Exception as exc:
                 self.lbl_feedback.configure(text=f"Erro ao proteger credencial: {exc}", text_color=PALETTE.error)
                 return
