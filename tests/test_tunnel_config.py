@@ -25,3 +25,18 @@ def test_tunnel_id_precedence_env_then_local_then_empty(monkeypatch, tmp_path) -
     assert config.get_tunnel_id() == local
     monkeypatch.setenv("BROWSER_MTS_TUNNEL_ID", env_id)
     assert config.get_tunnel_id() == env_id
+
+def test_tunnel_id_config_exception(monkeypatch) -> None:
+    """Verifica se get_tunnel_id lida corretamente com exceções ao acessar tunnel_id da configuração atual."""
+    class BuggyConfig:
+        @property
+        def tunnel_id(self):
+            raise Exception("Mock error accessing tunnel_id")
+
+    monkeypatch.delenv("BROWSER_MTS_TUNNEL_ID", raising=False)
+    # Ignora o arquivo de túnel gravado (ou mocka get_tunnel_data se preferir)
+    monkeypatch.setattr(config, "current_config", BuggyConfig())
+    # O arquivo pode existir, então vamos apagar ou mockar _read_tunnel_data
+    monkeypatch.setattr("src.core.tunnel_config._read_tunnel_data", lambda: {})
+
+    assert config.get_tunnel_id() == ""
