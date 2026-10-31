@@ -10,8 +10,9 @@ references = {}
 
 def clear_session_refs(session_id):
     with _lock:
-        for key in [key for key in references if key[0] == session_id]:
-            references.pop(key, None)
+        for key in list(references):
+            if key[0] == session_id:
+                del references[key]
 
 
 def publish(lease, controls):
