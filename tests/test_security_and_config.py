@@ -55,6 +55,23 @@ class TestSecurityModule(unittest.TestCase):
             mock_k32.LocalFree.assert_called()
             m_str_at.assert_called()
 
+    def test_decrypt_dpapi_empty_input_raises_value_error(self) -> None:
+        """Valida que entradas vazias ou de tipos inválidos lançam ValueError."""
+        with patch("sys.platform", "win32"):
+            with self.assertRaises(ValueError):
+                decrypt_dpapi("")
+            with self.assertRaises(ValueError):
+                decrypt_dpapi(None)  # type: ignore
+            with self.assertRaises(ValueError):
+                decrypt_dpapi(123)  # type: ignore
+
+    def test_decrypt_dpapi_invalid_base64_raises_value_error(self) -> None:
+        """Valida que payloads Base64 inválidos lançam ValueError explicativo."""
+        with patch("sys.platform", "win32"):
+            with self.assertRaises(ValueError) as ctx:
+                decrypt_dpapi("invalid base64")
+            self.assertIn("Payload Base64 inválido", str(ctx.exception))
+
     def test_dpapi_encrypt_decrypt_roundtrip(self) -> None:
         """Garante que a DPAPI criptografa e restaura o dado original no Windows."""
         secreto = "sk-proj-teste-real-de-credencial-1234567890"
