@@ -6,11 +6,14 @@ garantindo auto-recuperação em <= 500ms e evitando processos órfãos.
 
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 import time
 from typing import Any, Dict, List, Optional
 import psutil
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessSupervisor:
@@ -92,11 +95,15 @@ class ProcessSupervisor:
             return
         for stream in (self._popen.stdin, self._popen.stdout, self._popen.stderr):
             if stream is not None and not stream.closed:
-                try: stream.close()
-                except Exception: pass
+                try:
+                    stream.close()
+                except OSError as e:
+                    logger.debug(f"Erro ao fechar stream no ProcessSupervisor: {e}")
         if self._popen.poll() is None:
-            try: self._popen.kill()
-            except Exception: pass
+            try:
+                self._popen.kill()
+            except OSError as e:
+                logger.debug(f"Erro ao matar Popen residual no ProcessSupervisor: {e}")
 
     def terminate_tree(self, timeout: float = 2.0) -> None:
         """Encerra graciosamente toda a árvore de processos (pai e filhos)."""
