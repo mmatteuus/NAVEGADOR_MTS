@@ -1,5 +1,4 @@
 """Módulo de Persistência e Identificação de Túneis (Principal e Multi-Túnel)."""
-from __future__ import annotations
 
 import json
 import os
