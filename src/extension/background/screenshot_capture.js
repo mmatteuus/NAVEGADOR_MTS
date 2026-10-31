@@ -20,12 +20,28 @@ function validateUrlAccess(url) {
 }
 
 /**
- * Captura o conteúdo visual de uma aba especificada (ou da aba ativa).
- * @param {string} [format='png'] - Formato da imagem ('png' ou 'jpeg').
- * @param {number} [quality=90] - Qualidade para formato JPEG (1-100).
- * @param {number} [tabId=null] - ID opcional da aba para captura em background.
+ * Monta o objeto padronizado de resposta da captura de tela.
+ * @param {Object} targetTab - Objeto da aba alvo.
+ * @param {Object} imageData - Dados da imagem capturada.
  */
-export async function captureTabScreenshot(format = 'png', quality = 90, tabId = null) {
+function buildScreenshotResponse(targetTab, { base64, dataUrl, mimeType }) {
+  return {
+    success: true,
+    base64,
+    dataUrl,
+    mimeType,
+    tabId: targetTab.id,
+    tabTitle: targetTab.title || '',
+    url: targetTab.url || ''
+  };
+}
+
+/**
+ * Resolve e valida a aba alvo para a captura de tela.
+ * @param {number|null} tabId - ID opcional da aba.
+ * @returns {Promise<Object>} Aba resolvida e validada.
+ */
+async function resolveTargetTab(tabId) {
   let targetTab = null;
 
   if (tabId !== null && tabId !== undefined) {
@@ -51,24 +67,17 @@ export async function captureTabScreenshot(format = 'png', quality = 90, tabId =
   }
 
   validateUrlAccess(targetTab.url);
+  return targetTab;
+}
 
-  // Tentativa primária: CDP em background (não rouba foco e funciona em abas ocultas)
-  try {
-    const cdpResult = await cdpCaptureScreenshot(targetTab.id, format, quality);
-    return {
-      success: true,
-      base64: cdpResult.base64,
-      dataUrl: cdpResult.dataUrl,
-      mimeType: cdpResult.mimeType,
-      tabId: targetTab.id,
-      tabTitle: targetTab.title || '',
-      url: targetTab.url || ''
-    };
-  } catch (cdpErr) {
-    logger.warn(`Captura via CDP falhou na aba ID ${targetTab.id} (${cdpErr.message}). Tentando fallback...`);
-  }
-
-  // Fallback suave: captureVisibleTab caso seja a aba ativa
+/**
+ * Executa a captura fallback via chrome.tabs.captureVisibleTab se a aba estiver ativa.
+ * @param {Object} targetTab - Aba alvo.
+ * @param {string} format - Formato da imagem.
+ * @param {number} quality - Qualidade do JPEG.
+ * @returns {Promise<Object>} Resposta padronizada da captura.
+ */
+async function captureVisibleTabFallback(targetTab, format, quality) {
   const activeTabs = await chrome.tabs.query({ active: true, windowId: targetTab.windowId });
   if (!activeTabs.some(tab => tab.id === targetTab.id)) {
     throw new Error('Captura fallback recusada: a aba alvo não está ativa.');
@@ -86,17 +95,30 @@ export async function captureTabScreenshot(format = 'png', quality = 90, tabId =
     const mimeType = header.match(/:(.*?);/)?.[1] || `image/${captureOptions.format}`;
     logger.info(`Captura realizada via fallback na aba ID ${targetTab.id} (${mimeType}).`);
 
-    return {
-      success: true,
-      base64: base64Data,
-      dataUrl,
-      mimeType,
-      tabId: targetTab.id,
-      tabTitle: targetTab.title || '',
-      url: targetTab.url || ''
-    };
+    return buildScreenshotResponse(targetTab, { base64: base64Data, dataUrl, mimeType });
   } catch (err) {
     logger.error('Falha geral ao capturar aba visual:', err);
     throw new Error(`Erro na captura da aba: ${err.message}`);
   }
+}
+
+/**
+ * Captura o conteúdo visual de uma aba especificada (ou da aba ativa).
+ * @param {string} [format='png'] - Formato da imagem ('png' ou 'jpeg').
+ * @param {number} [quality=90] - Qualidade para formato JPEG (1-100).
+ * @param {number} [tabId=null] - ID opcional da aba para captura em background.
+ */
+export async function captureTabScreenshot(format = 'png', quality = 90, tabId = null) {
+  const targetTab = await resolveTargetTab(tabId);
+
+  // Tentativa primária: CDP em background (não rouba foco e funciona em abas ocultas)
+  try {
+    const cdpResult = await cdpCaptureScreenshot(targetTab.id, format, quality);
+    return buildScreenshotResponse(targetTab, cdpResult);
+  } catch (cdpErr) {
+    logger.warn(`Captura via CDP falhou na aba ID ${targetTab.id} (${cdpErr.message}). Tentando fallback...`);
+  }
+
+  // Fallback suave: captureVisibleTab caso seja a aba ativa
+  return await captureVisibleTabFallback(targetTab, format, quality);
 }
