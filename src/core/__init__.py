@@ -8,7 +8,6 @@ Módulos fundamentais:
 from src.core.config import (
     AppConfig as AppConfig,
     current_config as current_config,
-    load_config as load_config,
 )
 from src.core.security import (
     SecurityError as SecurityError,
@@ -26,7 +25,6 @@ from src.core.updater import (
 
 __all__ = [
     "AppConfig",
-    "load_config",
     "current_config",
     "encrypt_dpapi",
     "decrypt_dpapi",
