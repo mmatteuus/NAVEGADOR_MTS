@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from websockets.asyncio.server import Server, serve
 from ..core.updater import APP_VERSION
 from .extension_sync import ExtensionReloadPolicy
-from .ws_action_dispatcher import handle_incoming_envelope
+from .ws_protocol import handle_incoming_envelope
 from .ws_session_registry import WSSessionRegistry
 
 logger = logging.getLogger("BrowserMTS.WSBridge")

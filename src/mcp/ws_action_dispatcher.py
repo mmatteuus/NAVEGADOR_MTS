@@ -7,7 +7,6 @@ import logging
 from typing import Any, Callable, Dict, Optional, Tuple
 from .execution_coordinator import coordinate_execution
 from .session_manager import session_manager
-from .ws_protocol import handle_incoming_envelope
 
 logger = logging.getLogger("BrowserMTS.WSDispatcher")
 
