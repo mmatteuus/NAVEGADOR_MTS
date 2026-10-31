@@ -93,6 +93,12 @@ def check_for_updates(api_url: str = DEFAULT_RELEASE_URL, allow_local_fallback: 
     return _error(error or "Canal de atualização indisponível.", "unavailable")
 
 
+def _is_safe_path(path: Path) -> bool:
+    """Valida se o caminho não contém caracteres perigosos para injeção de comandos."""
+    forbidden = ['"', '<', '>', '|', '&', ';']
+    return not any(char in str(path) for char in forbidden)
+
+
 def download_and_launch_update(info: UpdateInfo, progress_callback: Optional[Callable[[float], None]] = None,
                                on_ready_to_install: Optional[Callable[[], None]] = None) -> bool:
     """Valida e inicia o instalador completo no mesmo diretório da aplicação."""
@@ -101,14 +107,23 @@ def download_and_launch_update(info: UpdateInfo, progress_callback: Optional[Cal
         return False
     try:
         installer = download_installer(info, progress_callback)
-        log_path = Path(os.environ.get("TEMP", str(Path.cwd()))) / "NAVEGADOR_MTS_installer.log"
+        log_dir = Path(os.environ.get("TEMP", str(Path.cwd()))).resolve()
+        log_path = log_dir / "NAVEGADOR_MTS_installer.log"
+
+        if not _is_safe_path(installer) or not _is_safe_path(log_path):
+            return False
+
         args = [
             str(installer), "/SILENT", "/SUPPRESSMSGBOXES", "/CURRENTUSER",
             "/NORESTART", "/CLOSEAPPLICATIONS", "/FORCECLOSEAPPLICATIONS", f"/LOG={log_path}",
         ]
         if getattr(sys, "frozen", False):
-            args.append(f"/DIR={Path(sys.executable).resolve().parent}")
-        subprocess.Popen(args, close_fds=True)
+            install_dir = Path(sys.executable).resolve().parent
+            if not _is_safe_path(install_dir):
+                return False
+            args.append(f"/DIR={install_dir}")
+
+        subprocess.Popen(args, shell=False, close_fds=True)
         if on_ready_to_install:
             on_ready_to_install()
         return True
