@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 import shutil
@@ -12,6 +13,8 @@ import urllib.request
 
 from ..version import APP_VERSION
 from .update_models import UpdateInfo
+
+logger = logging.getLogger(__name__)
 
 
 def parse_version_tuple(value: str) -> tuple[int, ...]:
@@ -40,6 +43,7 @@ def fetch_json(url: str, timeout: float = 6.0) -> tuple[Optional[dict], Optional
                 return None, "Resposta de atualização inválida."
             return payload, None
     except Exception as exc:
+        logger.exception("Falha ao consultar JSON em %s", url)
         return None, f"Não foi possível consultar atualizações: {exc}"
 
 
