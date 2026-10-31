@@ -147,3 +147,15 @@ def test_download_and_launch_update_local_file(tmp_path):
     assert reports[-1] == 1.0
     mock_popen.assert_called_once()
 
+
+def test_download_and_launch_update_error_handling(tmp_path):
+    """Valida o tratamento de erro (ex: OSError) durante o download ou lançamento."""
+    installer = tmp_path / "Instalador_Erro.exe"
+    installer.write_bytes(_pe_stub(52))
+    info = UpdateInfo("2.5.0", "Notas", str(installer), "Instalador_Erro.exe", True)
+
+    with patch("subprocess.Popen", side_effect=OSError("Access denied")), \
+         patch("tempfile.gettempdir", return_value=str(tmp_path)):
+        ok = download_and_launch_update(info)
+
+    assert ok is False
