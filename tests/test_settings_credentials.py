@@ -52,7 +52,7 @@ def test_placeholder_and_empty_key_do_not_encrypt(tmp_path: Path, value: str) ->
     panel.entry_tunnel = _Entry("tunnel_" + "0" * 32)
     panel.switch_autostart = _Switch()
     panel.lbl_feedback = _Feedback()
-    panel._raw_api_key = "sk-existing"
+    panel._masked_api_key = mask_credential("sk-existing")
     config = _Config(tmp_path / "runtime_key.enc")
     with patch.object(settings_panel, "current_config", config), patch.object(
         settings_panel, "encrypt_dpapi"
@@ -61,7 +61,7 @@ def test_placeholder_and_empty_key_do_not_encrypt(tmp_path: Path, value: str) ->
     ):
         panel.save_settings()
     encrypt.assert_not_called()
-    assert panel._raw_api_key == "sk-existing"
+    assert panel._masked_api_key == mask_credential("sk-existing")
 
 
 def test_existing_masked_key_does_not_encrypt(tmp_path: Path) -> None:
@@ -71,7 +71,7 @@ def test_existing_masked_key_does_not_encrypt(tmp_path: Path) -> None:
     panel.entry_tunnel = _Entry("tunnel_" + "0" * 32)
     panel.switch_autostart = _Switch()
     panel.lbl_feedback = _Feedback()
-    panel._raw_api_key = "sk-existing-key"
+    panel._masked_api_key = mask_credential("sk-existing-key")
     with patch.object(settings_panel, "current_config", _Config(tmp_path / "key.enc")), patch.object(
         settings_panel, "encrypt_dpapi"
     ) as encrypt, patch.object(settings_panel, "save_tunnel_id"), patch.object(
@@ -88,7 +88,7 @@ def test_new_syntactically_valid_key_encrypts_once(tmp_path: Path) -> None:
     panel.entry_tunnel = _Entry("tunnel_" + "0" * 32)
     panel.switch_autostart = _Switch()
     panel.lbl_feedback = _Feedback()
-    panel._raw_api_key = None
+    panel._masked_api_key = None
     with patch.object(settings_panel, "current_config", _Config(tmp_path / "key.enc")), patch.object(
         settings_panel, "encrypt_dpapi", return_value="ciphertext"
     ) as encrypt, patch.object(settings_panel, "save_tunnel_id"), patch.object(
