@@ -81,7 +81,7 @@ class WebSocketBridge:
         finally:
             self.registry.unregister(websocket)
             self._agent_sessions.pop(websocket, None)
-            for request, owner in list(self._request_sockets.items()):
+            for request, owner in self._request_sockets.items():
                 future = self._pending_requests.get(request)
                 if owner is websocket and future and not future.done():
                     future.set_exception(ConnectionError("EXTENSION_DISCONNECTED: conexão encerrada durante a ação."))
