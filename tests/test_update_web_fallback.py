@@ -51,3 +51,12 @@ def test_fetch_release_web_fallback_invalid_tag():
 
     assert payload is None
     assert "Tag não encontrada" in err
+
+
+def test_fetch_release_web_fallback_exception():
+    """Valida o tratamento de exceção geral (ex: falha de rede)."""
+    with patch("urllib.request.urlopen", side_effect=Exception("Network failure")):
+        payload, err = fetch_release_web_fallback("mmatteuus", "NAVEGADOR_MTS")
+
+    assert payload is None
+    assert err.startswith("Falha na consulta alternativa: Network failure")
