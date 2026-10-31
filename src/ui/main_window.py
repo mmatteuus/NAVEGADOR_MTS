@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+from tkinter import TclError
 from typing import Any, Optional
 import customtkinter as ctk
 from .theme import PALETTE, apply_mica_theme, configure_app_theme
@@ -104,9 +106,10 @@ class MainWindow(ctk.CTk):
             self.withdraw()
             for aid in self.tk.splitlist(self.tk.call("after", "info")):
                 try: self.tk.call("after", "cancel", aid)
-                except Exception: pass
+                except TclError: pass
             super().destroy()
-        except Exception: pass
+        except Exception as e:
+            logging.error("Erro ao destruir a janela principal: %s", e)
 
     def check_for_updates_ui(self, auto_open: bool = True) -> None:
         import threading
