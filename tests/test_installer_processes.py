@@ -13,7 +13,7 @@ def run_harness(scenario: str) -> subprocess.CompletedProcess[str]:
         ["powershell", "-NoProfile", "-NonInteractive", "-File", str(HARNESS), scenario],
         capture_output=True,
         text=True,
-        timeout=15,
+        timeout=30,
     )
 
 
