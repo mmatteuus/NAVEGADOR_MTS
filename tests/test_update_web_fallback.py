@@ -51,3 +51,28 @@ def test_fetch_release_web_fallback_invalid_tag():
 
     assert payload is None
     assert "Tag não encontrada" in err
+
+
+def test_fetch_release_web_fallback_sha_request_exception():
+    """Valida que o payload ainda é retornado, sem digest, caso a requisição SHA falhe."""
+    redirect_resp = MagicMock()
+    redirect_resp.geturl.return_value = "https://github.com/mmatteuus/NAVEGADOR_MTS/releases/tag/v2.4.0.3"
+    redirect_resp.__enter__.return_value = redirect_resp
+
+    with patch("urllib.request.urlopen", side_effect=[redirect_resp, Exception("Simulated SHA Exception")]):
+        payload, err = fetch_release_web_fallback("mmatteuus", "NAVEGADOR_MTS")
+
+    assert err is None
+    assert payload is not None
+    assert payload["tag_name"] == "v2.4.0.3"
+    assert payload["assets"][0]["digest"] == ""
+
+
+def test_fetch_release_web_fallback_request_exception():
+    """Valida rejeição quando ocorre exceção ao acessar o redirecionamento principal."""
+    with patch("urllib.request.urlopen", side_effect=Exception("Simulated Fetch Exception")):
+        payload, err = fetch_release_web_fallback("mmatteuus", "NAVEGADOR_MTS")
+
+    assert payload is None
+    assert err is not None
+    assert "Falha na consulta alternativa" in err
