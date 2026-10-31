@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 import customtkinter as ctk
+
 from .theme import PALETTE, apply_mica_theme, configure_app_theme
 from .dashboard_panel import DashboardPanel
 from .ai_connections_panel import AIConnectionsPanel
 from .settings_panel import SettingsPanel
 from .destinations_panel import DestinationsPanel
 from .main_navigation import show_panel
+
+logger = logging.getLogger("BrowserMTS.MainWindow")
 
 
 class MainWindow(ctk.CTk):
@@ -104,9 +108,9 @@ class MainWindow(ctk.CTk):
             self.withdraw()
             for aid in self.tk.splitlist(self.tk.call("after", "info")):
                 try: self.tk.call("after", "cancel", aid)
-                except Exception: pass
+                except Exception as e: logger.warning(f"Error cancelling callback {aid}: {e}")
             super().destroy()
-        except Exception: pass
+        except Exception as e: logger.error(f"Error destroying MainWindow: {e}")
 
     def check_for_updates_ui(self, auto_open: bool = True) -> None:
         import threading
