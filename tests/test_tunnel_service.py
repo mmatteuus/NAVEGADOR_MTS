@@ -82,3 +82,14 @@ def test_env_key_precedence(monkeypatch):
     """Chave de ambiente tem prioridade sobre o cofre local."""
     monkeypatch.setenv("CONTROL_PLANE_API_KEY", "sk-test-from-env")
     assert get_runtime_api_key() == "sk-test-from-env"
+
+
+def test_local_mcp_is_ready_exception():
+    """Garante que a função captura exceções de rede e retorna False."""
+    from src.core.tunnel_service import local_mcp_is_ready
+    from urllib.error import URLError
+
+    with patch("src.core.tunnel_service.urlopen", side_effect=URLError("Connection refused")):
+        with patch("src.core.tunnel_service.current_config") as mock_config:
+            mock_config.mcp_port = 8000
+            assert local_mcp_is_ready() is False
