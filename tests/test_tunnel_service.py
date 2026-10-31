@@ -82,3 +82,20 @@ def test_env_key_precedence(monkeypatch):
     """Chave de ambiente tem prioridade sobre o cofre local."""
     monkeypatch.setenv("CONTROL_PLANE_API_KEY", "sk-test-from-env")
     assert get_runtime_api_key() == "sk-test-from-env"
+
+
+def test_get_runtime_api_key_exception(monkeypatch):
+    """Testa se exceção na leitura da credencial retorna None."""
+    monkeypatch.delenv("CONTROL_PLANE_API_KEY", raising=False)
+    # Mocking at module level where current_config is used
+    with patch("src.core.tunnel_service.current_config") as mock_config:
+        mock_config.credentials_file.is_file.return_value = True
+        mock_config.credentials_file.read_text.side_effect = Exception("Read error")
+        assert get_runtime_api_key() is None
+
+
+def test_local_mcp_is_ready_exception():
+    """Testa se exceção no check de healthz retorna False."""
+    from src.core.tunnel_service import local_mcp_is_ready
+    with patch("src.core.tunnel_service.urlopen", side_effect=Exception("Connection error")):
+        assert local_mcp_is_ready() is False
