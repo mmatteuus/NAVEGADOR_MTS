@@ -88,6 +88,49 @@ class TestProcessSupervisorStart(unittest.TestCase):
             self.assertIsNone(sup._popen)
             self.assertIsNone(sup._psutil_proc)
 
+    def test_close_popen_streams_exceptions(self) -> None:
+        """Verifica se OSError e ValueError em stream.close() são suprimidos."""
+        sup = ProcessSupervisor(command=["dummy"])
+        mock_stream1 = MagicMock()
+        mock_stream1.closed = False
+        mock_stream1.close.side_effect = OSError("Erro simulado")
+
+        mock_stream2 = MagicMock()
+        mock_stream2.closed = False
+        mock_stream2.close.side_effect = ValueError("Erro simulado")
+
+        mock_popen = MagicMock()
+        mock_popen.stdin = mock_stream1
+        mock_popen.stdout = mock_stream2
+        mock_popen.stderr = None
+        # Make poll() return a code so we skip kill() in this test
+        mock_popen.poll.return_value = 0
+        sup._popen = mock_popen
+
+        # Deve executar sem levantar exceção
+        sup._close_popen_streams()
+
+        mock_stream1.close.assert_called_once()
+        mock_stream2.close.assert_called_once()
+
+    def test_close_popen_streams_kill_exception(self) -> None:
+        """Verifica se OSError em _popen.kill() é suprimido."""
+        sup = ProcessSupervisor(command=["dummy"])
+        mock_popen = MagicMock()
+        mock_popen.stdin = None
+        mock_popen.stdout = None
+        mock_popen.stderr = None
+
+        # Simula processo ainda vivo
+        mock_popen.poll.return_value = None
+        mock_popen.kill.side_effect = OSError("Erro no kill")
+        sup._popen = mock_popen
+
+        # Deve executar sem levantar exceção
+        sup._close_popen_streams()
+
+        mock_popen.kill.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

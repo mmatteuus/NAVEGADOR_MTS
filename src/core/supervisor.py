@@ -92,11 +92,15 @@ class ProcessSupervisor:
             return
         for stream in (self._popen.stdin, self._popen.stdout, self._popen.stderr):
             if stream is not None and not stream.closed:
-                try: stream.close()
-                except Exception: pass
+                try:
+                    stream.close()
+                except (OSError, ValueError):
+                    pass
         if self._popen.poll() is None:
-            try: self._popen.kill()
-            except Exception: pass
+            try:
+                self._popen.kill()
+            except OSError:
+                pass
 
     def terminate_tree(self, timeout: float = 2.0) -> None:
         """Encerra graciosamente toda a árvore de processos (pai e filhos)."""
