@@ -122,6 +122,19 @@ class TestConfigModule(unittest.TestCase):
         finally:
             os.environ.pop("BROWSER_MTS_PORT", None)
 
+    def test_env_var_invalid_port_fallback(self) -> None:
+        """Verifica se o erro ValueError leva as portas ao fallback do padrão."""
+        os.environ["BROWSER_MTS_PORT"] = "invalido"
+        os.environ["BROWSER_MTS_MCP_PORT"] = "invalido"
+        try:
+            cfg = load_config()
+            from src.core.config import DEFAULT_DEV_PORT, DEFAULT_MCP_PORT
+            self.assertEqual(cfg.port, DEFAULT_DEV_PORT)
+            self.assertEqual(cfg.mcp_port, DEFAULT_MCP_PORT)
+        finally:
+            os.environ.pop("BROWSER_MTS_PORT", None)
+            os.environ.pop("BROWSER_MTS_MCP_PORT", None)
+
 
 if __name__ == "__main__":
     unittest.main()
