@@ -1,6 +1,7 @@
 """Suíte de Testes Automatizados para o Módulo de Desinstalação do BROWSER MTS."""
 
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 from src.core.uninstaller import (
     clean_shortcuts_and_registry,
     find_uninstaller_binary,
@@ -44,10 +45,47 @@ def test_find_uninstaller_binary_not_found():
 
 
 def test_clean_shortcuts_and_registry_safe_execution():
-    """Garante que a limpeza de atalhos e registro executa com segurança."""
-    with patch("os.path.isfile", return_value=True), patch("os.remove") as mock_remove:
+    """Garante que a limpeza de atalhos e registro executa com segurança no Windows."""
+    mock_winreg = MagicMock()
+    with patch("sys.platform", "win32"), \
+         patch.dict(sys.modules, {"winreg": mock_winreg}), \
+         patch("os.path.isfile", return_value=True), \
+         patch("os.remove") as mock_remove:
+
         clean_shortcuts_and_registry()
-        assert mock_remove.call_count >= 0
+
+        assert mock_winreg.OpenKey.called
+        assert mock_winreg.DeleteValue.called
+        assert mock_remove.call_count == 2
+
+
+def test_clean_shortcuts_and_registry_winreg_error():
+    """Garante que exceções do winreg são capturadas e ignoradas de forma segura."""
+    mock_winreg = MagicMock()
+    mock_winreg.OpenKey.side_effect = Exception("Acesso Negado no Registro")
+
+    with patch("sys.platform", "win32"), \
+         patch.dict(sys.modules, {"winreg": mock_winreg}), \
+         patch("os.path.isfile", return_value=False):
+
+        # Não deve levantar exceção
+        clean_shortcuts_and_registry()
+        assert mock_winreg.OpenKey.called
+        assert not mock_winreg.DeleteValue.called
+
+
+def test_clean_shortcuts_and_registry_os_remove_error():
+    """Garante que exceções do os.remove são capturadas e ignoradas de forma segura."""
+    mock_winreg = MagicMock()
+
+    with patch("sys.platform", "win32"), \
+         patch.dict(sys.modules, {"winreg": mock_winreg}), \
+         patch("os.path.isfile", return_value=True), \
+         patch("os.remove", side_effect=OSError("Arquivo em uso")):
+
+        # Não deve levantar exceção
+        clean_shortcuts_and_registry()
+        assert mock_winreg.OpenKey.called
 
 
 def test_trigger_application_uninstall_with_binary():
