@@ -100,3 +100,34 @@ def test_trigger_application_uninstall_without_binary():
 
     assert result is False
     assert len(shutdown_called) == 1
+
+def test_clean_shortcuts_and_registry_os_remove_exception():
+    """Valida que a exceção em os.remove é silenciada adequadamente."""
+    with patch("sys.platform", "win32"), \
+         patch("os.path.isfile", return_value=True), \
+         patch("os.remove", side_effect=OSError("Access denied")):
+        clean_shortcuts_and_registry()
+        # Se chegou aqui sem levantar exceção, o teste passou
+
+def test_clean_shortcuts_and_registry_winreg_exception():
+    """Valida que a exceção em winreg é silenciada adequadamente."""
+    with patch("sys.platform", "win32"):
+        # Como o winreg está sendo importado dentro do bloco try no código,
+        # podemos simular falha no import, ou podemos simplesmente mockar o ImportError.
+        # No uninstaller.py é feito 'import winreg' local. No mock a maneira mais facil
+        # é injetar winreg mockado no sys.modules.
+        import sys
+
+        class FakeWinreg:
+            def OpenKey(self, *args, **kwargs):
+                raise OSError("Access denied")
+
+            HKEY_CURRENT_USER = 1
+            KEY_SET_VALUE = 2
+
+        sys.modules['winreg'] = FakeWinreg()
+        try:
+            clean_shortcuts_and_registry()
+            # Se chegou aqui, a exceção lançada pelo OpenKey foi devidamente tratada (pass)
+        finally:
+            del sys.modules['winreg']
